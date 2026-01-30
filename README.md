@@ -29,9 +29,9 @@
 ```mermaid
 graph TD
     Agent[🤖 AI Agent]
-    subgraph "Flutter Skill Layer"
-        CLI[scripts/launch.dart]
-        MCP[scripts/server.dart]
+subgraph "Flutter Skill Layer"
+        CLI[bin/launch.dart]
+        MCP[bin/server.dart]
     end
     subgraph "Target App"
         App[📱 Flutter App]
@@ -56,7 +56,7 @@ You don't need to manually edit your code. The skill handles it for you.
 Run the launch script pointing to your project directory:
 
 ```bash
-dart run scripts/launch.dart /path/to/your/flutter_project
+dart run bin/launch.dart /path/to/your/flutter_project
 ```
 
 **What happens automatically:**
@@ -71,10 +71,10 @@ Once launched, your Agent has full control using the provided tools.
 **CLI Mode (e.g. Claude Code):**
 ```bash
 # Inspect the screen
-dart run scripts/inspect.dart
+dart run bin/inspect.dart
 
 # Tap a button
-dart run scripts/act.dart tap "login_button"
+dart run bin/act.dart tap "login_button"
 ```
 
 **MCP Mode (e.g. Cursor):**

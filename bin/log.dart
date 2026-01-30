@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'lib/flutter_skill_client.dart';
+import 'package:flutter_skill/src/flutter_skill_client.dart';
 
 void main(List<String> args) async {
   if (args.isEmpty) {
-    print('Usage: dart run scripts/reload.dart <vm-uri>');
+    print('Usage: dart run scripts/log.dart <vm-uri>');
     exit(1);
   }
 
@@ -12,9 +12,15 @@ void main(List<String> args) async {
 
   try {
     await client.connect();
-    print('Triggering Hot Reload...');
-    await client.hotReload();
-    print('Hot Reload requested.');
+    final logs = await client.getLogs();
+
+    if (logs.isEmpty) {
+      print('(No logs found)');
+    } else {
+      for (final log in logs) {
+        print(log);
+      }
+    }
   } catch (e) {
     print('Error: $e');
     exit(1);

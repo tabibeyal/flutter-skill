@@ -30,7 +30,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  flutter_skill: any
+  flutter_skill:
+    path: ../
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,7 +56,7 @@ class MyApp extends StatelessWidget {
   print('\n[TEST 1] Testing launch.dart ...');
   final launchProcess = await Process.start(
     'dart',
-    ['run', 'scripts/launch.dart', 'test_dummy'],
+    ['run', 'bin/launch.dart', 'test_dummy'],
     environment: env,
     mode: ProcessStartMode.normal,
   );
@@ -95,7 +96,7 @@ class MyApp extends StatelessWidget {
   print('\n[TEST 2] Testing inspect.dart against running mock...');
   final inspectProcess = await Process.start('dart', [
     'run',
-    'scripts/inspect.dart',
+    'bin/inspect.dart',
   ]);
   final inspectStdout = StringBuffer();
 
@@ -129,7 +130,7 @@ class MyApp extends StatelessWidget {
   print('\n[TEST 3] Testing act.dart tap...');
   final actRes = await Process.run('dart', [
     'run',
-    'scripts/act.dart',
+    'bin/act.dart',
     'tap',
     'login_btn',
   ]);
@@ -142,10 +143,7 @@ class MyApp extends StatelessWidget {
   // 5. Test "server.dart" (MCP Mode)
   print('\n[TEST 4] Testing server.dart (MCP Mode)...');
   // We spawn server.dart
-  final serverProcess = await Process.start('dart', [
-    'run',
-    'scripts/server.dart',
-  ]);
+  final serverProcess = await Process.start('dart', ['run', 'bin/server.dart']);
 
   // We send JSON-RPC commands
   final stdin = serverProcess.stdin;

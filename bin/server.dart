@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-import 'lib/flutter_skill_client.dart';
+import 'package:flutter_skill/src/flutter_skill_client.dart';
 
 // Minimal MCP Server implementation over Stdio.
 // Does not depend on large mcp packages to keep it lightweight.
@@ -20,10 +20,9 @@ class FlutterMcpServer {
 
   Future<void> run() async {
     // Read from stdin, line by line (JSON-RPC)
-    stdin
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) async {
+    stdin.transform(utf8.decoder).transform(const LineSplitter()).listen((
+      line,
+    ) async {
       if (line.trim().isEmpty) return;
       try {
         final request = jsonDecode(line);
@@ -44,12 +43,9 @@ class FlutterMcpServer {
     try {
       if (method == 'initialize') {
         _sendResult(id, {
-          "capabilities": {
-            "tools": {},
-            "resources": {},
-          },
+          "capabilities": {"tools": {}, "resources": {}},
           "protocolVersion": "2024-11-05", // Example version
-          "serverInfo": {"name": "flutter-skill-mcp", "version": "1.0.0"}
+          "serverInfo": {"name": "flutter-skill-mcp", "version": "1.0.0"},
         });
       } else if (method == 'notifications/initialized') {
         // No op
@@ -64,11 +60,11 @@ class FlutterMcpServer {
                 "properties": {
                   "uri": {
                     "type": "string",
-                    "description": "WebSocket URI (ws://...)"
-                  }
+                    "description": "WebSocket URI (ws://...)",
+                  },
                 },
-                "required": ["uri"]
-              }
+                "required": ["uri"],
+              },
             },
             {
               "name": "launch_app",
@@ -78,19 +74,19 @@ class FlutterMcpServer {
                 "properties": {
                   "project_path": {
                     "type": "string",
-                    "description": "Path to Flutter project (default: current)"
+                    "description": "Path to Flutter project (default: current)",
                   },
                   "device_id": {
                     "type": "string",
-                    "description": "Destination device (optional)"
-                  }
-                }
-              }
+                    "description": "Destination device (optional)",
+                  },
+                },
+              },
             },
             {
               "name": "inspect",
               "description": "Get the interactive widget tree",
-              "inputSchema": {"type": "object", "properties": {}}
+              "inputSchema": {"type": "object", "properties": {}},
             },
             {
               "name": "tap",
@@ -99,9 +95,9 @@ class FlutterMcpServer {
                 "type": "object",
                 "properties": {
                   "key": {"type": "string"},
-                  "text": {"type": "string"}
-                }
-              }
+                  "text": {"type": "string"},
+                },
+              },
             },
             {
               "name": "enter_text",
@@ -110,10 +106,10 @@ class FlutterMcpServer {
                 "type": "object",
                 "properties": {
                   "key": {"type": "string"},
-                  "text": {"type": "string"}
+                  "text": {"type": "string"},
                 },
-                "required": ["key", "text"]
-              }
+                "required": ["key", "text"],
+              },
             },
             {
               "name": "pub_search",
@@ -121,12 +117,12 @@ class FlutterMcpServer {
               "inputSchema": {
                 "type": "object",
                 "properties": {
-                  "query": {"type": "string"}
+                  "query": {"type": "string"},
                 },
-                "required": ["query"]
-              }
-            }
-          ]
+                "required": ["query"],
+              },
+            },
+          ],
         });
       } else if (method == 'tools/call') {
         final name = params['name'];
@@ -134,8 +130,8 @@ class FlutterMcpServer {
         final result = await _executeTool(name, args);
         _sendResult(id, {
           "content": [
-            {"type": "text", "text": jsonEncode(result)}
-          ]
+            {"type": "text", "text": jsonEncode(result)},
+          ],
         });
       } else {
         // Unknown method, or ping
@@ -179,8 +175,11 @@ class FlutterMcpServer {
 
       try {
         // Run setup synchronously (await)
-        final setupRes =
-            await Process.run('dart', ['run', setupScript, projectPath]);
+        final setupRes = await Process.run('dart', [
+          'run',
+          setupScript,
+          projectPath,
+        ]);
         // We log stderr but don't fail hard, as maybe setup isn't needed or failed but launch might work
         if (setupRes.exitCode != 0) {
           // Log somewhere? mcp doesn't have easy log stream to user unless we send log notification
@@ -208,26 +207,30 @@ class FlutterMcpServer {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
-        // Find URI
-        if (line.contains('ws://')) {
-          final uriRegex = RegExp(r'ws://[a-zA-Z0-9.:/-]+');
-          final match = uriRegex.firstMatch(line);
-          if (match != null) {
-            final uri = match.group(0)!;
-            // Connect!
-            _client?.disconnect(); // Disconnect existing
-            _client = FlutterSkillClient(uri);
-            _client!.connect().then((_) {
-              if (!completer.isCompleted)
-                completer.complete("Launched and connected to $uri");
-            }).catchError((e) {
-              if (!completer.isCompleted)
-                completer
-                    .completeError("Found URI $uri but failed to connect: $e");
-            });
-          }
-        }
-      });
+            // Find URI
+            if (line.contains('ws://')) {
+              final uriRegex = RegExp(r'ws://[a-zA-Z0-9.:/-]+');
+              final match = uriRegex.firstMatch(line);
+              if (match != null) {
+                final uri = match.group(0)!;
+                // Connect!
+                _client?.disconnect(); // Disconnect existing
+                _client = FlutterSkillClient(uri);
+                _client!
+                    .connect()
+                    .then((_) {
+                      if (!completer.isCompleted)
+                        completer.complete("Launched and connected to $uri");
+                    })
+                    .catchError((e) {
+                      if (!completer.isCompleted)
+                        completer.completeError(
+                          "Found URI $uri but failed to connect: $e",
+                        );
+                    });
+              }
+            }
+          });
 
       // Also listen to stderr/exit
       _flutterProcess!.stderr.transform(utf8.decoder).listen((data) {
@@ -235,14 +238,17 @@ class FlutterMcpServer {
       });
       _flutterProcess!.exitCode.then((code) {
         if (!completer.isCompleted)
-          completer
-              .completeError("Flutter app exited prematurely with code $code");
+          completer.completeError(
+            "Flutter app exited prematurely with code $code",
+          );
         _flutterProcess = null;
       });
 
       // Timeout after 60s
-      return completer.future.timeout(const Duration(seconds: 60),
-          onTimeout: () => "Timed out waiting for app to start");
+      return completer.future.timeout(
+        const Duration(seconds: 60),
+        onTimeout: () => "Timed out waiting for app to start",
+      );
     }
 
     if (name == 'pub_search') {
@@ -282,10 +288,12 @@ class FlutterMcpServer {
 
   void _sendError(dynamic id, int code, String message) {
     if (id == null) return;
-    stdout.writeln(jsonEncode({
-      "jsonrpc": "2.0",
-      "id": id,
-      "error": {"code": code, "message": message}
-    }));
+    stdout.writeln(
+      jsonEncode({
+        "jsonrpc": "2.0",
+        "id": id,
+        "error": {"code": code, "message": message},
+      }),
+    );
   }
 }

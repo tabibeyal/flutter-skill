@@ -1,10 +1,11 @@
 import 'dart:io';
-import 'lib/flutter_skill_client.dart';
+import 'package:flutter_skill/src/flutter_skill_client.dart';
 
 void main(List<String> args) async {
   if (args.length < 2) {
     print(
-        'Usage: dart run scripts/wait_for.dart <vm-uri> <key_or_text> [timeout_seconds]');
+      'Usage: dart run scripts/wait_for.dart <vm-uri> <key_or_text> [timeout_seconds]',
+    );
     exit(1);
   }
 

@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'lib/flutter_skill_client.dart';
+import 'package:flutter_skill/src/flutter_skill_client.dart';
 
 void main(List<String> args) async {
   String uri;
