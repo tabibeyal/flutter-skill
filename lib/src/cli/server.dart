@@ -844,22 +844,28 @@ class FlutterMcpServer {
       case 'tap':
         final result = await _client!.tap(key: args['key'], text: args['text']);
         if (result['success'] != true) {
+          // Return full error details including suggestions
           return {
             "success": false,
-            "error": result['message'] ?? "Element not found",
-            "key": args['key'],
-            "text": args['text'],
+            "error": result['error'] ?? {"message": "Element not found"},
+            "target": result['target'] ?? {"key": args['key'], "text": args['text']},
+            if (result['suggestions'] != null) "suggestions": result['suggestions'],
           };
         }
-        return {"success": true, "message": "Tapped"};
+        return {
+          "success": true,
+          "message": "Tapped",
+          if (result['position'] != null) "position": result['position'],
+        };
 
       case 'enter_text':
         final result = await _client!.enterText(args['key'], args['text']);
         if (result['success'] != true) {
           return {
             "success": false,
-            "error": result['message'] ?? "TextField not found",
-            "key": args['key'],
+            "error": result['error'] ?? {"message": "TextField not found"},
+            "target": result['target'] ?? {"key": args['key']},
+            if (result['suggestions'] != null) "suggestions": result['suggestions'],
           };
         }
         return {"success": true, "message": "Text entered"};

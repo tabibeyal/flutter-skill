@@ -7,6 +7,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+// ==================== ERROR CODES ====================
+
+class ErrorCode {
+  // Element errors
+  static const String elementNotFound = 'E001';
+  static const String elementNotVisible = 'E002';
+  static const String elementNotEnabled = 'E003';
+  static const String multipleElements = 'E004';
+
+  // Action errors
+  static const String tapFailed = 'E101';
+  static const String swipeFailed = 'E102';
+  static const String inputFailed = 'E103';
+
+  // Connection errors
+  static const String appDisconnected = 'E201';
+  static const String vmServiceError = 'E202';
+
+  // Timeout errors
+  static const String operationTimeout = 'E301';
+  static const String elementWaitTimeout = 'E302';
+}
+
 /// The Binding that enables Flutter Skill automation.
 class FlutterSkillBinding {
   static void ensureInitialized() {
@@ -41,10 +64,8 @@ class FlutterSkillBinding {
       try {
         final key = parameters['key'];
         final text = parameters['text'];
-        final success = await _performTap(key: key, text: text);
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'success': success, 'message': success ? 'Tap successful' : 'Element not found'}),
-        );
+        final result = await _performTapWithDetails(key: key, text: text);
+        return developer.ServiceExtensionResponse.result(jsonEncode(result));
       } catch (e, stack) {
         return _errorResponse(e, stack);
       }
@@ -56,15 +77,16 @@ class FlutterSkillBinding {
         final key = parameters['key'];
         final text = parameters['text'];
         if (text == null) {
-          return developer.ServiceExtensionResponse.error(
-            developer.ServiceExtensionResponse.invalidParams,
-            'Missing text',
-          );
+          return developer.ServiceExtensionResponse.result(jsonEncode({
+            'success': false,
+            'error': {
+              'code': ErrorCode.inputFailed,
+              'message': 'Missing text parameter',
+            },
+          }));
         }
-        final success = await _performEnterText(key: key, text: text);
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'success': success, 'message': success ? 'Text entered' : 'TextField not found'}),
-        );
+        final result = await _performEnterTextWithDetails(key: key, text: text);
+        return developer.ServiceExtensionResponse.result(jsonEncode(result));
       } catch (e, stack) {
         return _errorResponse(e, stack);
       }
@@ -552,6 +574,7 @@ class FlutterSkillBinding {
 
   // ==================== ACTIONS ====================
 
+  // ignore: unused_element
   static Future<bool> _performTap({String? key, String? text}) async {
     final element = _findElement(key: key, text: text);
     if (element == null) {
@@ -573,6 +596,161 @@ class FlutterSkillBinding {
     return true;
   }
 
+  /// Enhanced tap with detailed error information and suggestions
+  static Future<Map<String, dynamic>> _performTapWithDetails({String? key, String? text}) async {
+    final element = _findElement(key: key, text: text);
+
+    if (element == null) {
+      final suggestions = <String>[];
+
+      // Find similar keys if key was provided
+      if (key != null) {
+        final similarKeys = _findSimilarKeys(key);
+        if (similarKeys.isNotEmpty) {
+          suggestions.add('Similar keys found: ${similarKeys.take(5).toList()}');
+        }
+      }
+
+      // Find similar text if text was provided
+      if (text != null) {
+        final similarTexts = _findSimilarTexts(text);
+        if (similarTexts.isNotEmpty) {
+          suggestions.add('Similar texts found: ${similarTexts.take(5).toList()}');
+        }
+      }
+
+      suggestions.addAll([
+        'Use inspect() to see available interactive elements',
+        'Use get_widget_tree() to explore the widget hierarchy',
+      ]);
+
+      _log('Element not found for tap (key: $key, text: $text)');
+      return {
+        'success': false,
+        'error': {
+          'code': ErrorCode.elementNotFound,
+          'message': 'No element matching ${key != null ? "key '$key'" : "text '$text'"} found in widget tree',
+        },
+        'target': {'key': key, 'text': text},
+        'suggestions': suggestions,
+      };
+    }
+
+    final renderObject = element.renderObject;
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return {
+        'success': false,
+        'error': {
+          'code': ErrorCode.elementNotVisible,
+          'message': 'Element found but has no valid render box',
+        },
+        'target': {'key': key, 'text': text},
+        'suggestions': ['Element may be offscreen or not yet laid out', 'Try waiting for the element to be visible'],
+      };
+    }
+
+    final center = renderObject.localToGlobal(renderObject.size.center(Offset.zero));
+    _log('Tapping at $center (key: $key, text: $text)');
+
+    await _dispatchTap(center);
+    _log('Tap completed on (key: $key, text: $text)');
+
+    return {
+      'success': true,
+      'message': 'Tap successful',
+      'target': {'key': key, 'text': text},
+      'position': {'x': center.dx.round(), 'y': center.dy.round()},
+    };
+  }
+
+  /// Get all keys in the widget tree
+  static List<String> _getAllKeys() {
+    final keys = <String>[];
+
+    void visit(Element element) {
+      final widget = element.widget;
+      if (widget.key is ValueKey<String>) {
+        keys.add((widget.key as ValueKey<String>).value);
+      }
+      element.visitChildren(visit);
+    }
+
+    final binding = WidgetsBinding.instance;
+    // ignore: invalid_use_of_protected_member
+    if (binding.rootElement != null) {
+      visit(binding.rootElement!);
+    }
+    return keys;
+  }
+
+  /// Find keys similar to the given key using simple substring matching
+  static List<String> _findSimilarKeys(String targetKey) {
+    final allKeys = _getAllKeys();
+    final targetLower = targetKey.toLowerCase();
+
+    // Score and sort by similarity
+    final scored = <MapEntry<String, int>>[];
+    for (final key in allKeys) {
+      final keyLower = key.toLowerCase();
+      int score = 0;
+
+      // Exact substring match
+      if (keyLower.contains(targetLower) || targetLower.contains(keyLower)) {
+        score += 100;
+      }
+
+      // Common prefix
+      int prefixLen = 0;
+      for (int i = 0; i < targetLower.length && i < keyLower.length; i++) {
+        if (targetLower[i] == keyLower[i]) prefixLen++;
+        else break;
+      }
+      score += prefixLen * 10;
+
+      // Character overlap
+      for (final char in targetLower.split('')) {
+        if (keyLower.contains(char)) score += 1;
+      }
+
+      if (score > 5) {
+        scored.add(MapEntry(key, score));
+      }
+    }
+
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    return scored.map((e) => e.key).toList();
+  }
+
+  /// Find texts similar to the given text
+  static List<String> _findSimilarTexts(String targetText) {
+    final allTexts = _getTextContent().map((t) => t['text'] as String?).whereType<String>().toList();
+    final targetLower = targetText.toLowerCase();
+
+    final scored = <MapEntry<String, int>>[];
+    for (final text in allTexts) {
+      final textLower = text.toLowerCase();
+      int score = 0;
+
+      if (textLower.contains(targetLower) || targetLower.contains(textLower)) {
+        score += 100;
+      }
+
+      // Common words
+      final targetWords = targetLower.split(RegExp(r'\s+'));
+      final textWords = textLower.split(RegExp(r'\s+'));
+      for (final word in targetWords) {
+        if (textWords.contains(word)) score += 20;
+      }
+
+      if (score > 10 && text != targetText) {
+        scored.add(MapEntry(text, score));
+      }
+    }
+
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    return scored.map((e) => e.key).toList();
+  }
+
   static Future<void> _dispatchTap(Offset position) async {
     final binding = WidgetsBinding.instance;
     final pointer = _pointerCounter++;
@@ -583,6 +761,7 @@ class FlutterSkillBinding {
     await Future.delayed(const Duration(milliseconds: 100));
   }
 
+  // ignore: unused_element
   static Future<bool> _performEnterText({String? key, required String text}) async {
     final element = _findElement(key: key);
     if (element == null) {
@@ -626,6 +805,101 @@ class FlutterSkillBinding {
     });
     _log('Text input sent via channel');
     return true;
+  }
+
+  /// Enhanced enter text with detailed error information
+  static Future<Map<String, dynamic>> _performEnterTextWithDetails({String? key, required String text}) async {
+    final element = _findElement(key: key);
+
+    if (element == null) {
+      final suggestions = <String>[];
+
+      if (key != null) {
+        final similarKeys = _findSimilarKeys(key);
+        if (similarKeys.isNotEmpty) {
+          suggestions.add('Similar keys found: ${similarKeys.take(5).toList()}');
+        }
+      }
+
+      // Find TextField keys specifically
+      final textFieldKeys = _getAllKeys().where((k) =>
+        k.toLowerCase().contains('field') ||
+        k.toLowerCase().contains('input') ||
+        k.toLowerCase().contains('text')
+      ).toList();
+      if (textFieldKeys.isNotEmpty) {
+        suggestions.add('TextField keys available: ${textFieldKeys.take(5).toList()}');
+      }
+
+      suggestions.add('Use inspect() to find TextField elements');
+
+      return {
+        'success': false,
+        'error': {
+          'code': ErrorCode.elementNotFound,
+          'message': 'No TextField matching key \'$key\' found',
+        },
+        'target': {'key': key},
+        'suggestions': suggestions,
+      };
+    }
+
+    final renderObject = element.renderObject;
+    if (renderObject is! RenderBox) {
+      return {
+        'success': false,
+        'error': {
+          'code': ErrorCode.elementNotVisible,
+          'message': 'TextField has no valid render box',
+        },
+        'target': {'key': key},
+      };
+    }
+
+    final center = renderObject.localToGlobal(renderObject.size.center(Offset.zero));
+    await _dispatchTap(center);
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    EditableTextState? editableTextState;
+    void findEditable(Element e) {
+      if (editableTextState != null) return;
+      if (e is StatefulElement && e.state is EditableTextState) {
+        editableTextState = e.state as EditableTextState;
+        return;
+      }
+      e.visitChildren(findEditable);
+    }
+    findEditable(element);
+
+    if (editableTextState != null) {
+      editableTextState!.updateEditingValue(TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      ));
+      _log('Entered text "$text" (key: $key)');
+      return {
+        'success': true,
+        'message': 'Text entered successfully',
+        'target': {'key': key},
+        'enteredText': text,
+      };
+    }
+
+    SystemChannels.textInput.invokeMethod('TextInput.setEditingState', {
+      'text': text,
+      'selectionBase': text.length,
+      'selectionExtent': text.length,
+      'composingBase': -1,
+      'composingExtent': -1,
+    });
+    _log('Text input sent via channel');
+
+    return {
+      'success': true,
+      'message': 'Text entered via system channel',
+      'target': {'key': key},
+      'enteredText': text,
+    };
   }
 
   static Future<bool> _performScroll({String? key, String? text}) async {
@@ -907,13 +1181,16 @@ class FlutterSkillBinding {
 
   static List<Map<String, dynamic>> _findInteractiveElements() {
     final results = <Map<String, dynamic>>[];
+    int elementCounter = 0;
 
-    void visit(Element element) {
+    void visit(Element element, List<String> ancestors) {
       final widget = element.widget;
       String? type;
       String? text;
       String? key;
       String? semanticsLabel;
+      String? tooltip;
+      String? icon;
 
       if (widget.key is ValueKey<String>) {
         key = (widget.key as ValueKey<String>).value;
@@ -923,6 +1200,9 @@ class FlutterSkillBinding {
           widget is IconButton || widget is FloatingActionButton) {
         type = 'Button';
         text = _extractTextFrom(element);
+        if (widget is IconButton && widget.icon is Icon) {
+          icon = (widget.icon as Icon).icon?.toString();
+        }
       } else if (widget is TextField || widget is TextFormField) {
         type = 'TextField';
       } else if (widget is Checkbox) {
@@ -939,51 +1219,76 @@ class FlutterSkillBinding {
       } else if (widget is GestureDetector && widget.onTap != null) {
         type = 'Tappable';
         text = _extractTextFrom(element);
+      } else if (widget is ListTile) {
+        type = 'ListTile';
+        text = _extractTextFrom(element);
+      } else if (widget is BottomNavigationBarItem) {
+        type = 'BottomNavItem';
       }
 
-      // Extract semantics label if available
+      // Extract semantics label
       if (widget is Semantics && widget.properties.label != null) {
         semanticsLabel = widget.properties.label;
       }
 
+      // Extract tooltip
+      if (widget is Tooltip) {
+        tooltip = widget.message;
+      }
+
       if (type != null) {
+        elementCounter++;
         final entry = <String, dynamic>{
+          'id': 'elem_${elementCounter.toString().padLeft(3, '0')}',
           'type': type,
+          'widgetType': widget.runtimeType.toString(),
         };
 
         if (key != null) entry['key'] = key;
         if (text != null) entry['text'] = text;
         if (semanticsLabel != null) entry['semanticsLabel'] = semanticsLabel;
+        if (tooltip != null) entry['tooltip'] = tooltip;
+        if (icon != null) entry['icon'] = icon;
+
+        // Add ancestors (last 3 meaningful ancestors)
+        final meaningfulAncestors = ancestors
+            .where((a) => !a.startsWith('_') && a != 'Builder' && a != 'StatefulWidget')
+            .toList();
+        if (meaningfulAncestors.isNotEmpty) {
+          entry['ancestors'] = meaningfulAncestors.reversed.take(3).toList();
+        }
 
         // Add position and size from render object
         final renderObject = element.renderObject;
         if (renderObject is RenderBox && renderObject.hasSize) {
           final offset = renderObject.localToGlobal(Offset.zero);
-          entry['position'] = {
+          entry['bounds'] = {
             'x': offset.dx.round(),
             'y': offset.dy.round(),
-          };
-          entry['size'] = {
             'width': renderObject.size.width.round(),
             'height': renderObject.size.height.round(),
           };
-          // Add center point for easy tapping
           entry['center'] = {
             'x': (offset.dx + renderObject.size.width / 2).round(),
             'y': (offset.dy + renderObject.size.height / 2).round(),
           };
+          entry['visible'] = renderObject.size.width > 0 && renderObject.size.height > 0;
         }
 
         results.add(entry);
       }
 
-      element.visitChildren(visit);
+      // Build new ancestors list for children
+      final widgetName = widget.runtimeType.toString();
+      final newAncestors = [...ancestors, widgetName];
+
+      element.visitChildren((child) => visit(child, newAncestors));
     }
 
     final binding = WidgetsBinding.instance;
     // ignore: invalid_use_of_protected_member
     if (binding.rootElement != null) {
-      visit(binding.rootElement!);
+      visit(binding.rootElement!, []);
     }
 
     return results;
