@@ -1,3 +1,107 @@
+## 0.2.13
+
+**Feature Parity & Developer Experience**
+
+### New MCP Tools
+- `scan_and_connect` - Auto-scan VM Service ports and connect to first found Flutter app
+- `list_running_apps` - List all running Flutter apps with their VM Service URIs
+- `stop_app` - Stop the currently running Flutter app
+- `disconnect` - Disconnect from app without stopping it
+- `get_connection_status` - Get connection info with actionable suggestions
+- `hot_restart` - Full app restart (resets state)
+
+### Enhanced Tools
+- `launch_app` now supports:
+  - `dart_defines` - Pass compile-time variables (e.g., `["ENV=staging", "DEBUG=true"]`)
+  - `flavor` - Build flavor selection
+  - `target` - Custom entry point file
+  - `extra_args` - Additional flutter run arguments
+
+### Improved Error Messages
+- Connection errors now include specific solutions
+- `get_connection_status` shows available apps and suggestions
+
+---
+
+## 0.2.12
+
+**Auto-Update Checking**
+
+### New Features
+- Auto-update checking for all installation methods
+- npm: Checks registry every 24 hours, shows notification
+- VSCode: Extension auto-updates via marketplace
+- IntelliJ: Plugin auto-updates via JetBrains marketplace
+- Homebrew: `brew upgrade flutter-skill`
+
+---
+
+## 0.2.11
+
+**Homebrew Distribution**
+
+### New Features
+- Homebrew formula with pre-compiled native binary
+- `brew tap ai-dashboad/flutter-skill && brew install flutter-skill`
+- Auto-upgrades via `brew upgrade`
+
+---
+
+## 0.2.10
+
+**IntelliJ Native Binary Support**
+
+### New Features
+- Native binary auto-download for IntelliJ/Android Studio plugin
+- Background download with progress indicator
+- Cached to `~/.flutter-skill/bin/`
+
+---
+
+## 0.2.9
+
+**npm Native Binary Auto-Download**
+
+### New Features
+- npm postinstall script auto-downloads native binary
+- Platform detection: macOS (arm64/x64), Linux (x64), Windows (x64)
+- Fallback to Dart runtime if download fails
+
+---
+
+## 0.2.8
+
+**Native Binary Compilation**
+
+### Performance
+- Native binary compilation for ~100x faster MCP startup
+- Startup time: ~0.01s (native) vs ~1s (Dart JIT)
+- GitHub Actions builds for all platforms
+
+---
+
+## 0.2.7
+
+**VSCode Native Binary Support**
+
+### New Features
+- VSCode extension auto-downloads native binary
+- Background download on extension activation
+- Automatic fallback to Dart runtime
+
+---
+
+## 0.2.6
+
+**Claude Code Config Fix**
+
+### Bug Fixes
+- Fixed Claude Code MCP config detection
+- Correct path: `~/.claude/settings.json` (was incorrectly using `~/.claude.json`)
+- Config now properly merges into existing settings
+
+---
+
 ## 0.2.0
 
 **Major Feature Release - 25+ MCP Tools**

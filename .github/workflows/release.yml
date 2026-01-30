@@ -20,9 +20,33 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+  # Sync documentation to all distribution channels
+  sync-docs:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Sync documentation
+        run: dart scripts/sync_docs.dart
+
+      - name: Upload synced docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: synced-docs
+          path: |
+            vscode-extension/README.md
+            npm/README.md
+            intellij-plugin/src/main/resources/META-INF/plugin.xml
+
   # Publish to pub.dev
   publish-pub-dev:
-    needs: prepare
+    needs: [prepare, sync-docs]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,13 +78,19 @@ jobs:
 
   # Publish to npm
   publish-npm:
-    needs: prepare
+    needs: [prepare, sync-docs]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: npm
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download synced docs
+        uses: actions/download-artifact@v4
+        with:
+          name: synced-docs
+          path: .
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -84,13 +114,19 @@ jobs:
 
   # Publish VSCode extension
   publish-vscode:
-    needs: prepare
+    needs: [prepare, sync-docs]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: vscode-extension
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download synced docs
+        uses: actions/download-artifact@v4
+        with:
+          name: synced-docs
+          path: .
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -117,13 +153,19 @@ jobs:
 
   # Publish IntelliJ plugin
   publish-intellij:
-    needs: prepare
+    needs: [prepare, sync-docs]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: intellij-plugin
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download synced docs
+        uses: actions/download-artifact@v4
+        with:
+          name: synced-docs
+          path: .
 
       - name: Setup Java
         uses: actions/setup-java@v4
