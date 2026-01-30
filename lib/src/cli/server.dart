@@ -680,11 +680,51 @@ class FlutterMcpServer {
   Future<dynamic> _executeTool(String name, Map<String, dynamic> args) async {
     // Connection tools
     if (name == 'connect_app') {
-      final uri = args['uri'] as String;
+      var uri = args['uri'] as String;
+
+      // Normalize URI format
+      uri = _normalizeVmServiceUri(uri);
+
       if (_client != null) await _client!.disconnect();
-      _client = FlutterSkillClient(uri);
-      await _client!.connect();
-      return "Connected to $uri";
+
+      // Retry logic with exponential backoff
+      const maxRetries = 3;
+      Exception? lastError;
+
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          _client = FlutterSkillClient(uri);
+          await _client!.connect();
+          return {
+            "success": true,
+            "message": "Connected to $uri",
+            "uri": uri,
+            "attempts": attempt,
+          };
+        } catch (e) {
+          lastError = e is Exception ? e : Exception(e.toString());
+          _client = null;
+
+          if (attempt < maxRetries) {
+            // Wait before retry (100ms, 200ms, 400ms)
+            await Future.delayed(Duration(milliseconds: 100 * (1 << (attempt - 1))));
+          }
+        }
+      }
+
+      return {
+        "success": false,
+        "error": {
+          "code": "E201",
+          "message": "Failed to connect after $maxRetries attempts: $lastError",
+        },
+        "uri": uri,
+        "suggestions": [
+          "Verify the app is running with 'flutter run'",
+          "Check if the VM Service URI is correct",
+          "Try scan_and_connect() to auto-detect running apps",
+        ],
+      };
     }
 
     if (name == 'launch_app') {
@@ -753,10 +793,22 @@ class FlutterMcpServer {
         _flutterProcess = null;
       });
 
-      return completer.future.timeout(
-        const Duration(seconds: 120),
-        onTimeout: () => "Timed out waiting for app to start",
-      );
+      try {
+        return await completer.future.timeout(const Duration(seconds: 180));  // 3 minutes for slow builds
+      } on TimeoutException {
+        return {
+          "success": false,
+          "error": {
+            "code": "E301",
+            "message": "Timed out waiting for app to start (180s)",
+          },
+          "suggestions": [
+            "The app may still be compiling. Try again or check flutter logs.",
+            "Use scan_and_connect() after the app finishes launching.",
+            "For faster startup, use 'flutter run' manually and then connect_app().",
+          ],
+        };
+      }
     }
 
     if (name == 'scan_and_connect') {
@@ -1181,6 +1233,30 @@ class FlutterMcpServer {
   }
 
   /// Gesture presets for common interactions
+  /// Normalize VM Service URI to ensure correct format
+  String _normalizeVmServiceUri(String uri) {
+    // Remove trailing slash
+    uri = uri.trimRight();
+    if (uri.endsWith('/')) {
+      uri = uri.substring(0, uri.length - 1);
+    }
+
+    // Handle http:// -> ws://
+    if (uri.startsWith('http://')) {
+      uri = uri.replaceFirst('http://', 'ws://');
+    }
+
+    // Ensure /ws suffix for VM Service
+    if (!uri.endsWith('/ws') && !uri.contains('/ws?')) {
+      // Check if it's a base URL like ws://127.0.0.1:50000/xxx=
+      if (uri.contains('=') && !uri.endsWith('/ws')) {
+        uri = '$uri/ws';
+      }
+    }
+
+    return uri;
+  }
+
   static const Map<String, Map<String, dynamic>> _gesturePresets = {
     'drawer_open': {
       'from_x': 0.0,
