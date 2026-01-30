@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { configureAllAgents, detectAiAgents, checkExistingConfigs } from './mcpConfigManager';
 import { VmServiceScanner } from './vmServiceScanner';
 import { StatusBar, showStatusMenu } from './statusBar';
+import { promptSetupFlutterSkill, setupFlutterSkill, hasFlutterSkillDependency } from './flutterSetup';
 
 let mcpServerProcess: child_process.ChildProcess | undefined;
 let outputChannel: vscode.OutputChannel;
@@ -30,7 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('flutter-skill.stopMcpServer', stopMcpServer),
         vscode.commands.registerCommand('flutter-skill.configureAgents', () => configureAllAgents(outputChannel)),
         vscode.commands.registerCommand('flutter-skill.rescan', () => vmScanner.rescan()),
-        vscode.commands.registerCommand('flutter-skill.showStatus', showStatus)
+        vscode.commands.registerCommand('flutter-skill.showStatus', showStatus),
+        vscode.commands.registerCommand('flutter-skill.setupDependency', () => setupFlutterSkillCommand())
     );
 
     // Add status bar and scanner to subscriptions for cleanup
@@ -59,6 +61,11 @@ export function activate(context: vscode.ExtensionContext) {
         // Prompt to configure AI agents if configured and not already done
         if (config.get('autoConfigureAgents')) {
             promptConfigureAgentsIfNeeded();
+        }
+
+        // Auto-setup flutter_skill dependency if configured
+        if (config.get('autoSetupDependency')) {
+            promptSetupFlutterSkill(outputChannel);
         }
     }
 
@@ -270,4 +277,19 @@ async function stopMcpServer(): Promise<void> {
     mcpServerProcess.kill();
     mcpServerProcess = undefined;
     vscode.window.showInformationMessage('MCP Server stopped');
+}
+
+async function setupFlutterSkillCommand(): Promise<void> {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+    }
+
+    if (hasFlutterSkillDependency(workspaceFolder.uri.fsPath)) {
+        vscode.window.showInformationMessage('flutter_skill is already configured in this project');
+        return;
+    }
+
+    await setupFlutterSkill(workspaceFolder.uri.fsPath, outputChannel);
 }

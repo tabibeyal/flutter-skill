@@ -2,7 +2,7 @@
   "name": "flutter-skill",
   "displayName": "Flutter Skill - AI App Automation",
   "description": "Give your AI Agent eyes and hands inside your Flutter app. Bridge between AI coding assistants (Claude Code, Cursor, Windsurf) and running Flutter applications with 25+ MCP tools for UI inspection, gestures, screenshots, and more.",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "publisher": "ai-dashboad",
   "icon": "images/icon.png",
   "repository": {
@@ -73,6 +73,10 @@
       {
         "command": "flutter-skill.showStatus",
         "title": "Flutter Skill: Show Status"
+      },
+      {
+        "command": "flutter-skill.setupDependency",
+        "title": "Flutter Skill: Add flutter_skill to Project"
       }
     ],
     "configuration": {
@@ -117,6 +121,11 @@
           "type": "number",
           "default": 50100,
           "description": "End of port range to scan for VM Service"
+        },
+        "flutter-skill.autoSetupDependency": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prompt to add flutter_skill dependency when Flutter project is opened"
         }
       }
     },
