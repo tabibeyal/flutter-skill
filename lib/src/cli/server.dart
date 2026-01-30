@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../flutter_skill_client.dart';
 import 'setup.dart';
 
-const String _currentVersion = '0.2.12';
+const String _currentVersion = '0.2.13';
 
 Future<void> runServer(List<String> args) async {
   // Check for updates in background
@@ -160,6 +160,21 @@ class FlutterMcpServer {
             "port_end": {"type": "integer", "description": "End of port range (default: 50100)"},
           },
         },
+      },
+      {
+        "name": "stop_app",
+        "description": "Stop the currently connected/launched Flutter app",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "disconnect",
+        "description": "Disconnect from the current Flutter app (without stopping it)",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "get_connection_status",
+        "description": "Get current connection status and app info",
+        "inputSchema": {"type": "object", "properties": {}},
       },
 
       // Basic Inspection
@@ -411,7 +426,12 @@ class FlutterMcpServer {
       // Utilities
       {
         "name": "hot_reload",
-        "description": "Trigger hot reload",
+        "description": "Trigger hot reload (fast, keeps app state)",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "hot_restart",
+        "description": "Trigger hot restart (slower, resets app state)",
         "inputSchema": {"type": "object", "properties": {}},
       },
       {
@@ -535,6 +555,50 @@ class FlutterMcpServer {
       return {"apps": vmServices, "count": vmServices.length};
     }
 
+    if (name == 'stop_app') {
+      if (_flutterProcess != null) {
+        _flutterProcess!.kill();
+        _flutterProcess = null;
+      }
+      if (_client != null) {
+        await _client!.disconnect();
+        _client = null;
+      }
+      return {"success": true, "message": "App stopped"};
+    }
+
+    if (name == 'disconnect') {
+      if (_client != null) {
+        await _client!.disconnect();
+        _client = null;
+      }
+      return {"success": true, "message": "Disconnected"};
+    }
+
+    if (name == 'get_connection_status') {
+      final isConnected = _client != null && _client!.isConnected;
+      final hasLaunchedApp = _flutterProcess != null;
+
+      if (!isConnected) {
+        // Try to find running apps to provide helpful suggestions
+        final vmServices = await _scanVmServices(50000, 50100);
+        return {
+          "connected": false,
+          "launched_app": hasLaunchedApp,
+          "available_apps": vmServices,
+          "suggestion": vmServices.isNotEmpty
+              ? "Found ${vmServices.length} running app(s). Use scan_and_connect() to auto-connect."
+              : "No running apps found. Use launch_app() to start one.",
+        };
+      }
+
+      return {
+        "connected": true,
+        "uri": _client!.vmServiceUri,
+        "launched_app": hasLaunchedApp,
+      };
+    }
+
     if (name == 'pub_search') {
       final query = args['query'];
       final url = Uri.parse('https://pub.dev/api/search?q=$query');
@@ -548,6 +612,12 @@ class FlutterMcpServer {
       _requireConnection();
       await _client!.hotReload();
       return "Hot reload triggered";
+    }
+
+    if (name == 'hot_restart') {
+      _requireConnection();
+      await _client!.hotRestart();
+      return "Hot restart triggered";
     }
 
     // Require connection for all other tools
@@ -645,7 +715,14 @@ class FlutterMcpServer {
 
   void _requireConnection() {
     if (_client == null || !_client!.isConnected) {
-      throw Exception("Not connected. Call 'connect_app', 'launch_app', or 'scan_and_connect' first.");
+      throw Exception('''Not connected to Flutter app.
+
+Solutions:
+1. If app is already running: call scan_and_connect() to auto-detect and connect
+2. To start a new app: call launch_app(project_path: "/path/to/project")
+3. If you have the VM Service URI: call connect_app(uri: "ws://...")
+
+Tip: Use get_connection_status() to see available running apps.''');
     }
   }
 

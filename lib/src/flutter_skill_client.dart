@@ -9,6 +9,9 @@ class FlutterSkillClient {
 
   FlutterSkillClient(this.wsUri);
 
+  /// Get the VM Service URI this client is connected to
+  String get vmServiceUri => wsUri;
+
   Future<void> connect() async {
     print('DEBUG: Connecting to $wsUri');
     _service = await vmServiceConnectUri(wsUri);
