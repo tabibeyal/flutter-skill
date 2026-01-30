@@ -44,8 +44,9 @@ if (!fs.existsSync(serverScript)) {
   process.exit(1);
 }
 
-// Get dependencies first
-const pubGet = spawn('dart', ['pub', 'get'], {
+// Get dependencies first (use flutter pub for Flutter packages)
+const pubCmd = checkFlutter() ? 'flutter' : 'dart';
+const pubGet = spawn(pubCmd, ['pub', 'get'], {
   cwd: dartDir,
   stdio: 'inherit'
 });

@@ -4,8 +4,8 @@ import 'package:vm_service/vm_service_io.dart';
 
 class FlutterSkillClient {
   final String wsUri;
-  late VmService _service;
-  late String _isolateId;
+  VmService? _service;
+  String? _isolateId;
 
   FlutterSkillClient(this.wsUri);
 
@@ -14,7 +14,7 @@ class FlutterSkillClient {
     _service = await vmServiceConnectUri(wsUri);
     print('DEBUG: Connected to VM Service');
 
-    final vm = await _service.getVM();
+    final vm = await _service!.getVM();
     print('DEBUG: Got VM info');
     final isolates = vm.isolates;
     if (isolates == null || isolates.isEmpty) {
@@ -24,13 +24,18 @@ class FlutterSkillClient {
   }
 
   Future<void> disconnect() async {
-    await _service.dispose();
+    await _service?.dispose();
+    _service = null;
+    _isolateId = null;
   }
 
   Future<Map<String, dynamic>> _call(String method, [Map<String, dynamic>? args]) async {
-    final response = await _service.callServiceExtension(
+    if (_service == null || _isolateId == null) {
+      throw Exception('Not connected');
+    }
+    final response = await _service!.callServiceExtension(
       method,
-      isolateId: _isolateId,
+      isolateId: _isolateId!,
       args: args,
     );
     return response.json ?? {};
@@ -232,11 +237,17 @@ class FlutterSkillClient {
   // ==================== EXISTING HELPERS ====================
 
   Future<void> hotReload() async {
-    await _service.reloadSources(_isolateId);
+    if (_service == null || _isolateId == null) {
+      throw Exception('Not connected');
+    }
+    await _service!.reloadSources(_isolateId!);
   }
 
   Future<void> hotRestart() async {
-    await _service.reloadSources(_isolateId);
+    if (_service == null || _isolateId == null) {
+      throw Exception('Not connected');
+    }
+    await _service!.reloadSources(_isolateId!);
   }
 
   Future<Map<String, dynamic>> getLayoutTree() async {
@@ -251,7 +262,7 @@ class FlutterSkillClient {
     }
   }
 
-  bool get isConnected => _isolateId.isNotEmpty;
+  bool get isConnected => _service != null && _isolateId != null;
 
   static Future<String> resolveUri(List<String> args) async {
     if (args.isNotEmpty) {
