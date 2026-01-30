@@ -1,3 +1,7 @@
+## 0.1.4
+
+- Housekeeping: Removed `demo_counter` test app from package distribution.
+
 ## 0.1.3
 
 - Fix: Critical fix for `launch` command to correctly capture VM Service URI with auth tokens.
