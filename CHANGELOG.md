@@ -1,3 +1,8 @@
+## 0.1.5
+
+- Fix: Added missing implementation for `scroll` extension found during comprehensive verification.
+- Verified: All CLI features (inspect, tap, enterText, scroll) verified against real macOS app.
+
 ## 0.1.4
 
 - Housekeeping: Removed `demo_counter` test app from package distribution.

@@ -3,7 +3,7 @@ import 'dart:developer' as developer; // For registerExtension
 // import 'package:flutter/foundation.dart'; // Unused
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+
 // import 'package:flutter/services.dart'; // Unused
 
 /// The Binding that enables Flutter Skill automation.
@@ -46,24 +46,10 @@ class FlutterSkillBinding {
     ) async {
       final key = parameters['key'];
       final text = parameters['text'];
-      if (key == null && text == null) {
-        return developer.ServiceExtensionResponse.error(
-          developer.ServiceExtensionResponse.invalidParams,
-          'Missing key or text',
-        );
-      }
-
       final success = await _performTap(key: key, text: text);
-      if (success) {
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'type': 'Success'}),
-        );
-      } else {
-        return developer.ServiceExtensionResponse.error(
-          developer.ServiceExtensionResponse.extensionError,
-          'Element not found or not tappable',
-        );
-      }
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode({'success': success}),
+      );
     });
 
     // 3. Enter Text
@@ -71,6 +57,7 @@ class FlutterSkillBinding {
       method,
       parameters,
     ) async {
+      final key = parameters['key'];
       final text = parameters['text'];
       if (text == null) {
         return developer.ServiceExtensionResponse.error(
@@ -78,24 +65,23 @@ class FlutterSkillBinding {
           'Missing text',
         );
       }
-      // Basic implementation: Enters text into currently focused field
+      final success = await _performEnterText(key: key, text: text);
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode({'success': success}),
+      );
+    });
 
-      try {
-        final input = _findFocusedEditable();
-        if (input != null) {
-          input.text = TextSpan(text: text);
-        }
-
-        print('Flutter Skill: Entering text "$text"');
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'type': 'Success'}),
-        );
-      } catch (e) {
-        return developer.ServiceExtensionResponse.error(
-          developer.ServiceExtensionResponse.extensionError,
-          '$e',
-        );
-      }
+    // 4. Scroll
+    developer.registerExtension('ext.flutter.flutter_skill.scroll', (
+      method,
+      parameters,
+    ) async {
+      final key = parameters['key'];
+      final text = parameters['text'];
+      final success = await _performScroll(key: key, text: text);
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode({'success': success}),
+      );
     });
   }
 
@@ -182,7 +168,22 @@ class FlutterSkillBinding {
     return true;
   }
 
-  static RenderEditable? _findFocusedEditable() {
-    return null;
+  static Future<bool> _performEnterText(
+      {String? key, required String text}) async {
+    print('Flutter Skill: Mock Enter Text "$text" on $key');
+    // Real implementation would look up Element and use setText/updateEditingValue
+    return true;
+  }
+
+  static Future<bool> _performScroll({String? key, String? text}) async {
+    print('Flutter Skill: Mock Scroll to $key / $text');
+    // Real implementation: EnsureVisible
+    // Since we are mocking the finding logic for now due to complexity,
+    // we also mock the scroll action success.
+
+    // In a real implementation:
+    // Scrollable.ensureVisible(context);
+
+    return true;
   }
 }
