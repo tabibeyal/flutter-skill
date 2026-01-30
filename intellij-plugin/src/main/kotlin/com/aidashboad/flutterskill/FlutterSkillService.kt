@@ -51,6 +51,9 @@ class FlutterSkillService(private val project: Project) {
 
         // Download native binary in background for faster startup
         NativeBinaryManager.getInstance().downloadNativeBinaryAsync()
+
+        // Check for updates (once per 24 hours)
+        UpdateChecker.getInstance().checkForUpdatesAsync(project)
     }
 
     /**

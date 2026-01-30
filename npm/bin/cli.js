@@ -10,6 +10,10 @@ const os = require('os');
 const packageJson = require('../package.json');
 const VERSION = packageJson.version;
 
+// Update check config
+const CHECK_INTERVAL_HOURS = 24;
+const UPDATE_CHECK_FILE = path.join(os.homedir(), '.flutter-skill', 'update-check.json');
+
 // Paths
 const cacheDir = path.join(os.homedir(), '.flutter-skill');
 const binDir = path.join(cacheDir, 'bin');
@@ -184,5 +188,75 @@ function checkFlutter() {
     return false;
   }
 }
+
+// Check for updates (non-blocking, runs in background)
+function checkForUpdates() {
+  // Only check periodically
+  try {
+    const checkDir = path.dirname(UPDATE_CHECK_FILE);
+    if (!fs.existsSync(checkDir)) {
+      fs.mkdirSync(checkDir, { recursive: true });
+    }
+
+    let lastCheck = 0;
+    let skippedVersion = null;
+
+    if (fs.existsSync(UPDATE_CHECK_FILE)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(UPDATE_CHECK_FILE, 'utf-8'));
+        lastCheck = data.lastCheck || 0;
+        skippedVersion = data.skippedVersion;
+      } catch {}
+    }
+
+    const now = Date.now();
+    const hoursSinceLastCheck = (now - lastCheck) / (1000 * 60 * 60);
+
+    if (hoursSinceLastCheck < CHECK_INTERVAL_HOURS) {
+      return;
+    }
+
+    // Update last check time
+    fs.writeFileSync(UPDATE_CHECK_FILE, JSON.stringify({
+      lastCheck: now,
+      skippedVersion
+    }));
+
+    // Check npm registry for latest version (async, non-blocking)
+    https.get('https://registry.npmjs.org/flutter-skill-mcp', (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const latestVersion = json['dist-tags'].latest;
+
+          if (latestVersion && compareVersions(latestVersion, VERSION) > 0) {
+            if (skippedVersion !== latestVersion) {
+              console.error(`\n[flutter-skill] Update available: ${VERSION} → ${latestVersion}`);
+              console.error(`[flutter-skill] Run: npm update -g flutter-skill-mcp\n`);
+            }
+          }
+        } catch {}
+      });
+    }).on('error', () => {});
+  } catch {}
+}
+
+function compareVersions(v1, v2) {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
+// Run update check in background (non-blocking)
+checkForUpdates();
 
 main().catch(console.error);

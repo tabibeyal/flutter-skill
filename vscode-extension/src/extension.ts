@@ -7,8 +7,9 @@ import { VmServiceScanner } from './vmServiceScanner';
 import { StatusBar, showStatusMenu } from './statusBar';
 import { promptSetupFlutterSkill, setupFlutterSkill, hasFlutterSkillDependency } from './flutterSetup';
 import { ensureNativeBinary, getBestBinaryPath } from './nativeBinary';
+import { checkForUpdates } from './updateChecker';
 
-const EXTENSION_VERSION = '0.2.10';
+const EXTENSION_VERSION = '0.2.11';
 
 let mcpServerProcess: child_process.ChildProcess | undefined;
 let outputChannel: vscode.OutputChannel;
@@ -74,6 +75,9 @@ export function activate(context: vscode.ExtensionContext) {
         // Download native binary in background for faster MCP startup
         ensureNativeBinary(EXTENSION_VERSION, outputChannel);
     }
+
+    // Check for updates (once per 24 hours)
+    checkForUpdates(EXTENSION_VERSION, context, outputChannel);
 
     outputChannel.appendLine('Flutter Skill extension activated');
 }

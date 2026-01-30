@@ -16,7 +16,7 @@ class NativeBinaryManager {
     private val logger = Logger.getInstance(NativeBinaryManager::class.java)
 
     companion object {
-        const val VERSION = "0.2.10"
+        const val VERSION = "0.2.11"
 
         @JvmStatic
         fun getInstance(): NativeBinaryManager {
