@@ -1,3 +1,28 @@
+## 0.2.18
+
+**Connection Reliability & Error Handling Improvements**
+
+### Bug Fixes
+- `connect_app` now retries 3 times with exponential backoff
+- Auto-normalize VM Service URI format (http→ws, add /ws suffix)
+- `launch_app` timeout increased from 120s to 180s for slow builds
+
+### Improved Error Messages
+- Structured error responses with error codes (E201, E301)
+- Actionable suggestions on connection/launch failures
+- Clear next steps for troubleshooting
+
+### Example Error Response
+```json
+{
+  "success": false,
+  "error": {"code": "E201", "message": "Failed to connect after 3 attempts"},
+  "suggestions": ["Try scan_and_connect()", "Verify app is running"]
+}
+```
+
+---
+
 ## 0.2.17
 
 **P2 Optimizations - Gesture Presets & Wait for Idle**
