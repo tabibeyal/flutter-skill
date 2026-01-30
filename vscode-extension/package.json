@@ -1,0 +1,97 @@
+{
+  "name": "flutter-skill",
+  "displayName": "Flutter Skill - AI App Automation",
+  "description": "Control Flutter apps with AI agents - inspect UI, perform gestures, take screenshots",
+  "version": "0.2.0",
+  "publisher": "ai-dashboad",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-dashboad/flutter-skill.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "flutter",
+    "dart",
+    "mcp",
+    "ai",
+    "automation",
+    "testing",
+    "claude",
+    "cursor"
+  ],
+  "activationEvents": [
+    "onLanguage:dart",
+    "workspaceContains:**/pubspec.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "flutter-skill.launch",
+        "title": "Flutter Skill: Launch App"
+      },
+      {
+        "command": "flutter-skill.inspect",
+        "title": "Flutter Skill: Inspect UI"
+      },
+      {
+        "command": "flutter-skill.screenshot",
+        "title": "Flutter Skill: Take Screenshot"
+      },
+      {
+        "command": "flutter-skill.startMcpServer",
+        "title": "Flutter Skill: Start MCP Server"
+      }
+    ],
+    "configuration": {
+      "title": "Flutter Skill",
+      "properties": {
+        "flutter-skill.dartPath": {
+          "type": "string",
+          "default": "dart",
+          "description": "Path to Dart executable"
+        },
+        "flutter-skill.flutterPath": {
+          "type": "string",
+          "default": "flutter",
+          "description": "Path to Flutter executable"
+        },
+        "flutter-skill.autoConnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically connect when Flutter app starts"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "flutterSkillView",
+          "name": "Flutter Skill",
+          "when": "dart:anyFlutterProjectLoaded"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

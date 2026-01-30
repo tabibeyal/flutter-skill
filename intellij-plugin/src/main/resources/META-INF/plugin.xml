@@ -1,0 +1,82 @@
+<idea-plugin>
+    <id>com.aidashboad.flutterskill</id>
+    <name>Flutter Skill - AI App Automation</name>
+    <version>0.2.0</version>
+    <vendor email="support@ai-dashboad.com" url="https://github.com/ai-dashboad/flutter-skill">ai-dashboad</vendor>
+
+    <description><![CDATA[
+    <h2>Flutter Skill - AI App Automation</h2>
+    <p>Control Flutter apps with AI agents - inspect UI, perform gestures, take screenshots.</p>
+
+    <h3>Features</h3>
+    <ul>
+        <li>Launch Flutter app with auto-setup</li>
+        <li>Inspect UI elements and widget tree</li>
+        <li>Take screenshots</li>
+        <li>Start MCP server for AI agent integration (Cursor, Windsurf, Claude)</li>
+    </ul>
+
+    <h3>Requirements</h3>
+    <ul>
+        <li>Flutter SDK</li>
+        <li>Dart SDK</li>
+        <li>flutter_skill package</li>
+    </ul>
+
+    <h3>Links</h3>
+    <ul>
+        <li><a href="https://github.com/ai-dashboad/flutter-skill">GitHub</a></li>
+        <li><a href="https://pub.dev/packages/flutter_skill">pub.dev</a></li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>0.2.0</h3>
+    <ul>
+        <li>Initial release with 25+ MCP tools</li>
+        <li>UI inspection, gestures, screenshots</li>
+        <li>State validation, navigation, debug tools</li>
+    </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="231" until-build="243.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Dart</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Flutter Skill"
+                    secondary="true"
+                    icon="/icons/flutter_skill.svg"
+                    anchor="right"
+                    factoryClass="com.aidashboad.flutterskill.FlutterSkillToolWindowFactory"/>
+
+        <notificationGroup id="Flutter Skill" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <group id="FlutterSkillActions" text="Flutter Skill" description="Flutter Skill actions">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="FlutterSkill.Launch"
+                    class="com.aidashboad.flutterskill.actions.LaunchAction"
+                    text="Launch App"
+                    description="Launch Flutter app with Flutter Skill"/>
+
+            <action id="FlutterSkill.Inspect"
+                    class="com.aidashboad.flutterskill.actions.InspectAction"
+                    text="Inspect UI"
+                    description="Inspect Flutter app UI"/>
+
+            <action id="FlutterSkill.Screenshot"
+                    class="com.aidashboad.flutterskill.actions.ScreenshotAction"
+                    text="Take Screenshot"
+                    description="Take app screenshot"/>
+
+            <action id="FlutterSkill.StartMcp"
+                    class="com.aidashboad.flutterskill.actions.StartMcpAction"
+                    text="Start MCP Server"
+                    description="Start MCP server for AI agents"/>
+        </group>
+    </actions>
+</idea-plugin>
