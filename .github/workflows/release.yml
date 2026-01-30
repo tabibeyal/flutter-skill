@@ -151,20 +151,28 @@ jobs:
         env:
           PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
 
-  # Update Homebrew tap
+  # Update Homebrew tap with native binaries
   update-homebrew:
-    needs: [prepare, publish-pub-dev]  # Wait for pub.dev to ensure release is valid
+    needs: [prepare, build-native-binaries]  # Wait for native binaries to be built
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Calculate SHA256
+      - name: Download native binaries for SHA256
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+
+      - name: Calculate SHA256 for all binaries
         id: sha256
         run: |
-          VERSION=${{ needs.prepare.outputs.version }}
-          URL="https://github.com/ai-dashboad/flutter-skill/archive/refs/tags/v${VERSION}.tar.gz"
-          SHA256=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          cd binaries
+          SHA256_ARM64=$(sha256sum flutter-skill-macos-arm64/flutter-skill-macos-arm64 | cut -d' ' -f1)
+          SHA256_X64=$(sha256sum flutter-skill-macos-x64/flutter-skill-macos-x64 | cut -d' ' -f1)
+          SHA256_LINUX=$(sha256sum flutter-skill-linux-x64/flutter-skill-linux-x64 | cut -d' ' -f1)
+          echo "sha256_arm64=$SHA256_ARM64" >> $GITHUB_OUTPUT
+          echo "sha256_x64=$SHA256_X64" >> $GITHUB_OUTPUT
+          echo "sha256_linux=$SHA256_LINUX" >> $GITHUB_OUTPUT
 
       - name: Checkout Homebrew tap
         uses: actions/checkout@v4
@@ -176,11 +184,70 @@ jobs:
       - name: Update Homebrew formula
         run: |
           VERSION=${{ needs.prepare.outputs.version }}
-          SHA256=${{ steps.sha256.outputs.sha256 }}
+          SHA256_ARM64=${{ steps.sha256.outputs.sha256_arm64 }}
+          SHA256_X64=${{ steps.sha256.outputs.sha256_x64 }}
+          SHA256_LINUX=${{ steps.sha256.outputs.sha256_linux }}
 
-          # Update the formula file (in Formula/ directory)
-          sed -i "s|url \".*\"|url \"https://github.com/ai-dashboad/flutter-skill/archive/refs/tags/v${VERSION}.tar.gz\"|" homebrew-tap/Formula/flutter-skill.rb
-          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" homebrew-tap/Formula/flutter-skill.rb
+          # Write the new formula
+          cat > homebrew-tap/Formula/flutter-skill.rb << 'FORMULA'
+          class FlutterSkill < Formula
+            desc "MCP Server for Flutter app automation - AI Agent control for Flutter apps"
+            homepage "https://github.com/ai-dashboad/flutter-skill"
+            version "VERSION_PLACEHOLDER"
+            license "MIT"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/ai-dashboad/flutter-skill/releases/download/vVERSION_PLACEHOLDER/flutter-skill-macos-arm64"
+                sha256 "SHA256_ARM64_PLACEHOLDER"
+              end
+              on_intel do
+                url "https://github.com/ai-dashboad/flutter-skill/releases/download/vVERSION_PLACEHOLDER/flutter-skill-macos-x64"
+                sha256 "SHA256_X64_PLACEHOLDER"
+              end
+            end
+
+            on_linux do
+              url "https://github.com/ai-dashboad/flutter-skill/releases/download/vVERSION_PLACEHOLDER/flutter-skill-linux-x64"
+              sha256 "SHA256_LINUX_PLACEHOLDER"
+            end
+
+            def install
+              bin.install Dir["flutter-skill-*"].first => "flutter-skill"
+            end
+
+            def caveats
+              <<~EOS
+                flutter-skill is now installed as a native binary for instant startup!
+
+                MCP Configuration (add to ~/.claude/settings.json):
+                  {
+                    "mcpServers": {
+                      "flutter-skill": {
+                        "command": "flutter-skill",
+                        "args": ["server"]
+                      }
+                    }
+                  }
+
+                CLI Usage:
+                  flutter-skill launch /path/to/flutter/project
+                  flutter-skill inspect
+                  flutter-skill act tap "button_key"
+              EOS
+            end
+
+            test do
+              system "#{bin}/flutter-skill", "server", "--help"
+            end
+          end
+          FORMULA
+
+          # Replace placeholders
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" homebrew-tap/Formula/flutter-skill.rb
+          sed -i "s/SHA256_ARM64_PLACEHOLDER/${SHA256_ARM64}/g" homebrew-tap/Formula/flutter-skill.rb
+          sed -i "s/SHA256_X64_PLACEHOLDER/${SHA256_X64}/g" homebrew-tap/Formula/flutter-skill.rb
+          sed -i "s/SHA256_LINUX_PLACEHOLDER/${SHA256_LINUX}/g" homebrew-tap/Formula/flutter-skill.rb
 
       - name: Commit and push
         run: |
@@ -188,7 +255,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/flutter-skill.rb
-          git commit -m "Update flutter-skill to v${{ needs.prepare.outputs.version }}" || echo "No changes to commit"
+          git commit -m "Update flutter-skill to v${{ needs.prepare.outputs.version }} with native binaries" || echo "No changes to commit"
           git push
 
   # Build native binaries for all platforms

@@ -48,6 +48,9 @@ class FlutterSkillService(private val project: Project) {
 
         // Check if agents need configuration
         promptConfigureAgentsIfNeeded()
+
+        // Download native binary in background for faster startup
+        NativeBinaryManager.getInstance().downloadNativeBinaryAsync()
     }
 
     /**
@@ -156,7 +159,16 @@ class FlutterSkillService(private val project: Project) {
             return
         }
 
-        val commandLine = GeneralCommandLine("dart", "pub", "global", "run", "flutter_skill", "server")
+        val (binaryPath, isNative) = NativeBinaryManager.getInstance().getBestBinaryPath()
+
+        val commandLine = if (isNative) {
+            logger.info("Using native binary: $binaryPath")
+            GeneralCommandLine(binaryPath, "server")
+        } else {
+            logger.info("Using Dart runtime (native binary not available)")
+            GeneralCommandLine("dart", "pub", "global", "run", "flutter_skill", "server")
+        }
+
         mcpProcess = OSProcessHandler(commandLine)
 
         mcpProcess?.addProcessListener(object : ProcessAdapter() {

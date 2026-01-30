@@ -8,7 +8,7 @@ import { StatusBar, showStatusMenu } from './statusBar';
 import { promptSetupFlutterSkill, setupFlutterSkill, hasFlutterSkillDependency } from './flutterSetup';
 import { ensureNativeBinary, getBestBinaryPath } from './nativeBinary';
 
-const EXTENSION_VERSION = '0.2.9';
+const EXTENSION_VERSION = '0.2.10';
 
 let mcpServerProcess: child_process.ChildProcess | undefined;
 let outputChannel: vscode.OutputChannel;
