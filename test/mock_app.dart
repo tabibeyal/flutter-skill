@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async';
 
 // Mock App that simulates VM Service + Flutter Skill Extensions
 // Does NOT depend on vm_service package to avoid version conflicts in this script,
