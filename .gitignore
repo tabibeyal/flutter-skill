@@ -47,6 +47,4 @@ vscode-extension/node_modules/
 intellij-plugin/.gradle/
 intellij-plugin/.intellijPlatform/
 intellij-plugin/build/
-intellij-plugin/gradle/
-intellij-plugin/gradlew
-intellij-plugin/gradlew.bat
+# Note: gradle/, gradlew, gradlew.bat are NOT ignored - needed for CI/CD
