@@ -21,6 +21,10 @@ npm install -g flutter-skill-mcp
 brew tap ai-dashboad/flutter-skill
 brew install flutter-skill
 
+# Scoop (Windows)
+scoop bucket add flutter-skill https://github.com/ai-dashboad/scoop-flutter-skill
+scoop install flutter-skill
+
 # Dart
 dart pub global activate flutter_skill
 
