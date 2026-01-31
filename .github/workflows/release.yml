@@ -414,14 +414,12 @@ jobs:
           name: winget-manifest
           path: AIDashboard.FlutterSkill.yaml
 
-  # Update Scoop manifest
+  # Update Scoop bucket
   update-scoop:
     needs: [prepare, build-native-binaries]
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-
       - name: Download Windows binary
         uses: actions/download-artifact@v4
         with:
@@ -430,48 +428,56 @@ jobs:
 
       - name: Calculate SHA256
         id: sha256
-        shell: pwsh
         run: |
-          $hash = (Get-FileHash -Algorithm SHA256 "flutter-skill-windows-x64.exe").Hash.ToLower()
-          echo "sha256=$hash" >> $env:GITHUB_OUTPUT
+          hash=$(sha256sum flutter-skill-windows-x64.exe | cut -d' ' -f1)
+          echo "sha256=$hash" >> $GITHUB_OUTPUT
+
+      - name: Checkout Scoop bucket
+        uses: actions/checkout@v4
+        with:
+          repository: ai-dashboad/scoop-flutter-skill
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: scoop-bucket
 
       - name: Update Scoop manifest
-        shell: pwsh
         run: |
-          $version = "${{ needs.prepare.outputs.version }}"
-          $sha256 = "${{ steps.sha256.outputs.sha256 }}"
+          VERSION=${{ needs.prepare.outputs.version }}
+          SHA256=${{ steps.sha256.outputs.sha256 }}
 
-          $manifest = @{
-            version = $version
-            description = "AI Agent Bridge for Flutter Apps - Connect Claude, Cursor, and other AI agents to running Flutter applications"
-            homepage = "https://github.com/ai-dashboad/flutter-skill"
-            license = "MIT"
-            architecture = @{
-              "64bit" = @{
-                url = "https://github.com/ai-dashboad/flutter-skill/releases/download/v$version/flutter-skill-windows-x64.exe"
-                hash = $sha256
+          cat > scoop-bucket/bucket/flutter-skill.json << EOF
+          {
+              "version": "$VERSION",
+              "description": "AI Agent Bridge for Flutter Apps - Connect Claude, Cursor, and other AI agents to running Flutter applications",
+              "homepage": "https://github.com/ai-dashboad/flutter-skill",
+              "license": "MIT",
+              "architecture": {
+                  "64bit": {
+                      "url": "https://github.com/ai-dashboad/flutter-skill/releases/download/v$VERSION/flutter-skill-windows-x64.exe",
+                      "hash": "$SHA256"
+                  }
+              },
+              "bin": [["flutter-skill-windows-x64.exe", "flutter-skill"]],
+              "checkver": {
+                  "github": "https://github.com/ai-dashboad/flutter-skill"
+              },
+              "autoupdate": {
+                  "architecture": {
+                      "64bit": {
+                          "url": "https://github.com/ai-dashboad/flutter-skill/releases/download/v\$version/flutter-skill-windows-x64.exe"
+                      }
+                  }
               }
-            }
-            bin = @(@("flutter-skill-windows-x64.exe", "flutter-skill"))
-            checkver = @{
-              github = "https://github.com/ai-dashboad/flutter-skill"
-            }
-            autoupdate = @{
-              architecture = @{
-                "64bit" = @{
-                  url = "https://github.com/ai-dashboad/flutter-skill/releases/download/v`$version/flutter-skill-windows-x64.exe"
-                }
-              }
-            }
           }
+          EOF
 
-          $manifest | ConvertTo-Json -Depth 10 | Out-File -FilePath "flutter-skill.json" -Encoding utf8
-
-      - name: Upload Scoop manifest
-        uses: actions/upload-artifact@v4
-        with:
-          name: scoop-manifest
-          path: flutter-skill.json
+      - name: Commit and push
+        run: |
+          cd scoop-bucket
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/flutter-skill.json
+          git commit -m "Update flutter-skill to v${{ needs.prepare.outputs.version }}" || echo "No changes"
+          git push
 
   # Create GitHub Release
   create-release:
