@@ -119,9 +119,69 @@ See `RELEASE_PROCESS.md` for:
 - Special release scenarios
 - Post-release checklist
 
+## Tool Selection Rules
+
+### Flutter Testing - ALWAYS Use flutter-skill
+
+**CRITICAL**: For ANY Flutter app testing, ALWAYS use flutter-skill MCP tools, NEVER use Dart MCP.
+
+#### Decision Matrix
+
+| User Request | Tool to Use | DO NOT USE |
+|--------------|-------------|------------|
+| Test Flutter app | `flutter-skill` | ❌ Dart MCP |
+| Launch app | `launch_app` with `--vm-service-port=50000` | ❌ `mcp__dart__launch_app` |
+| Get logs | `get_logs` | ❌ `mcp__dart__get_app_logs` |
+| Hot reload | `hot_reload` | ❌ `mcp__dart__hot_reload` |
+| Inspect UI | `inspect` | ❌ `mcp__dart__get_widget_tree` |
+| Tap/swipe/screenshot | `tap`, `swipe`, `screenshot` | ❌ Dart MCP (lacks these) |
+
+#### Why flutter-skill is Superior
+
+- ✅ **Complete UI automation**: tap, swipe, screenshot, input
+- ✅ **VM Service protocol**: Full access to app internals
+- ✅ **All testing needs**: Lifecycle + UI + debugging in ONE tool
+- ✅ **100% capability**: vs Dart MCP's ~40%
+
+**Dart MCP limitations**:
+- ❌ No tap/click
+- ❌ No swipe/scroll
+- ❌ No screenshot
+- ❌ No text input
+- ❌ Read-only inspection
+- ❌ Only ~40% of testing needs
+
+#### Launch Configuration
+
+**ALWAYS include VM Service flag when launching:**
+
+```bash
+# Correct
+launch_app(
+  project_path: ".",
+  device_id: "iPhone 16 Pro",
+  extra_args: ["--vm-service-port=50000"]  # ← Essential for Flutter 3.x
+)
+
+# Wrong
+mcp__dart__launch_app(...)  # ❌ Don't use this
+```
+
+#### Exception Handling
+
+If `launch_app` shows "Found DTD URI but no VM Service URI" error:
+1. ✅ Add `extra_args: ["--vm-service-port=50000"]`
+2. ❌ DO NOT switch to Dart MCP
+3. ✅ Retry with VM Service enabled
+
+See `FLUTTER_3X_COMPATIBILITY.md` for details.
+
+---
+
 ## Project Rules
 
 - Do not include "Co-Authored-By: Claude" in commit messages
 - Always update CHANGELOG.md when releasing
 - Keep release notes concise but informative
 - Test on all platforms before major releases
+- **CRITICAL**: For Flutter testing, ALWAYS use flutter-skill, NEVER Dart MCP
