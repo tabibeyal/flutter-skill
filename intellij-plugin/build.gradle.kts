@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.aidashboad"
-version = "0.2.23"
+version = "0.2.25"
 
 repositories {
     mavenCentral()
