@@ -179,7 +179,7 @@ class FlutterMcpServer {
       },
       {
         "name": "launch_app",
-        "description": "Launch a Flutter app and auto-connect",
+        "description": "Launch and test a Flutter app on iOS simulator/Android emulator. Use when user asks to 'test app', 'run on simulator', 'verify feature', or 'start E2E test'. Automatically sets up app for UI testing and connects for interaction.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -262,7 +262,7 @@ class FlutterMcpServer {
       // Basic Inspection
       {
         "name": "inspect",
-        "description": "Get interactive elements (buttons, text fields, etc.)",
+        "description": "See what UI elements are on screen (buttons, text fields, etc.). Use when user asks 'what's on the screen?', 'list buttons', 'show elements', or before interacting. Essential first step for any UI test or validation.",
         "inputSchema": {"type": "object", "properties": {}},
       },
       {
@@ -312,7 +312,7 @@ class FlutterMcpServer {
       // Basic Actions
       {
         "name": "tap",
-        "description": "Tap an element",
+        "description": "Tap/click a button or UI element. Use when user asks to 'click button', 'press', 'tap', or 'select'. Simulates real user interaction in the app. Call inspect() first to see available elements.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -323,7 +323,7 @@ class FlutterMcpServer {
       },
       {
         "name": "enter_text",
-        "description": "Enter text into an input field",
+        "description": "Type text into a text field (email, password, search, etc.). Use when testing forms, login screens, or any text input. Simulates user typing in the app.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -475,7 +475,7 @@ class FlutterMcpServer {
       // Screenshot
       {
         "name": "screenshot",
-        "description": "Take a screenshot of the app",
+        "description": "Capture a screenshot of the current app screen. Use for visual debugging, documentation, or when user asks 'show me what it looks like', 'take a picture', or 'how does it appear'. Returns base64 PNG image.",
         "inputSchema": {
           "type": "object",
           "properties": {
