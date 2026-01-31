@@ -1147,11 +1147,14 @@ Base64-encoded PNG image that can be displayed to user.
           workingDirectory: projectPath);
 
       final completer = Completer<String>();
+      final errorLines = <String>[];
 
+      // Capture stdout (includes Flutter output and errors)
       _flutterProcess!.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
+        // Check for VM Service URI
         if (line.contains('ws://')) {
           final uriRegex = RegExp(r'ws://[a-zA-Z0-9.:/-]+');
           final match = uriRegex.firstMatch(line);
@@ -1168,18 +1171,59 @@ Base64-encoded PNG image that can be displayed to user.
             });
           }
         }
+
+        // Capture error messages from Flutter output
+        if (line.contains('[Flutter Error]') ||
+            line.contains('Error:') ||
+            line.contains('Exception:') ||
+            line.contains('Failed to build') ||
+            line.contains('Error launching application')) {
+          errorLines.add(line);
+        }
+      });
+
+      // Capture stderr (build errors, warnings)
+      _flutterProcess!.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        // Collect all stderr output as potential errors
+        if (line.trim().isNotEmpty) {
+          errorLines.add(line);
+        }
       });
 
       _flutterProcess!.exitCode.then((code) {
         if (!completer.isCompleted) {
-          completer.completeError("Flutter app exited with code $code");
+          if (code != 0) {
+            // Build failed, create detailed error response
+            final errorMessage = errorLines.isNotEmpty
+                ? errorLines.join('\n')
+                : "Flutter app exited with code $code";
+
+            // Build failed, complete with error marker
+            completer.completeError({
+              "success": false,
+              "error": {
+                "code": "E302",
+                "message": "Flutter build/launch failed",
+                "details": errorMessage,
+                "exitCode": code,
+              },
+              "suggestions": _getBuildErrorSuggestions(errorMessage),
+              "quick_fixes": _getQuickFixes(errorMessage, projectPath),
+            });
+          } else {
+            completer.completeError("Flutter app exited normally but no connection established");
+          }
         }
         _flutterProcess = null;
       });
 
       try {
-        return await completer.future
+        final result = await completer.future
             .timeout(const Duration(seconds: 180)); // 3 minutes for slow builds
+        return result; // Success message string
       } on TimeoutException {
         return {
           "success": false,
@@ -1192,6 +1236,19 @@ Base64-encoded PNG image that can be displayed to user.
             "Use scan_and_connect() after the app finishes launching.",
             "For faster startup, use 'flutter run' manually and then connect_app().",
           ],
+        };
+      } catch (e) {
+        // Catch build errors from completeError
+        if (e is Map) {
+          return e; // Return the error map directly
+        }
+        // Fallback for other errors
+        return {
+          "success": false,
+          "error": {
+            "code": "E303",
+            "message": "Launch failed: $e",
+          },
         };
       }
     }
@@ -2425,6 +2482,134 @@ if (mounted) {
   }
 
   // ==================== End Smart Diagnosis ====================
+
+  // ==================== Build Error Helpers ====================
+
+  /// Get suggestions based on build error message
+  List<String> _getBuildErrorSuggestions(String errorMessage) {
+    final suggestions = <String>[];
+    final lowerError = errorMessage.toLowerCase();
+
+    // iOS specific errors
+    if (lowerError.contains('xcode') || lowerError.contains('cocoapods')) {
+      suggestions.addAll([
+        'iOS Build Error Detected',
+        '',
+        'Common fixes:',
+      ]);
+
+      if (lowerError.contains('webrtc') || lowerError.contains('pod')) {
+        suggestions.addAll([
+          '1. Clean and reinstall CocoaPods:',
+          '   cd ios && rm -rf Pods Podfile.lock && pod install',
+          '',
+          '2. Clean Flutter build cache:',
+          '   flutter clean && flutter pub get',
+          '',
+          '3. If still failing, clear Xcode cache:',
+          '   rm -rf ~/Library/Developer/Xcode/DerivedData',
+        ]);
+      } else if (lowerError.contains('signing') ||
+          lowerError.contains('provisioning')) {
+        suggestions.addAll([
+          '1. Check Xcode signing settings',
+          '2. Verify Apple Developer account',
+          '3. Update provisioning profiles',
+        ]);
+      } else {
+        suggestions.addAll([
+          '1. Try: flutter clean && flutter pub get',
+          '2. Try: cd ios && pod install',
+          '3. Check Xcode version compatibility',
+        ]);
+      }
+    }
+
+    // Android specific errors
+    else if (lowerError.contains('gradle') || lowerError.contains('android')) {
+      suggestions.addAll([
+        'Android Build Error Detected',
+        '',
+        '1. Clean and rebuild:',
+        '   flutter clean && flutter pub get',
+        '',
+        '2. Invalidate Gradle cache:',
+        '   cd android && ./gradlew clean',
+        '',
+        '3. Check gradle-wrapper.properties version',
+      ]);
+    }
+
+    // Dependency errors
+    else if (lowerError.contains('dependency') ||
+        lowerError.contains('version solving failed')) {
+      suggestions.addAll([
+        'Dependency Conflict Detected',
+        '',
+        '1. Run: flutter pub outdated',
+        '2. Update dependencies: flutter pub upgrade',
+        '3. Check pubspec.yaml for version conflicts',
+      ]);
+    }
+
+    // General build errors
+    else {
+      suggestions.addAll([
+        'Build Failed',
+        '',
+        '1. Run: flutter doctor -v',
+        '2. Try: flutter clean && flutter pub get',
+        '3. Check the error details above for specific issues',
+      ]);
+    }
+
+    return suggestions;
+  }
+
+  /// Get quick fix commands based on error message
+  Map<String, String> _getQuickFixes(String errorMessage, String projectPath) {
+    final lowerError = errorMessage.toLowerCase();
+
+    // iOS CocoaPods/WebRTC fix
+    if (lowerError.contains('webrtc') ||
+        (lowerError.contains('cocoapods') && lowerError.contains('pod'))) {
+      return {
+        'description': 'Clean and reinstall CocoaPods dependencies',
+        'command':
+            'cd $projectPath/ios && rm -rf Pods Podfile.lock .symlinks && pod deintegrate && pod install && cd ..',
+        'platform': 'iOS',
+      };
+    }
+
+    // General iOS build fix
+    if (lowerError.contains('xcode') || lowerError.contains('ios')) {
+      return {
+        'description': 'Clean iOS build and Flutter cache',
+        'command':
+            'cd $projectPath && rm -rf ios/Pods ios/Podfile.lock build && flutter clean && flutter pub get',
+        'platform': 'iOS',
+      };
+    }
+
+    // Android build fix
+    if (lowerError.contains('gradle') || lowerError.contains('android')) {
+      return {
+        'description': 'Clean Android build and Gradle cache',
+        'command':
+            'cd $projectPath && flutter clean && cd android && ./gradlew clean && cd ..',
+        'platform': 'Android',
+      };
+    }
+
+    // General fix
+    return {
+      'description': 'Clean Flutter build cache',
+      'command': 'cd $projectPath && flutter clean && flutter pub get',
+      'platform': 'All',
+    };
+  }
+
+  // ==================== End Build Error Helpers ====================
 
   void _sendResult(dynamic id, dynamic result) {
     if (id == null) return;
