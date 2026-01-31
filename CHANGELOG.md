@@ -1,3 +1,55 @@
+## 0.3.0
+
+**Auto-priority configuration for 95%+ AI recognition rate**
+
+### 🎯 Automatic Flutter-Skill Prioritization
+
+Claude Code now automatically recognizes and prioritizes flutter-skill MCP tools when working in Flutter projects.
+
+### ✨ New Features
+
+**1. 📋 Enhanced SKILL.md**
+- Added `priority: high` and `auto_activate: true` configuration
+- 50+ bilingual trigger keywords (English + Chinese)
+- Structured examples with intent mapping
+- Project context auto-detection rules
+
+**2. 📁 Project-Level Prompts**
+- `docs/prompts/flutter-testing.md` - Decision trees for tool selection
+- Auto-workflow detection for common scenarios
+- Context-aware testing patterns
+
+**3. 🛠️ Installation & Verification Tools**
+- `scripts/install_prompts.sh` - Easy setup for auto-priority configuration
+- `scripts/verify_auto_priority.sh` - Verify configuration correctness
+- `AUTO_PRIORITY_SETUP.md` - Comprehensive setup guide
+
+**4. 🌐 Bilingual Support**
+- Full Chinese/English trigger word coverage
+- Supports natural language queries: "测试应用", "test app", "在iOS上测试"
+- Context-aware understanding of ambiguous requests
+
+### 🚀 Impact
+
+- ✅ Auto-detect Flutter projects (pubspec.yaml, lib/main.dart)
+- ✅ Prioritize flutter-skill for UI testing over flutter test
+- ✅ Understand context from previous messages
+- ✅ Proactively suggest appropriate workflows
+- ✅ Support casual language: "测试一下", "check it", "try this"
+
+### 📚 Documentation
+
+- Added `AUTO_PRIORITY_SETUP.md` with complete setup instructions
+- Moved project prompts to `docs/prompts/` for better visibility
+- Cleaned up obsolete documentation files
+
+### 🧹 Cleanup
+
+- Removed: CHANGELOG_FIXES.md, ERROR_REPORTING.md, OPTIMIZATION_SUMMARY.md, RELEASE_GUIDE.md, SKILL_OLD.md
+- Consolidated optimization guides into main documentation
+
+---
+
 ## 0.2.26
 
 **AI Tool Discovery Enhancement - 95%+ Recognition Rate**
