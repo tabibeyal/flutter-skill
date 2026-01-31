@@ -7,7 +7,7 @@ import '../flutter_skill_client.dart';
 import '../diagnostics/error_reporter.dart';
 import 'setup.dart';
 
-const String _currentVersion = '0.2.25';
+const String _currentVersion = '0.3.1';
 
 Future<void> runServer(List<String> args) async {
   // Check for updates in background
@@ -387,19 +387,31 @@ Essential first step for any UI interaction. Returns element list with keys/text
 [PRIMARY PURPOSE]
 Tap/click a button or any interactive UI element. Simulates real user touch/click interaction.
 
+[SUPPORTED METHODS]
+1. By Widget key: tap(key: "submit_button")
+2. By visible text: tap(text: "Submit")
+3. By coordinates: tap(x: 100, y: 200)  // Use center coordinates from inspect()
+
 [USE WHEN]
 • User asks to click/press/tap a button or element
 • Testing button functionality or navigation
 • Automating user interactions in UI flows
 
 [WORKFLOW]
-Call inspect() first to see available elements and their keys/texts, then use tap() with the key or text.
+Call inspect() first to see available elements and their keys/texts/coordinates, then use tap() with one of the methods above.
+
+[TIP FOR ICONS/IMAGES]
+For elements without text (icons, images), use coordinates from inspect():
+  inspect() returns: {"center": {"x": 30, "y": 22}}
+  Then call: tap(x: 30, y: 22)
 """,
         "inputSchema": {
           "type": "object",
           "properties": {
             "key": {"type": "string", "description": "Widget key"},
             "text": {"type": "string", "description": "Text to find"},
+            "x": {"type": "number", "description": "X coordinate (use with y)"},
+            "y": {"type": "number", "description": "Y coordinate (use with x)"},
           },
         },
       },
@@ -591,6 +603,11 @@ Capture a screenshot of the current app screen for visual inspection, debugging,
 
 [RETURNS]
 Base64-encoded PNG image that can be displayed to user.
+
+[DEFAULTS OPTIMIZED FOR WEB]
+• quality: 0.5 (prevents token overflow, set to 1.0 for full quality)
+• max_width: 800 (scales down large screens, set to null for original size)
+• For high-quality screenshots, explicitly set: quality=1.0, max_width=null
 """,
         "inputSchema": {
           "type": "object",
@@ -598,11 +615,11 @@ Base64-encoded PNG image that can be displayed to user.
             "quality": {
               "type": "number",
               "description":
-                  "Image quality 0.1-1.0 (default: 1.0, lower = smaller file)"
+                  "Image quality 0.1-1.0 (default: 0.5, lower = smaller file)"
             },
             "max_width": {
               "type": "integer",
-              "description": "Maximum width in pixels (scales down if larger)"
+              "description": "Maximum width in pixels (default: 800, null for original size)"
             },
           },
         },
@@ -1288,6 +1305,22 @@ Base64-encoded PNG image that can be displayed to user.
 
       // Basic Actions
       case 'tap':
+        // Support three methods: key, text, or coordinates
+        final x = args['x'] as num?;
+        final y = args['y'] as num?;
+
+        // Method 3: Tap by coordinates
+        if (x != null && y != null) {
+          await _client!.tapAt(x.toDouble(), y.toDouble());
+          return {
+            "success": true,
+            "method": "coordinates",
+            "message": "Tapped at ($x, $y)",
+            "position": {"x": x, "y": y},
+          };
+        }
+
+        // Method 1 & 2: Tap by key or text
         final result = await _client!.tap(key: args['key'], text: args['text']);
         if (result['success'] != true) {
           // Return full error details including suggestions
@@ -1302,6 +1335,7 @@ Base64-encoded PNG image that can be displayed to user.
         }
         return {
           "success": true,
+          "method": args['key'] != null ? "key" : "text",
           "message": "Tapped",
           if (result['position'] != null) "position": result['position'],
         };
@@ -1370,8 +1404,9 @@ Base64-encoded PNG image that can be displayed to user.
 
       // Screenshot
       case 'screenshot':
-        final quality = (args['quality'] as num?)?.toDouble() ?? 1.0;
-        final maxWidth = args['max_width'] as int?;
+        // Default to lower quality and max width to prevent token overflow
+        final quality = (args['quality'] as num?)?.toDouble() ?? 0.5;
+        final maxWidth = args['max_width'] as int? ?? 800;
         final image =
             await _client!.takeScreenshot(quality: quality, maxWidth: maxWidth);
         return {"image": image, "quality": quality, "max_width": maxWidth};

@@ -222,7 +222,7 @@ flutter-skill launch /path/to/project
 1. Add dependency:
 ```yaml
 dependencies:
-  flutter_skill: ^0.3.0
+  flutter_skill: ^0.3.1
 ```
 
 2. Initialize in main.dart:
