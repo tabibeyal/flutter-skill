@@ -23,7 +23,7 @@ import javax.swing.tree.DefaultTreeModel
  * Card showing interactive elements in a tree view with search
  */
 class InteractiveElementsCard(project: Project) : CardComponent(project) {
-    private val elements = mutableListOf<UIElement>()
+    private var elements: MutableList<UIElement> = mutableListOf()
     private var tree: Tree? = null
     private var searchField: JTextField? = null
 
@@ -93,13 +93,13 @@ class InteractiveElementsCard(project: Project) : CardComponent(project) {
             actionsPanel.alignmentX = Component.LEFT_ALIGNMENT
             actionsPanel.isOpaque = false
 
-            val tapBtn = createButton("👆 Tap") {
+            val tapBtn = createButton("Tap") {
                 performAction("tap")
             }
-            val inputBtn = createButton("⌨️ Input") {
+            val inputBtn = createButton("Input") {
                 performAction("input")
             }
-            val inspectBtn = createButton("🔍 Inspect") {
+            val inspectBtn = createButton("Inspect") {
                 performAction("inspect")
             }
 

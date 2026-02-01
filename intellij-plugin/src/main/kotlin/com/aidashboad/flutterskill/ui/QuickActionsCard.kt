@@ -22,7 +22,7 @@ import javax.swing.JPanel
  */
 class QuickActionsCard(project: Project) : CardComponent(project) {
     private var isConnected = false
-    private val actionButtons = mutableListOf<JButton>()
+    private var actionButtons: MutableList<JButton> = mutableListOf()
 
     override fun buildContent() {
         addTitle("Quick Actions", "⚡")
@@ -34,19 +34,19 @@ class QuickActionsCard(project: Project) : CardComponent(project) {
         gridPanel.isOpaque = false
 
         // Create action buttons
-        val launchBtn = createActionButton("▶️ Launch App", "Launch Flutter app") {
+        val launchBtn = createActionButton("Launch App", "Launch Flutter app") {
             FlutterSkillService.getInstance(project).launchApp()
         }
 
-        val inspectBtn = createActionButton("🔍 Inspect", "Inspect UI elements") {
+        val inspectBtn = createActionButton("Inspect", "Inspect UI elements") {
             FlutterSkillService.getInstance(project).inspect()
         }
 
-        val screenshotBtn = createActionButton("📸 Screenshot", "Take screenshot") {
+        val screenshotBtn = createActionButton("Screenshot", "Take screenshot") {
             FlutterSkillService.getInstance(project).screenshot()
         }
 
-        val hotReloadBtn = createActionButton("🔄 Hot Reload", "Hot reload app") {
+        val hotReloadBtn = createActionButton("Hot Reload", "Hot reload app") {
             performHotReload()
         }
 
@@ -57,10 +57,7 @@ class QuickActionsCard(project: Project) : CardComponent(project) {
         gridPanel.add(hotReloadBtn)
 
         // Store buttons for state updates
-        actionButtons.clear()
-        actionButtons.add(inspectBtn)
-        actionButtons.add(screenshotBtn)
-        actionButtons.add(hotReloadBtn)
+        actionButtons = mutableListOf(inspectBtn, screenshotBtn, hotReloadBtn)
 
         panel.add(gridPanel)
 

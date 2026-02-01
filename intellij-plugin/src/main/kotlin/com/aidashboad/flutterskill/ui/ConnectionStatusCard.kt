@@ -82,14 +82,14 @@ class ConnectionStatusCard(project: Project) : CardComponent(project) {
     /**
      * Update connection state
      */
-    fun updateConnectionState(state: ConnectionState, service: VmServiceInfo?) {
-        this.currentState = state
+    fun updateConnectionState(state: ConnectionState?, service: VmServiceInfo?) {
+        this.currentState = state ?: ConnectionState.DISCONNECTED
         this.currentService = service
         refresh()
     }
 
-    private fun getStatusText(state: ConnectionState): String {
-        return when (state) {
+    private fun getStatusText(state: ConnectionState?): String {
+        return when (state ?: ConnectionState.DISCONNECTED) {
             ConnectionState.CONNECTED -> "Connected"
             ConnectionState.DISCONNECTED -> "Disconnected"
             ConnectionState.CONNECTING -> "Connecting..."
@@ -97,8 +97,8 @@ class ConnectionStatusCard(project: Project) : CardComponent(project) {
         }
     }
 
-    private fun getStatusColor(state: ConnectionState): java.awt.Color {
-        return when (state) {
+    private fun getStatusColor(state: ConnectionState?): java.awt.Color {
+        return when (state ?: ConnectionState.DISCONNECTED) {
             ConnectionState.CONNECTED -> FlutterSkillColors.connected
             ConnectionState.DISCONNECTED -> FlutterSkillColors.disconnected
             ConnectionState.CONNECTING -> FlutterSkillColors.connecting

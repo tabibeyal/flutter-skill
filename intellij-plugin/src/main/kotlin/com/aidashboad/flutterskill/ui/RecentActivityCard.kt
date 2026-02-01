@@ -15,7 +15,7 @@ import javax.swing.*
  * Card showing recent activity history
  */
 class RecentActivityCard(project: Project) : CardComponent(project) {
-    private val activities = mutableListOf<ActivityEntry>()
+    private var activities: MutableList<ActivityEntry> = mutableListOf()
     private val maxDisplayCount = 5  // Show 5 items for consistency with VSCode
     private val maxStoredCount = 20  // Store up to 20 items
 

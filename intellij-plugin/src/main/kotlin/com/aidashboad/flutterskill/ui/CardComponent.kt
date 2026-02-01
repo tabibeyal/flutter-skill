@@ -16,7 +16,7 @@ abstract class CardComponent(protected val project: Project) {
 
     init {
         setupPanel()
-        buildContent()
+        // Note: buildContent() should be called after construction to ensure subclass fields are initialized
     }
 
     /**

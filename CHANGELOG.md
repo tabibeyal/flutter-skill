@@ -1,3 +1,12 @@
+## 0.4.2
+
+**Auto-configure VM Service for Flutter 3.x**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
 ## 0.4.1
 
 **Cross-Platform UI/UX Overhaul & VM Service Integration**

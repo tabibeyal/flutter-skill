@@ -215,11 +215,11 @@ Launch and test a Flutter app on iOS simulator/Android emulator for UI validatio
 3. Ready for: inspect() → tap() → enter_text() → screenshot()
 
 [FLUTTER 3.x COMPATIBILITY]
-⚠️ Flutter 3.x uses DTD protocol by default. This tool requires VM Service protocol.
-If launch fails with "getVM method not found" or "no VM Service URI":
-• Solution: Add --vm-service-port flag to extra_args
-• Example: launch_app(extra_args: ["--vm-service-port=50000"])
-• Alternative: Use Dart MCP tools for DTD-based testing
+✅ AUTO-CONFIGURED: This tool automatically adds --vm-service-port=50000 for Flutter 3.x compatibility.
+• Flutter 3.x uses DTD protocol by default, but flutter-skill requires VM Service protocol
+• The tool auto-injects --vm-service-port=50000 unless already specified in extra_args
+• You don't need to manually add this flag - it's handled automatically!
+• If you want a custom port, specify it in extra_args: ["--vm-service-port=8888"]
 """,
         "inputSchema": {
           "type": "object",
@@ -1138,11 +1138,22 @@ Base64-encoded PNG image that can be displayed to user.
       }
 
       // Add extra arguments
-      if (extraArgs != null) {
-        for (final arg in extraArgs) {
-          processArgs.add(arg.toString());
-        }
+      final extraArgsList = extraArgs?.map((e) => e.toString()).toList() ?? [];
+
+      // Auto-inject --vm-service-port for Flutter 3.x compatibility
+      // Flutter 3.x defaults to DTD protocol, but flutter-skill requires VM Service
+      final hasVmServicePort = extraArgsList.any((arg) =>
+        arg.contains('--vm-service-port') ||
+        arg.contains('--observatory-port')
+      );
+
+      if (!hasVmServicePort) {
+        // Auto-add VM Service port for Flutter 3.x compatibility
+        processArgs.add('--vm-service-port=50000');
       }
+
+      // Add user-provided extra arguments
+      processArgs.addAll(extraArgsList);
 
       try {
         await runSetup(projectPath);

@@ -46,10 +46,19 @@ class FlutterSkillPanel(private val project: Project) : JPanel(BorderLayout()) {
 
         // Initialize all cards
         connectionCard = ConnectionStatusCard(project)
+        connectionCard.refresh()  // Build content after construction
+
         quickActionsCard = QuickActionsCard(project)
+        quickActionsCard.refresh()  // Build content after construction
+
         elementsCard = InteractiveElementsCard(project)
+        elementsCard.refresh()  // Build content after construction
+
         activityCard = RecentActivityCard(project)
+        activityCard.refresh()  // Build content after construction
+
         aiEditorsCard = AiEditorsCard(project)
+        aiEditorsCard.refresh()  // Build content after construction
 
         // Add cards to main panel with spacing (16px for consistency with VSCode)
         mainPanel.add(connectionCard.component)

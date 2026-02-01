@@ -153,28 +153,41 @@ See `RELEASE_PROCESS.md` for:
 
 #### Launch Configuration
 
-**ALWAYS include VM Service flag when launching:**
+**Flutter 3.x Auto-Configuration:**
+
+The `launch_app` tool **automatically adds** `--vm-service-port=50000` for Flutter 3.x compatibility.
+You don't need to specify it manually!
 
 ```bash
-# Correct
+# ✅ Simplest usage (auto-configured)
+launch_app(
+  project_path: ".",
+  device_id: "iPhone 16 Pro"
+)
+# Automatically becomes: flutter run -d "iPhone 16 Pro" --vm-service-port=50000
+
+# ✅ With custom VM Service port (if needed)
 launch_app(
   project_path: ".",
   device_id: "iPhone 16 Pro",
-  extra_args: ["--vm-service-port=50000"]  # ← Essential for Flutter 3.x
+  extra_args: ["--vm-service-port=8888"]  # Custom port
 )
 
-# Wrong
+# ❌ Wrong - Don't use Dart MCP for Flutter testing
 mcp__dart__launch_app(...)  # ❌ Don't use this
 ```
 
 #### Exception Handling
 
-If `launch_app` shows "Found DTD URI but no VM Service URI" error:
-1. ✅ Add `extra_args: ["--vm-service-port=50000"]`
-2. ❌ DO NOT switch to Dart MCP
-3. ✅ Retry with VM Service enabled
+**Note:** Since v0.3.2+, `--vm-service-port=50000` is **auto-added** by default.
 
-See `FLUTTER_3X_COMPATIBILITY.md` for details.
+If you still see "Found DTD URI but no VM Service URI" error (rare):
+1. ✅ Check if the app is using a custom Flutter version
+2. ✅ Verify the Flutter output logs for any VM Service errors
+3. ✅ Try specifying a custom port: `extra_args: ["--vm-service-port=8888"]`
+4. ❌ DO NOT switch to Dart MCP for Flutter testing
+
+The error should be extremely rare now that auto-configuration is enabled.
 
 ---
 

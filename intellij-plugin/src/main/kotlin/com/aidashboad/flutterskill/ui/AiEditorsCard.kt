@@ -13,7 +13,7 @@ import javax.swing.*
  * Card showing AI editor detection and configuration status
  */
 class AiEditorsCard(project: Project) : CardComponent(project) {
-    private val tools = mutableListOf<AiToolDetector.AiTool>()
+    private var tools: MutableList<AiToolDetector.AiTool> = mutableListOf()
 
     override fun buildContent() {
         addTitle("AI Editors", "🤖")
