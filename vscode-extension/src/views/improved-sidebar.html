@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flutter Skill</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      background: var(--vscode-sideBar-background);
+      padding: 12px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* Status Card */
+    .status-card {
+      background: var(--vscode-sideBarSectionHeader-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-connected {
+      background: rgba(0, 255, 0, 0.15);
+      color: var(--vscode-testing-iconPassed);
+    }
+
+    .status-disconnected {
+      background: rgba(255, 0, 0, 0.15);
+      color: var(--vscode-testing-iconFailed);
+    }
+
+    .status-info {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-info-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Button Grid */
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .action-button {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: 4px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .action-button:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+
+    .action-button-secondary {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+    }
+
+    .action-button-secondary:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Elements List */
+    .elements-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+    }
+
+    .element-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--vscode-panel-border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .element-item:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .element-item:last-child {
+      border-bottom: none;
+    }
+
+    .element-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .element-name {
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .element-type {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .element-details {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 6px;
+    }
+
+    .element-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .element-action {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: none;
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .element-action:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    /* History */
+    .history-item {
+      padding: 8px 10px;
+      background: var(--vscode-input-background);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .history-time {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .empty-state-text {
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* AI Editors */
+    .ai-editor-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--vscode-input-background);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .ai-editor-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .configure-button {
+      background: transparent;
+      color: var(--vscode-textLink-foreground);
+      border: 1px solid var(--vscode-textLink-foreground);
+      border-radius: 3px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .configure-button:hover {
+      background: var(--vscode-textLink-activeForeground);
+      color: var(--vscode-editor-background);
+    }
+
+    /* Icon Button */
+    .icon-button {
+      background: transparent;
+      border: none;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-button:hover {
+      background: var(--vscode-toolbar-hoverBackground);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--vscode-scrollbarSlider-background);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--vscode-scrollbarSlider-hoverBackground);
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h2>
+      <span>🎯</span>
+      Flutter Skill
+    </h2>
+    <div class="header-actions">
+      <button class="icon-button" title="Settings" onclick="openSettings()">
+        ⚙️
+      </button>
+      <button class="icon-button" title="Help" onclick="openHelp()">
+        ❓
+      </button>
+    </div>
+  </div>
+
+  <!-- Connection Status -->
+  <div class="status-card">
+    <div class="status-header">
+      <span class="status-badge status-connected">
+        <span>●</span>
+        Connected
+      </span>
+    </div>
+    <div class="status-info">
+      <div class="status-info-row">
+        <span>📱</span>
+        <span>iPhone 16 Pro</span>
+      </div>
+      <div class="status-info-row">
+        <span>⚡</span>
+        <span>VM Service: :50000</span>
+      </div>
+    </div>
+    <div class="status-actions">
+      <button class="action-button-secondary action-button" onclick="disconnect()">
+        Disconnect
+      </button>
+      <button class="action-button-secondary action-button" onclick="refresh()">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="section">
+    <div class="section-title">
+      <span>⚡</span>
+      Quick Actions
+    </div>
+    <div class="button-grid">
+      <button class="action-button" onclick="launchApp()">
+        <span>▶️</span>
+        Launch App
+      </button>
+      <button class="action-button" onclick="inspect()">
+        <span>🔍</span>
+        Inspect UI
+      </button>
+      <button class="action-button" onclick="screenshot()">
+        <span>📸</span>
+        Screenshot
+      </button>
+      <button class="action-button" onclick="hotReload()">
+        <span>🔄</span>
+        Hot Reload
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Elements -->
+  <div class="section">
+    <div class="section-title">
+      <span>📱</span>
+      Interactive Elements (12)
+    </div>
+    <div class="elements-list">
+      <!-- Example element -->
+      <div class="element-item">
+        <div class="element-header">
+          <div class="element-name">
+            <span>🔘</span>
+            login_button
+          </div>
+          <div class="element-type">ElevatedButton</div>
+        </div>
+        <div class="element-details">
+          Text: "Login" • Position: (156, 420) • Size: 120×48
+        </div>
+        <div class="element-actions">
+          <button class="element-action" onclick="tapElement('login_button')">
+            👆 Tap
+          </button>
+          <button class="element-action" onclick="inspectElement('login_button')">
+            🔍 Inspect
+          </button>
+        </div>
+      </div>
+
+      <div class="element-item">
+        <div class="element-header">
+          <div class="element-name">
+            <span>📝</span>
+            email_field
+          </div>
+          <div class="element-type">TextField</div>
+        </div>
+        <div class="element-details">
+          Hint: "Enter email" • Value: "test@example.com"
+        </div>
+        <div class="element-actions">
+          <button class="element-action" onclick="inputText('email_field')">
+            ⌨️ Input
+          </button>
+          <button class="element-action" onclick="clearField('email_field')">
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testing History -->
+  <div class="section">
+    <div class="section-title">
+      <span>📜</span>
+      Recent Activity
+    </div>
+    <div class="history-item">
+      <div class="history-header">
+        <span>✅</span>
+        <span>Login flow test</span>
+      </div>
+      <div class="history-time">2 minutes ago</div>
+    </div>
+    <div class="history-item">
+      <div class="history-header">
+        <span>📸</span>
+        <span>Screenshot capture</span>
+      </div>
+      <div class="history-time">5 minutes ago</div>
+    </div>
+    <button class="action-button-secondary action-button" style="width: 100%; margin-top: 8px;" onclick="viewHistory()">
+      View All History
+    </button>
+  </div>
+
+  <!-- AI Editors -->
+  <div class="section">
+    <div class="section-title">
+      <span>🤖</span>
+      AI Editors
+    </div>
+    <div class="ai-editor-item">
+      <div class="ai-editor-info">
+        <span>✅</span>
+        <span>Claude Code</span>
+      </div>
+    </div>
+    <div class="ai-editor-item">
+      <div class="ai-editor-info">
+        <span>✅</span>
+        <span>Cursor</span>
+      </div>
+    </div>
+    <div class="ai-editor-item">
+      <div class="ai-editor-info">
+        <span>⚠️</span>
+        <span>Windsurf</span>
+      </div>
+      <button class="configure-button" onclick="configureEditor('windsurf')">
+        Configure
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Placeholder functions - 实际实现应该通过 postMessage 与 extension 通信
+    const vscode = acquireVsCodeApi();
+
+    function launchApp() {
+      vscode.postMessage({ command: 'launchApp' });
+    }
+
+    function inspect() {
+      vscode.postMessage({ command: 'inspect' });
+    }
+
+    function screenshot() {
+      vscode.postMessage({ command: 'screenshot' });
+    }
+
+    function hotReload() {
+      vscode.postMessage({ command: 'hotReload' });
+    }
+
+    function disconnect() {
+      vscode.postMessage({ command: 'disconnect' });
+    }
+
+    function refresh() {
+      vscode.postMessage({ command: 'refresh' });
+    }
+
+    function tapElement(key) {
+      vscode.postMessage({ command: 'tap', key });
+    }
+
+    function inspectElement(key) {
+      vscode.postMessage({ command: 'inspectElement', key });
+    }
+
+    function inputText(key) {
+      vscode.postMessage({ command: 'showInputDialog', key });
+    }
+
+    function clearField(key) {
+      vscode.postMessage({ command: 'clearField', key });
+    }
+
+    function viewHistory() {
+      vscode.postMessage({ command: 'viewHistory' });
+    }
+
+    function configureEditor(editor) {
+      vscode.postMessage({ command: 'configureEditor', editor });
+    }
+
+    function openSettings() {
+      vscode.postMessage({ command: 'openSettings' });
+    }
+
+    function openHelp() {
+      vscode.postMessage({ command: 'openHelp' });
+    }
+
+    // 监听来自 extension 的消息
+    window.addEventListener('message', event => {
+      const message = event.data;
+      switch (message.command) {
+        case 'updateStatus':
+          updateStatus(message.data);
+          break;
+        case 'updateElements':
+          updateElements(message.data);
+          break;
+        case 'addHistoryItem':
+          addHistoryItem(message.data);
+          break;
+      }
+    });
+
+    function updateStatus(data) {
+      // 更新连接状态
+      console.log('Update status:', data);
+    }
+
+    function updateElements(elements) {
+      // 更新元素列表
+      console.log('Update elements:', elements);
+    }
+
+    function addHistoryItem(item) {
+      // 添加历史记录
+      console.log('Add history:', item);
+    }
+  </script>
+</body>
+</html>
