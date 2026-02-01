@@ -1,3 +1,70 @@
+## 0.4.3
+
+**Multi-session support for parallel Flutter app testing**
+
+### 🎯 Major Features
+
+**Multi-Session Management**
+- ✨ Support for parallel testing of multiple Flutter apps simultaneously
+- 🏗️ Complete SessionManager architecture for Kotlin (IntelliJ plugin)
+- 📊 SessionInfo model with state tracking (CREATED → LAUNCHING → CONNECTED → DISCONNECTED → ERROR)
+- 🔢 Automatic port assignment (50001-60000 range) with conflict detection
+- 🔄 Session switching and lifecycle management
+- 📝 Session persistence and tracking
+
+**UI Components**
+- 🎨 New SessionTabBar component with tab-based session switching
+- ➕ New Session Dialog with device auto-detection
+- 📱 Device detection for iOS/Android/Web/Desktop platforms
+- 🎯 Real-time status indicators (● connected, ○ disconnected, ⏳ launching, ⚠️ error)
+- 🖱️ Click to switch sessions, close button on tabs
+- ✨ Hover effects and visual feedback
+
+**MCP Server Enhancements**
+- 🔧 All MCP tools now support `session_id` parameter
+- 📋 New tools: `list_sessions`, `switch_session`, `close_session`
+- 🔄 Multi-client management with session isolation
+- ⬆️ Backward compatible (defaults to active session)
+
+### 📁 Code Changes
+
+- **New Files**: 11 files created (~5800 lines total)
+  - SessionManager.kt (200+ lines)
+  - SessionTabBar.kt (284 lines)
+  - NewSessionDialog.kt (450+ lines)
+  - SessionManagerTest.kt (450+ lines)
+  - multi_session_test.dart (441 lines)
+  - Complete documentation suite
+
+- **Modified Files**: 5 files updated
+  - lib/src/cli/server.dart (+478, -134 lines)
+  - All UI cards updated for session support
+
+### 🧪 Testing
+
+- ✅ Dart tests: 20/20 passed (100% pass rate)
+- ✅ Kotlin compilation: BUILD SUCCESSFUL
+- ✅ Plugin build: BUILD SUCCESSFUL
+- ✅ Session isolation tests
+- ✅ Port allocation tests
+- ✅ State transition tests
+
+### 📚 Documentation
+
+- 📖 Multi-session testing guide
+- 🎨 Complete UI design documentation
+- 🧪 Comprehensive testing documentation
+- 📊 Implementation report with all task details
+- 🗂️ Organized documentation structure (docs/ui/, docs/testing/, docs/releases/)
+
+### 🔧 Improvements
+
+- 🏗️ Organized project structure (moved docs and scripts to subdirectories)
+- 📝 Better separation of concerns
+- 🧹 Cleaner root directory with only core files
+
+---
+
 ## 0.4.1
 
 **Cross-Platform UI/UX Overhaul & VM Service Integration**
