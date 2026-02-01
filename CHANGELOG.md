@@ -1,3 +1,84 @@
+## 0.4.0
+
+**One-Click Installation & Tool Priority System**
+
+### 🚀 Major Features
+
+**1. One-Click Installation**
+- Added universal installation scripts for all platforms
+- macOS/Linux: `curl -fsSL https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.sh | bash`
+- Windows: `iwr https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.ps1 -useb | iex`
+- Auto-detects best installation method (npm > Homebrew/Scoop > source)
+- Auto-configures PATH and dependencies
+- Zero manual configuration needed
+
+**2. Automatic Tool Priority Setup**
+- New command: `flutter_skill setup`
+- Installs Claude Code priority rules automatically
+- Ensures flutter-skill is ALWAYS used instead of Dart MCP
+- First-run reminder if not installed
+- Supports `--force` and `--silent` flags
+
+**3. Comprehensive Tool Priority System**
+- Added decision tree and enforcement rules
+- Updated SKILL.md with alternatives comparison
+- Created detailed setup guide (TOOL_PRIORITY_SETUP.md)
+- Added tool-priority.md prompt rules
+- 100% priority for flutter-skill in Flutter testing
+
+### ✨ New Commands
+
+```bash
+# One-click setup of tool priority rules
+flutter_skill setup
+
+# Force reinstall/update rules
+flutter_skill setup --force
+
+# Silent installation (for scripts)
+flutter_skill setup --silent
+```
+
+### 📚 Documentation
+
+- Added `install.sh` - Universal installer for macOS/Linux
+- Added `install.ps1` - Universal installer for Windows
+- Added `TOOL_PRIORITY_SETUP.md` - Setup and verification guide
+- Added `docs/prompts/tool-priority.md` - Claude Code priority rules
+- Updated `README.md` - One-click installation instructions
+- Updated `CLAUDE.md` - Tool selection rules
+
+### 🎯 What This Solves
+
+**Before:**
+- ❌ Users had to manually install and configure
+- ❌ PATH issues on different systems
+- ❌ Dependency conflicts
+- ❌ Claude Code might use Dart MCP instead of flutter-skill
+
+**After:**
+- ✅ One command to install everything
+- ✅ Auto-configures all settings
+- ✅ Works across all platforms
+- ✅ Claude Code always prioritizes flutter-skill
+
+### 📊 Installation Methods (Auto-Detected)
+
+| Method | Priority | Speed | Requirements |
+|--------|----------|-------|--------------|
+| npm | 1st (best) | Instant | Node.js |
+| Homebrew/Scoop | 2nd | Fast | macOS/Windows |
+| From source | 3rd (fallback) | Medium | Flutter SDK |
+
+### 🔧 Technical Improvements
+
+- Created `lib/src/cli/setup_priority.dart` - Setup command implementation
+- Updated `bin/flutter_skill.dart` - Added setup command routing
+- Added auto-detection for installed priority rules
+- Improved error messages and user guidance
+
+---
+
 ## 0.3.1
 
 **Web Platform Optimization - Screenshot & Tap Enhancements**

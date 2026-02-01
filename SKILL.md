@@ -1,6 +1,6 @@
 ---
 name: flutter-skill
-version: 0.2.26
+version: 0.4.0
 category: testing
 priority: high
 auto_activate: true
