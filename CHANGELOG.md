@@ -1,3 +1,27 @@
+## 0.4.5
+
+**Add MCP auto-fix and diagnostics**
+
+### Features
+- ✨ New `diagnose_project` MCP tool for comprehensive project diagnostics
+- 🔧 Auto-fix capability in `connect_app` and `scan_and_connect` tools
+- 📁 Optional `project_path` parameter for automatic configuration
+- 🛠️ Diagnostic shell script (`scripts/diagnose.sh`) for manual troubleshooting
+
+### Improvements
+- 📊 Enhanced error logging with complete diagnostic output
+- 🔍 Automatic detection and repair of missing `flutter_skill` dependency
+- ⚙️ Automatic detection and repair of missing `FlutterSkillBinding` initialization
+- ✅ Backward compatible (all tools work without `project_path` parameter)
+
+### Documentation
+- 📖 New AUTO_FIX_IMPROVEMENTS.md guide
+- ✅ New test_auto_fix.md testing checklist
+- 🔧 Updated TROUBLESHOOTING.md with auto-fix workflows
+- 🌍 README.md translated to English
+
+---
+
 ## 0.4.4
 
 **Fix dart analyze errors**
