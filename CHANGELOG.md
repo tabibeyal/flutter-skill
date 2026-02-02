@@ -1,3 +1,24 @@
+## 0.4.9
+
+**Fix screenshot_element null handling and add text parameter**
+
+### Bug Fixes
+- 🐛 Fixed "type 'Null' is not a subtype of type 'String'" error in `screenshot_element`
+- ✅ Added `text` parameter support (in addition to `key`) for finding elements by text content
+- 🔍 Automatically looks up element key when `text` parameter is provided
+- 🛡️ Added null check for `takeElementScreenshot` return value
+- 📝 Returns descriptive error messages when element not found or screenshot fails
+
+### Improvements
+- 🎯 `screenshot_element` now matches behavior of other action tools (`tap`, `long_press`, etc.)
+- 🔄 Supports both `screenshot_element(key: "button_1")` and `screenshot_element(text: "Submit")`
+
+### Technical Details
+- Queries `getInteractiveElements()` to find matching text when key not provided
+- Returns `{"error": "...", "message": "..."}` instead of crashing on null
+
+---
+
 ## 0.4.8
 
 **Fix Infinity/NaN crash when inspecting widgets**
