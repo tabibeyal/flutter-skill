@@ -1396,15 +1396,22 @@ class FlutterSkillBinding {
         final renderObject = element.renderObject;
         if (renderObject is RenderBox && renderObject.hasSize) {
           final offset = renderObject.localToGlobal(Offset.zero);
+
+          // Helper function to safely convert double to int, handling Infinity/NaN
+          int safeRound(double value) {
+            if (!value.isFinite) return 0;
+            return value.round();
+          }
+
           entry['bounds'] = {
-            'x': offset.dx.round(),
-            'y': offset.dy.round(),
-            'width': renderObject.size.width.round(),
-            'height': renderObject.size.height.round(),
+            'x': safeRound(offset.dx),
+            'y': safeRound(offset.dy),
+            'width': safeRound(renderObject.size.width),
+            'height': safeRound(renderObject.size.height),
           };
           entry['center'] = {
-            'x': (offset.dx + renderObject.size.width / 2).round(),
-            'y': (offset.dy + renderObject.size.height / 2).round(),
+            'x': safeRound(offset.dx + renderObject.size.width / 2),
+            'y': safeRound(offset.dy + renderObject.size.height / 2),
           };
           entry['visible'] =
               renderObject.size.width > 0 && renderObject.size.height > 0;
