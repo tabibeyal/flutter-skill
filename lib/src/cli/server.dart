@@ -833,8 +833,8 @@ Base64-encoded PNG image that can be displayed to user.
           "type": "object",
           "properties": {
             "key": {"type": "string", "description": "Element key"},
+            "text": {"type": "string", "description": "Text to find"},
           },
-          "required": ["key"],
         },
       },
 
@@ -2139,7 +2139,33 @@ Detailed diagnostic report with:
         };
 
       case 'screenshot_element':
-        final image = await client!.takeElementScreenshot(args['key']);
+        // Support both key and text parameters
+        String? targetKey = args['key'];
+
+        // If text is provided, find the element first
+        if (targetKey == null && args['text'] != null) {
+          final elements = await client!.getInteractiveElements();
+          final matchingElement = elements.firstWhere(
+            (e) => e['text'] == args['text'],
+            orElse: () => <String, dynamic>{},
+          );
+          targetKey = matchingElement['key'];
+        }
+
+        if (targetKey == null) {
+          return {
+            "error": "Element not found",
+            "message": "No element found with key or text: ${args['key'] ?? args['text']}",
+          };
+        }
+
+        final image = await client!.takeElementScreenshot(targetKey);
+        if (image == null) {
+          return {
+            "error": "Screenshot failed",
+            "message": "Could not capture screenshot of element",
+          };
+        }
         return {"image": image};
 
       // Navigation
