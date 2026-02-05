@@ -467,3 +467,53 @@ jobs:
             release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Post release announcement to X (Twitter)
+  post-to-twitter:
+    needs: [prepare, create-release]
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Don't block if Twitter posting fails
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+
+          # Extract version section from CHANGELOG.md
+          ENTRY=$(awk "/^## $VERSION/,/^## /" CHANGELOG.md | sed '1d;$d' | head -n 10)
+
+          # Create tweet text (280 char limit for Twitter/X)
+          cat > tweet.txt << 'EOF'
+          🚀 Flutter Skill v$VERSION released!
+
+          AI agents → Flutter apps bridge via Dart VM Service
+
+          📦 Install:
+          npm i -g flutter-skill-mcp
+          brew install ai-dashboad/flutter-skill/flutter-skill
+          winget install AIDashboard.FlutterSkill
+
+          🔗 https://github.com/ai-dashboad/flutter-skill/releases/tag/v$VERSION
+
+          #Flutter #AI #MCP #DartLang
+          EOF
+
+          # Replace version placeholder
+          sed -i "s/\$VERSION/$VERSION/g" tweet.txt
+
+          # Read and truncate to 280 chars if needed
+          TWEET=$(cat tweet.txt | head -c 280)
+
+          echo "tweet<<EOFTWEET" >> $GITHUB_OUTPUT
+          echo "$TWEET" >> $GITHUB_OUTPUT
+          echo "EOFTWEET" >> $GITHUB_OUTPUT
+
+      - name: Post to X (Twitter)
+        run: |
+          # Twitter API v2 endpoint for creating tweets
+          curl -X POST "https://api.twitter.com/2/tweets" \
+            -H "Authorization: Bearer ${{ secrets.TWITTER_BEARER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": $(echo '${{ steps.changelog.outputs.tweet }}' | jq -Rs .)}"
