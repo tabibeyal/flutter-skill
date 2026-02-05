@@ -1,3 +1,12 @@
+## Unreleased
+
+### 🐛 Bug Fixes
+- 🔧 **Fixed Twitter OAuth Authentication**: Switch from Bearer Token to OAuth 1.0a
+  - Twitter API v2 create tweets endpoint requires User Context authentication
+  - Bearer Token (App-Only) is not supported for posting tweets
+  - Now uses OAuth 1.0a with API Key, API Secret, Access Token, and Access Token Secret
+  - Uses `nearform-actions/github-action-notify-twitter` action for OAuth signing
+
 ## 0.5.4
 
 **Add automated Twitter/X posting for release announcements**
