@@ -1,4 +1,6 @@
-## Unreleased
+## 0.5.5
+
+**Fix Twitter OAuth authentication**
 
 ### 🐛 Bug Fixes
 - 🔧 **Fixed Twitter OAuth Authentication**: Switch from Bearer Token to OAuth 1.0a
@@ -6,6 +8,11 @@
   - Bearer Token (App-Only) is not supported for posting tweets
   - Now uses OAuth 1.0a with API Key, API Secret, Access Token, and Access Token Secret
   - Uses `nearform-actions/github-action-notify-twitter` action for OAuth signing
+
+### 💡 What Changed
+- ✅ Twitter posting now works correctly with User Context authentication
+- ✅ Automatic release announcements will be posted to Twitter/X
+- ✅ No more "Unsupported Authentication" errors
 
 ## 0.5.4
 
