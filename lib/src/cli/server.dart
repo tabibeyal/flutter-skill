@@ -7,7 +7,7 @@ import '../flutter_skill_client.dart';
 import '../diagnostics/error_reporter.dart';
 import 'setup.dart';
 
-const String _currentVersion = '0.5.5';
+const String _currentVersion = '0.6.0';
 
 /// Session information for multi-session support
 class SessionInfo {
