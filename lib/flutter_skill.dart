@@ -2565,10 +2565,10 @@ class _TapIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFF4CAF50).withValues(alpha: opacity),
+                color: const Color(0xFF4CAF50).withOpacity(opacity),
                 width: 3,
               ),
-              color: const Color(0xFF4CAF50).withValues(alpha: opacity * 0.3),
+              color: const Color(0xFF4CAF50).withOpacity(opacity * 0.3),
             ),
           ),
         );
@@ -2637,7 +2637,7 @@ class _SwipePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF9C27B0).withValues(alpha: (1.0 - progress) * 0.5)
+      ..color = const Color(0xFF9C27B0).withOpacity((1.0 - progress) * 0.5)
       ..strokeWidth = style == IndicatorStyle.minimal ? 2 : 3
       ..style = PaintingStyle.stroke;
 
@@ -2767,13 +2767,13 @@ class _LongPressPainter extends CustomPainter {
 
     // Background circle
     final bgPaint = Paint()
-      ..color = const Color(0xFFFF9800).withValues(alpha: opacity * 0.2)
+      ..color = const Color(0xFFFF9800).withOpacity(opacity * 0.2)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, bgPaint);
 
     // Progress arc
     final progressPaint = Paint()
-      ..color = const Color(0xFFFF9800).withValues(alpha: opacity)
+      ..color = const Color(0xFFFF9800).withOpacity(opacity)
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -2818,7 +2818,7 @@ class _TextInputIndicator extends StatelessWidget {
             height: bounds.height,
             decoration: BoxDecoration(
               border: Border.all(
-                color: const Color(0xFF4CAF50).withValues(alpha: opacity),
+                color: const Color(0xFF4CAF50).withOpacity(opacity),
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(4),
@@ -3058,7 +3058,7 @@ class _ParticleEffectPainter extends CustomPainter {
 
   void _drawWalkingDust(Canvas canvas, double cx, double cy) {
     final dustPaint = Paint()
-      ..color = Colors.grey.withValues(alpha: 0.3 * (1 - progress))
+      ..color = Colors.grey.withOpacity(0.3 * (1 - progress))
       ..style = PaintingStyle.fill;
 
     // Dust clouds behind character
@@ -3090,7 +3090,7 @@ class _ParticleEffectPainter extends CustomPainter {
         const Color(0xFFFFEB3B),
         const Color(0xFFFF5722),
         i / 6,
-      )!.withValues(alpha: 0.8 * (1 - progress));
+      )!.withOpacity(0.8 * (1 - progress));
 
       particlePaint.color = color;
       canvas.drawCircle(Offset(x, y), 3 * (1 - progress), particlePaint);
@@ -3100,7 +3100,7 @@ class _ParticleEffectPainter extends CustomPainter {
     if (action == CharacterAction.tapping && progress > 0.5) {
       final impactProgress = (progress - 0.5) * 2;
       final impactPaint = Paint()
-        ..color = const Color(0xFFFF5722).withValues(alpha: 0.5 * (1 - impactProgress))
+        ..color = const Color(0xFFFF5722).withOpacity(0.5 * (1 - impactProgress))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3;
 
@@ -3139,7 +3139,7 @@ class _GameCharacterPainter extends CustomPainter {
 
     // Draw shadow first (for depth)
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.3)
+      ..color = Colors.black.withOpacity(0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     // Elliptical shadow on ground
@@ -3165,7 +3165,7 @@ class _GameCharacterPainter extends CustomPainter {
 
     // Head glow effect
     final glowPaint = Paint()
-      ..color = const Color(0xFFFFEB3B).withValues(alpha: 0.3)
+      ..color = const Color(0xFFFFEB3B).withOpacity(0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     final accentPaint = Paint()
@@ -3354,7 +3354,7 @@ class _GameCharacterPainter extends CustomPainter {
 
     // Swipe trail
     final trailPaint = Paint()
-      ..color = const Color(0xFF9C27B0).withValues(alpha: 0.5)
+      ..color = const Color(0xFF9C27B0).withOpacity(0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     canvas.drawLine(
@@ -3479,7 +3479,7 @@ class _GameCharacterPainter extends CustomPainter {
 
     // Drag trail
     final trailPaint = Paint()
-      ..color = const Color(0xFF9C27B0).withValues(alpha: 0.3)
+      ..color = const Color(0xFF9C27B0).withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
@@ -3609,7 +3609,7 @@ class _GameCharacterPainter extends CustomPainter {
     // Walking dust/motion lines for extra effect
     if (style == IndicatorStyle.detailed) {
       final dustPaint = Paint()
-        ..color = const Color(0xFF9E9E9E).withValues(alpha: 0.4)
+        ..color = const Color(0xFF9E9E9E).withOpacity(0.4)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..strokeCap = StrokeCap.round;
@@ -3722,10 +3722,10 @@ class _ActionHint extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.8),
+                  color: Colors.black.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.5),
+                    color: const Color(0xFF4CAF50).withOpacity(0.5),
                     width: 1,
                   ),
                 ),
