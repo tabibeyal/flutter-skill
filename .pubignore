@@ -5,6 +5,7 @@
 test_dummy/
 
 # Demo projects
+demo_app/
 demo_counter/
 
 # Build artifacts
@@ -26,6 +27,15 @@ npm/
 # Docker files
 Dockerfile
 .dockerignore
+
+# VSCode extension (separate package)
+vscode-extension/
+
+# CI/CD
+.github/
+
+# Scripts
+scripts/
 
 # Development docs
 docs/

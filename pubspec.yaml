@@ -15,7 +15,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  vm_service: ^14.0.0
+  vm_service: ">=14.0.0 <16.0.0"
   http: ^1.1.0
   path: ^1.8.0
   logging: ^1.2.0

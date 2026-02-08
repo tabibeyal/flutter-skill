@@ -2346,14 +2346,6 @@ class _TestIndicatorWidgetState extends State<_TestIndicatorWidget>
   final Map<IndicatorData, AnimationController> _controllers = {};
   IndicatorStyle _style = IndicatorStyle.standard;
 
-  // Persistent character state
-  bool _persistentCharacterVisible = false;
-  Offset _persistentCharacterPos = const Offset(50, 100);
-  Offset? _persistentCharacterTarget;
-  CharacterAction _persistentCharacterAction = CharacterAction.pointing;
-  CharacterState _persistentCharacterState = CharacterState.idle;
-  AnimationController? _persistentCharacterController;
-
   @override
   void initState() {
     super.initState();
