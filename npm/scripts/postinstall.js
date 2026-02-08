@@ -94,6 +94,49 @@ async function main() {
   }
 }
 
-main().catch(() => {
-  // Silent fail - Dart fallback will work
-});
+// Install tool priority rules for Claude Code
+function installToolPriorityRules() {
+  const homeDir = os.homedir();
+  const promptsDir = path.join(homeDir, '.claude', 'prompts');
+  const targetFile = path.join(promptsDir, 'flutter-tool-priority.md');
+
+  if (fs.existsSync(targetFile)) {
+    return Promise.resolve(); // Already installed
+  }
+
+  // Download from GitHub
+  const url = 'https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/docs/prompts/tool-priority.md';
+
+  return new Promise((resolve) => {
+    fs.mkdirSync(promptsDir, { recursive: true });
+    const file = fs.createWriteStream(targetFile);
+
+    const request = (reqUrl) => {
+      https.get(reqUrl, (response) => {
+        if (response.statusCode === 302 || response.statusCode === 301) {
+          request(response.headers.location);
+          return;
+        }
+        if (response.statusCode !== 200) {
+          resolve(); // Silent fail
+          return;
+        }
+        response.pipe(file);
+        file.on('finish', () => {
+          file.close();
+          console.log('[flutter-skill] Tool priority rules installed for Claude Code');
+          resolve();
+        });
+      }).on('error', () => resolve());
+    };
+
+    request(url);
+  });
+}
+
+main()
+  .then(() => installToolPriorityRules())
+  .catch(() => {
+    // Silent fail - Dart fallback will work
+    installToolPriorityRules().catch(() => {});
+  });

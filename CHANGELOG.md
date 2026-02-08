@@ -1,3 +1,32 @@
+## 0.7.0
+
+**Enhanced developer experience: install scripts, CLI tips, and doctor command**
+
+### Features
+- **`flutter-skill doctor`**: New command to check installation and environment health (Flutter/Dart SDK, devices, native tools, IDE config, tool priority rules)
+- **`--version` / `-v` flag**: Quick version check from CLI (`flutter-skill --version`)
+- **Interactive CLI tips**: Running `flutter-skill-mcp` in terminal shows helpful usage guide with examples instead of hanging
+- **Auto-config IDE settings**: Install script automatically writes MCP config to Claude Code (`~/.claude/settings.json`) and Cursor (`~/.cursor/mcp.json`)
+
+### Install Script Improvements
+- One-click install auto-configures everything (IDE settings, tool priority rules, PATH)
+- Safe JSON merging via python3 (preserves existing settings)
+- POSIX-compatible output (`printf` instead of `echo -e`)
+- Removed `--force` npm warning during updates
+- Smart version verification with regex validation
+- Added fish shell PATH support
+- Windows PowerShell auto-config with `ConvertFrom-Json`/`ConvertTo-Json`
+
+### New Files
+- `lib/src/cli/doctor.dart` - Environment health checker
+- `uninstall.sh` - Clean uninstall for macOS/Linux
+- `uninstall.ps1` - Clean uninstall for Windows
+
+### Release Script
+- `scripts/release.sh` now auto-syncs Homebrew formula version
+
+---
+
 ## 0.6.2
 
 **Improve pub.dev score**

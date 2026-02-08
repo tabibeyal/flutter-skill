@@ -8,7 +8,7 @@ import '../native_driver.dart';
 import '../diagnostics/error_reporter.dart';
 import 'setup.dart';
 
-const String _currentVersion = '0.6.2';
+const String currentVersion = '0.7.0';
 
 /// Session information for multi-session support
 class SessionInfo {
@@ -76,12 +76,12 @@ Future<void> _checkForUpdates() async {
       final latestVersion = data['latest']?['version'] as String?;
 
       if (latestVersion != null &&
-          _isNewerVersion(latestVersion, _currentVersion)) {
+          _isNewerVersion(latestVersion, currentVersion)) {
         stderr.writeln('');
         stderr.writeln(
             '╔══════════════════════════════════════════════════════════╗');
         stderr.writeln(
-            '║  flutter-skill v$latestVersion available (current: v$_currentVersion)');
+            '║  flutter-skill v$latestVersion available (current: v$currentVersion)');
         stderr.writeln(
             '║                                                          ║');
         stderr.writeln(
@@ -188,7 +188,7 @@ class FlutterMcpServer {
           "protocolVersion": "2024-11-05",
           "serverInfo": {
             "name": "flutter-skill-mcp",
-            "version": _currentVersion
+            "version": currentVersion
           },
         });
       } else if (method == 'notifications/initialized') {

@@ -256,6 +256,60 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
+// Show tips when running interactively without arguments
+function showTips() {
+  const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
+  const args = process.argv.slice(2);
+
+  if (!isInteractive || args.length > 0) {
+    return false; // Not interactive or has args, don't show tips
+  }
+
+  console.log(`Flutter Skill v${VERSION} - AI Agent Bridge for Flutter Apps`);
+  console.log('');
+  console.log('Commands:');
+  console.log('  server          Start MCP server (default when launched by IDE)');
+  console.log('  launch          Launch and connect to a Flutter app');
+  console.log('  inspect         Inspect interactive elements in running app');
+  console.log('  act             Perform actions (tap, scroll, enter_text)');
+  console.log('  doctor          Check installation and environment health');
+  console.log('  setup           Install tool priority rules for Claude Code');
+  console.log('  --version       Show version');
+  console.log('');
+  console.log('Quick Start:');
+  console.log('  flutter-skill-mcp doctor              Check your environment is ready');
+  console.log('  flutter-skill-mcp launch ./my_app      Launch and connect to your app');
+  console.log('');
+  console.log('What can AI agents do with Flutter Skill?');
+  console.log('  - Launch your Flutter app and auto-connect');
+  console.log('  - Inspect UI: find buttons, text fields, lists');
+  console.log('  - Tap, swipe, scroll, and enter text');
+  console.log('  - Take screenshots to verify visual changes');
+  console.log('  - Read app logs and debug issues');
+  console.log('  - Hot reload after code changes');
+  console.log('');
+  console.log('Example: Ask your AI agent:');
+  console.log('  "Launch my Flutter app and tap the login button"');
+  console.log('  "Take a screenshot and check if the list is showing"');
+  console.log('  "Enter \'hello@test.com\' in the email field and submit"');
+  console.log('');
+  console.log('Docs: https://pub.dev/packages/flutter_skill');
+  console.log('');
+  return true;
+}
+
+// Handle --version / -v directly (fast, no binary needed)
+const cliArgs = process.argv.slice(2);
+if (cliArgs.includes('--version') || cliArgs.includes('-v')) {
+  console.log(VERSION);
+  process.exit(0);
+}
+
+// Show tips if interactive, otherwise run server
+if (showTips()) {
+  process.exit(0);
+}
+
 // Run update check in background (non-blocking)
 checkForUpdates();
 
