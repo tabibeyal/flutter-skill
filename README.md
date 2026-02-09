@@ -1,60 +1,83 @@
 # Flutter Skill
 
-> **Give your AI Agent eyes and hands inside your Flutter app.**
+> **AI-Powered End-to-End Testing for Flutter Apps**
 
 ![Version](https://img.shields.io/pub/v/flutter_skill.svg)
 ![npm](https://img.shields.io/npm/v/flutter-skill-mcp.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Flutter-02569B)
 
-**Flutter Skill** is a bridge that connects AI Agents (like Claude Code, Cursor, Windsurf) directly to running Flutter applications via the MCP (Model Context Protocol). It provides 30+ tools for UI automation, inspection, and testing.
+**Flutter Skill** is an E2E testing bridge that gives AI agents (Claude Code, Cursor, Windsurf, etc.) full control over running Flutter apps. Describe what you want to test in natural language, and the AI sees the screen, taps buttons, fills forms, scrolls, and verifies results - just like a human tester would.
 
-## Quick Start
+```
+You: "Test the login flow - enter test@example.com and password123, tap Login, verify Dashboard appears"
+
+AI Agent:
+  1. screenshot()          → sees the login screen
+  2. enter_text("email")   → types the email
+  3. enter_text("password") → types the password
+  4. tap("Login")           → taps the button
+  5. wait_for_element("Dashboard") → confirms navigation
+  6. screenshot()          → captures the result
+  ✅ Login flow verified!
+```
+
+## Why Flutter Skill?
+
+| Traditional E2E Testing | Flutter Skill |
+|------------------------|---------------|
+| Write Dart test code manually | Describe tests in natural language |
+| Learn WidgetTester API | AI handles the automation |
+| Maintain brittle test scripts | AI adapts to UI changes |
+| Debug test failures manually | AI sees screenshots and self-corrects |
+| Setup takes hours | Setup takes 2 minutes |
+
+**Flutter Skill is for you if:**
+- You want E2E tests without writing test code
+- You're using AI coding agents (Claude Code, Cursor, Windsurf)
+- You want to automate QA workflows with natural language
+- You need to test real app behavior on simulators/emulators
+
+---
+
+## Quick Start (2 minutes)
 
 ### 1. Install
 
-**⚡ One-Click Install (Recommended)**
-
 ```bash
-# macOS/Linux
+# One-click install (macOS/Linux) - recommended
 curl -fsSL https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.sh | bash
 
-# Windows PowerShell (Run as Administrator)
-iwr https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.ps1 -useb | iex
-```
-
-**Or Manual Install:**
-
-```bash
-# npm (recommended - includes native binary for instant startup)
+# Or: npm (all platforms)
 npm install -g flutter-skill-mcp
 
-# Homebrew (macOS/Linux)
-brew tap ai-dashboad/flutter-skill
-brew install flutter-skill
+# Or: Homebrew (macOS/Linux)
+brew tap ai-dashboad/flutter-skill && brew install flutter-skill
 
-# Scoop (Windows)
-scoop bucket add flutter-skill https://github.com/ai-dashboad/scoop-flutter-skill
-scoop install flutter-skill
-
-# Dart (requires Flutter SDK)
+# Or: Dart
 dart pub global activate flutter_skill
-
-# IDE Extensions
-# - VSCode: Search "Flutter Skill" in Extensions
-# - IntelliJ/Android Studio: Search "Flutter Skill" in Plugins
 ```
 
-**What does one-click install do?**
-- ✅ Auto-detects best installation method (npm > Homebrew/Scoop > source)
-- ✅ Auto-installs tool priority rules to `~/.claude/prompts/`
-- ✅ Auto-configures PATH environment variable
-- ✅ Resolves all dependencies and version issues
-- ✅ Cross-platform support (macOS, Linux, Windows)
+<details>
+<summary>More installation methods (Windows, Docker, IDE extensions...)</summary>
 
-### 2. Configure AI Agent
+| Method | Command | Platform |
+|--------|---------|----------|
+| **One-click** | `curl -fsSL .../install.sh \| bash` | macOS/Linux |
+| **Windows** | `iwr .../install.ps1 -useb \| iex` | Windows |
+| **npm** | `npm install -g flutter-skill-mcp` | All |
+| **Homebrew** | `brew install ai-dashboad/flutter-skill/flutter-skill` | macOS/Linux |
+| **Scoop** | `scoop install flutter-skill` | Windows |
+| **Docker** | `docker pull ghcr.io/ai-dashboad/flutter-skill` | All |
+| **pub.dev** | `dart pub global activate flutter_skill` | All |
+| **VSCode** | Extensions -> "Flutter Skill" | All |
+| **IntelliJ** | Plugins -> "Flutter Skill" | All |
 
-Add to your AI agent's MCP config:
+</details>
+
+### 2. Configure Your AI Agent
+
+Add to your agent's MCP config:
 
 **Claude Code** (`~/.claude/settings.json`):
 ```json
@@ -68,6 +91,9 @@ Add to your AI agent's MCP config:
 }
 ```
 
+<details>
+<summary>Cursor, Windsurf, and other agents</summary>
+
 **Cursor** (`~/.cursor/mcp.json`):
 ```json
 {
@@ -80,258 +106,191 @@ Add to your AI agent's MCP config:
 }
 ```
 
-### 3. Setup Tool Priority (Recommended for Claude Code)
+Any MCP-compatible agent uses the same config format.
 
-**One command to ensure Claude always uses flutter-skill for Flutter testing:**
+</details>
 
-```bash
-flutter_skill setup
-```
+### 3. Add to Your Flutter App
 
-This installs priority rules that ensure Claude Code ALWAYS uses flutter-skill instead of Dart MCP for Flutter testing, giving you 100% UI automation capability.
-
-**What it does:**
-- ✅ Installs rules to `~/.claude/prompts/`
-- ✅ Claude Code automatically prioritizes flutter-skill for ALL Flutter testing
-- ✅ Adds `--vm-service-port=50000` flag automatically (Flutter 3.x compatibility)
-- ✅ No manual tool selection needed
-
-**First-time run auto-reminder:**
-When you run any `flutter_skill` command for the first time, you'll see a reminder if the rules aren't installed yet.
-
-**See also:** [Tool Priority Setup Guide](docs/TOOL_PRIORITY_SETUP.md)
-
-### 4. Use
-
-```javascript
-// Option 1: Launch app with environment variables
-flutter-skill.launch_app({
-  project_path: "/path/to/flutter/project",
-  dart_defines: ["ENV=staging", "DEBUG=true"],
-  flavor: "staging"
-})
-
-// Option 2: Connect to already running app (auto-detect)
-flutter-skill.scan_and_connect()
-
-// Now use any tool
-flutter-skill.screenshot()
-flutter-skill.tap({ text: "Login" })
-flutter-skill.inspect()
-```
-
----
-
-## Features
-
-### App Lifecycle Management
-| Tool | Description |
-|------|-------------|
-| `launch_app` | Launch Flutter app with dart_defines, flavor, target, extra_args |
-| `scan_and_connect` | Auto-scan ports and connect to first running Flutter app |
-| `list_running_apps` | List all running Flutter apps (VM Services) |
-| `connect_app` | Connect to specific VM Service URI |
-| `stop_app` | Stop the currently running app |
-| `disconnect` | Disconnect without stopping the app |
-| `get_connection_status` | Get connection info and suggestions |
-| `hot_reload` | Fast reload (keeps state) |
-| `hot_restart` | Full restart (resets state) |
-
-### UI Inspection
-| Tool | Description |
-|------|-------------|
-| `inspect` | Get interactive elements with coordinates, size, and center point |
-| `get_widget_tree` | Get widget tree structure with depth control |
-| `get_widget_properties` | Get properties of a widget (size, position, visibility) |
-| `get_text_content` | Extract all visible text from the screen |
-| `find_by_type` | Find widgets by type (e.g., ElevatedButton) |
-
-### Interactions
-| Tool | Description |
-|------|-------------|
-| `tap` | Tap a widget by Key or Text (returns success/failure) |
-| `double_tap` | Double tap a widget |
-| `long_press` | Long press with configurable duration |
-| `swipe` | Swipe gesture (up/down/left/right) |
-| `edge_swipe` | Swipe from screen edge (for drawer menus, back gestures) |
-| `drag` | Drag from one element to another |
-| `scroll_to` | Scroll to make an element visible |
-| `enter_text` | Enter text into a text field (returns success/failure) |
-
-### State & Validation
-| Tool | Description |
-|------|-------------|
-| `get_text_value` | Get current value of a text field |
-| `get_checkbox_state` | Get checked state of a checkbox/switch |
-| `get_slider_value` | Get current value of a slider |
-| `wait_for_element` | Wait for an element to appear (with timeout) |
-| `wait_for_gone` | Wait for an element to disappear |
-
-### Screenshots
-| Tool | Description |
-|------|-------------|
-| `screenshot` | Take full app screenshot (quality, max_width options) |
-| `screenshot_region` | Take screenshot of specific region (x, y, width, height) |
-| `screenshot_element` | Take screenshot of specific element |
-
-### Navigation
-| Tool | Description |
-|------|-------------|
-| `get_current_route` | Get the current route name |
-| `go_back` | Navigate back |
-| `get_navigation_stack` | Get the navigation stack |
-
-### Debug & Logs
-| Tool | Description |
-|------|-------------|
-| `get_logs` | Get application logs |
-| `get_errors` | Get application errors |
-| `clear_logs` | Clear logs and errors |
-| `get_performance` | Get performance metrics |
-
-### Utilities
-| Tool | Description |
-|------|-------------|
-| `pub_search` | Search Flutter packages on pub.dev |
-
----
-
-## Installation Methods
-
-| Method | Command | Platform |
-|--------|---------|----------|
-| **npm** | `npm install -g flutter-skill-mcp` | All |
-| **Homebrew** | `brew install ai-dashboad/flutter-skill/flutter-skill` | macOS/Linux |
-| **Docker** | `docker pull ghcr.io/ai-dashboad/flutter-skill` | All |
-| **Snap** | `snap install flutter-skill` | Linux |
-| **Scoop** | `scoop install flutter-skill` | Windows |
-| **Winget** | `winget install AIDashboard.FlutterSkill` | Windows |
-| **pub.dev** | `dart pub global activate flutter_skill` | All |
-| **VSCode** | Extensions → "Flutter Skill" | All |
-| **IntelliJ** | Plugins → "Flutter Skill" | All |
-| **Devcontainer** | See below | All |
-
-### Docker
-
-```bash
-# Run MCP server
-docker run --rm -it ghcr.io/ai-dashboad/flutter-skill server
-
-# Or use in docker-compose
-services:
-  flutter-skill:
-    image: ghcr.io/ai-dashboad/flutter-skill:latest
-    command: ["server"]
-```
-
-### Devcontainer Feature
-
-Add to your `.devcontainer/devcontainer.json`:
-```json
-{
-    "features": {
-        "ghcr.io/ai-dashboad/flutter-skill/flutter-skill:latest": {}
-    }
-}
-```
-
-### Native Binary Performance
-| Version | Startup Time |
-|---------|--------------|
-| Dart JIT | ~1 second |
-| Native Binary | ~0.01 second |
-
-Native binaries are automatically downloaded on first use for supported platforms:
-- macOS (Apple Silicon & Intel)
-- Linux (x64)
-- Windows (x64)
-
----
-
-## Flutter App Setup
-
-For the MCP tools to work, your Flutter app needs the `flutter_skill` package:
-
-### Automatic Setup (Recommended)
-```bash
-flutter-skill launch /path/to/project
-# Automatically adds dependency and initializes
-```
-
-### Manual Setup
-1. Add dependency:
 ```yaml
+# pubspec.yaml
 dependencies:
-  flutter_skill: ^0.7.0
+  flutter_skill: ^0.7.1
 ```
 
-2. Initialize in main.dart:
 ```dart
+// main.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_skill/flutter_skill.dart';
 
 void main() {
-  FlutterSkillBinding.ensureInitialized();
+  if (kDebugMode) {
+    FlutterSkillBinding.ensureInitialized();
+  }
   runApp(MyApp());
 }
 ```
+
+> **Tip:** `launch_app` can auto-add this for you. The `kDebugMode` guard ensures it's stripped from release builds.
+
+### 4. Start Testing
+
+Just tell your AI agent what to test:
+
+```
+"Launch my app on iPhone simulator, tap the Sign Up button, fill in the form, and verify the success screen"
+```
+
+Or use tools directly:
+```javascript
+flutter-skill.launch_app({ project_path: "." })
+flutter-skill.inspect()                          // See all interactive elements
+flutter-skill.tap({ text: "Sign Up" })           // Tap by text
+flutter-skill.enter_text({ key: "email", text: "user@test.com" })
+flutter-skill.screenshot()                       // Visual verification
+```
+
+---
+
+## What Can It Do?
+
+### 40+ MCP Tools for Complete App Control
+
+**Launch & Connect**
+| Tool | What it does |
+|------|-------------|
+| `launch_app` | Launch app with dart-defines, flavors, custom targets |
+| `scan_and_connect` | Auto-find and connect to any running Flutter app |
+| `hot_reload` / `hot_restart` | Reload code without restarting |
+
+**See the Screen**
+| Tool | What it does |
+|------|-------------|
+| `screenshot` | Full app screenshot (configurable quality) |
+| `screenshot_region` | Screenshot a specific area |
+| `screenshot_element` | Screenshot a single widget |
+| `native_screenshot` | OS-level screenshot (native dialogs, permission popups) |
+| `inspect` | List all interactive elements with coordinates |
+| `get_widget_tree` | Full widget tree structure |
+| `find_by_type` | Find widgets by type (e.g., `ElevatedButton`) |
+| `get_text_content` | Extract all visible text |
+
+**Interact Like a User**
+| Tool | What it does |
+|------|-------------|
+| `tap` | Tap by Key, text, or coordinates |
+| `double_tap` | Double tap |
+| `long_press` | Long press with configurable duration |
+| `enter_text` | Type into text fields (by key or focused field) |
+| `swipe` | Swipe gestures (up/down/left/right) |
+| `scroll_to` | Scroll until element is visible |
+| `drag` | Drag from one element to another |
+| `go_back` | Navigate back |
+| `native_tap` | Tap native UI (permission dialogs, photo pickers) |
+| `native_input_text` | Type into native text fields |
+| `native_swipe` | Scroll native views |
+
+**Verify & Assert**
+| Tool | What it does |
+|------|-------------|
+| `assert_text` | Verify element contains expected text |
+| `assert_visible` | Verify element is visible |
+| `assert_not_visible` | Verify element is gone |
+| `assert_element_count` | Verify number of matching elements |
+| `wait_for_element` | Wait for element to appear (with timeout) |
+| `wait_for_gone` | Wait for element to disappear |
+| `get_checkbox_state` | Read checkbox/switch state |
+| `get_slider_value` | Read slider value |
+| `get_text_value` | Read text field value |
+
+**Debug & Monitor**
+| Tool | What it does |
+|------|-------------|
+| `get_logs` | Read application logs |
+| `get_errors` | Read application errors |
+| `get_performance` | Performance metrics |
+| `get_memory_stats` | Memory usage stats |
+
+**Multi-Session**
+| Tool | What it does |
+|------|-------------|
+| `list_sessions` | See all connected apps |
+| `switch_session` | Switch between apps |
+| `close_session` | Disconnect from an app |
 
 ---
 
 ## Example Workflows
 
-### E2E Testing with Environment Variables
+### Login Flow Test
+```
+You: "Test login with test@example.com / password123, verify it reaches the dashboard"
+```
+The AI agent will:
+1. `launch_app` or `scan_and_connect` to your app
+2. `screenshot` to see the current screen
+3. `enter_text(key: "email_field", text: "test@example.com")`
+4. `enter_text(key: "password_field", text: "password123")`
+5. `tap(text: "Login")`
+6. `wait_for_element(text: "Dashboard")`
+7. `screenshot` to confirm
+
+### Form Validation Test
+```
+You: "Submit the registration form empty and check that all validation errors appear"
+```
+
+### Navigation Test
+```
+You: "Navigate through all tabs, take a screenshot of each, and verify the back button works"
+```
+
+### Visual Regression
+```
+You: "Take screenshots of the home, profile, and settings pages - compare them with last time"
+```
+
+---
+
+## Native Platform Support
+
+Flutter Skill can interact with **native dialogs** that Flutter can't see (permission popups, photo pickers, share sheets):
+
+| Tool | iOS Simulator | Android Emulator |
+|------|--------------|-----------------|
+| `native_screenshot` | `xcrun simctl screenshot` | `adb screencap` |
+| `native_tap` | macOS Accessibility API | `adb input tap` |
+| `native_input_text` | Pasteboard + Cmd+V | `adb input text` |
+| `native_swipe` | Accessibility scroll | `adb input swipe` |
+
+No external tools needed - works with built-in OS capabilities.
+
+---
+
+## Flutter 3.x Compatibility
+
+Flutter 3.x defaults to the DTD protocol. Flutter Skill auto-adds `--vm-service-port=50000` to ensure VM Service protocol is available. No manual configuration needed.
+
+If you see "no VM Service URI" errors:
 ```javascript
-// Launch staging environment
+// Explicitly set a port
 flutter-skill.launch_app({
-  project_path: "./",
-  dart_defines: ["ENV=staging", "API_URL=https://staging.api.com"],
-  flavor: "staging",
-  target: "lib/main_staging.dart"
+  project_path: ".",
+  extra_args: ["--vm-service-port=50000"]
 })
-
-// Wait for app to load
-flutter-skill.wait_for_element({ text: "Welcome" })
-
-// Take screenshot
-flutter-skill.screenshot()
-
-// Perform login
-flutter-skill.tap({ text: "Login" })
-flutter-skill.enter_text({ key: "email_field", text: "test@example.com" })
-flutter-skill.enter_text({ key: "password_field", text: "password123" })
-flutter-skill.tap({ text: "Submit" })
-
-// Verify success
-flutter-skill.wait_for_element({ text: "Dashboard" })
 ```
 
-### Connect to Running App
-```javascript
-// List all running Flutter apps
-flutter-skill.list_running_apps()
-// Returns: { apps: ["ws://127.0.0.1:50123/ws", ...], count: 2 }
+---
 
-// Auto-connect to first one
-flutter-skill.scan_and_connect()
+## Tool Priority Setup (Claude Code)
 
-// Or connect to specific one
-flutter-skill.connect_app({ uri: "ws://127.0.0.1:50123/ws" })
+For Claude Code users, ensure it always uses Flutter Skill for Flutter testing:
+
+```bash
+flutter_skill setup
 ```
 
-### Debug a UI Issue
-```javascript
-// Get widget tree
-flutter-skill.get_widget_tree({ max_depth: 5 })
-
-// Find specific widgets
-flutter-skill.find_by_type({ type: "ElevatedButton" })
-
-// Inspect interactive elements
-flutter-skill.inspect()
-
-// Check if element is visible
-flutter-skill.wait_for_element({ key: "submit_button", timeout: 3000 })
-```
+This installs priority rules so Claude Code automatically chooses Flutter Skill over Dart MCP, giving you full UI automation (tap, screenshot, swipe) instead of read-only inspection.
 
 ---
 
@@ -339,15 +298,12 @@ flutter-skill.wait_for_element({ key: "submit_button", timeout: 3000 })
 
 ### VSCode Extension
 - Auto-detects Flutter projects
-- Prompts to add `flutter_skill` dependency
-- Auto-downloads native binary
 - Status bar shows connection state
 - Commands: Launch, Inspect, Screenshot
 
-### IntelliJ/Android Studio Plugin
+### IntelliJ / Android Studio Plugin
 - Same features as VSCode
 - Integrates with IDE notifications
-- Tool window for status
 
 ---
 
@@ -355,49 +311,22 @@ flutter-skill.wait_for_element({ key: "submit_button", timeout: 3000 })
 
 ### "Not connected to Flutter app"
 ```javascript
-// Check status and get suggestions
-flutter-skill.get_connection_status()
-
-// This returns:
-// - Current connection state
-// - List of available apps
-// - Actionable suggestions
+flutter-skill.get_connection_status()  // Shows suggestions
+flutter-skill.scan_and_connect()       // Auto-find running apps
 ```
 
 ### "Unknown method ext.flutter.flutter_skill.xxx"
-Your Flutter app doesn't have the `flutter_skill` package. Add it:
+Your app doesn't have the flutter_skill package:
 ```bash
 flutter pub add flutter_skill
 ```
-Then restart the app (hot reload is not enough).
+Then restart the app (hot reload is not enough for new packages).
 
-### MCP server slow to start
-The native binary should auto-download. If not:
-```bash
-# For npm
-npm update -g flutter-skill-mcp
-
-# For Homebrew
-brew upgrade flutter-skill
-```
-
----
-
-## 📚 Documentation
-
-### Core Documentation
-- [Usage Guide](docs/USAGE_GUIDE.md) - Detailed usage instructions
-- [Architecture](docs/ARCHITECTURE.md) - System architecture and communication flow
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [Flutter 3.x Fix](docs/FLUTTER_3X_FIX.md) - Flutter 3.x compatibility guide
-
-### Research & Deep Dives
-- [DTD Protocol Research](docs/research/DTD_PROTOCOL_RESEARCH.md) - DTD vs VM Service analysis
-- [Communication Flow](docs/COMMUNICATION_FLOW.md) - Complete communication flow examples
-- [Protocol Details](docs/research/DTD_PROTOCOL_DETAILS.md) - DTD protocol specifications
-
-### Release Notes
-- [v0.3.2 Auto VM Service](docs/releases/v0.3.2_AUTO_VM_SERVICE.md) - Auto-configuration feature
+### More help
+- [Usage Guide](docs/USAGE_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Flutter 3.x Fix](docs/FLUTTER_3X_FIX.md)
 
 ---
 
@@ -407,26 +336,15 @@ brew upgrade flutter-skill
 - [pub.dev](https://pub.dev/packages/flutter_skill)
 - [npm](https://www.npmjs.com/package/flutter-skill-mcp)
 - [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=ai-dashboad.flutter-skill)
-- [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+- [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/29991-flutter-skill)
+- [Roadmap](docs/ROADMAP.md)
 
 ## Support This Project
 
 If Flutter Skill helps you build better Flutter apps, consider supporting its development:
 
-| Platform | Link |
-|----------|------|
-| GitHub Sponsors | [Sponsor on GitHub](https://github.com/sponsors/ai-dashboad) |
-| Buy Me a Coffee | [buymeacoffee.com/ai-dashboad](https://buymeacoffee.com/ai-dashboad) |
-| Ko-fi | [ko-fi.com/flutter-skill](https://ko-fi.com/flutter-skill) |
-
-<details>
-<summary>WeChat / Alipay</summary>
-
-| WeChat Pay | Alipay |
-|------------|--------|
-| <img src="docs/assets/wechat-pay.jpg" width="200"/> | <img src="docs/assets/alipay.jpg" width="200"/> |
-
-</details>
+- [GitHub Sponsors](https://github.com/sponsors/ai-dashboad)
+- [Buy Me a Coffee](https://buymeacoffee.com/ai-dashboad)
 
 Your support helps maintain the project, add new features, and keep it free and open source.
 

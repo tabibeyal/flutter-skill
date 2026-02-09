@@ -1113,8 +1113,8 @@ class FlutterSkillBinding {
   /// Enhanced enter text with detailed error information
   static Future<Map<String, dynamic>> _performEnterTextWithDetails(
       {String? key, required String text}) async {
-    // If no key provided, try to enter text into the currently focused TextField
-    if (key == null) {
+    // If no key provided (null or empty), try the currently focused TextField
+    if (key == null || key.isEmpty) {
       final focusedField = _findFocusedTextField();
       if (focusedField != null) {
         focusedField.updateEditingValue(TextEditingValue(
@@ -1989,41 +1989,72 @@ class FlutterSkillBinding {
 
   // ==================== SCREENSHOT ====================
 
+  /// Captures the full composited scene from the RenderView's layer.
+  /// This correctly captures the current visible page even after navigation,
+  /// avoiding the bug where DFS finds a RepaintBoundary from an old route.
+  /// Returns the image in logical pixel dimensions scaled by [pixelRatio].
+  static Future<ui.Image?> _captureFullScene({double pixelRatio = 1.0}) async {
+    await WidgetsBinding.instance.endOfFrame;
+
+    final binding = WidgetsBinding.instance;
+    // ignore: invalid_use_of_protected_member
+    final renderObject = binding.rootElement?.renderObject;
+    if (renderObject == null) return null;
+
+    // Walk up to the RenderView (root of the render tree).
+    // RenderView's layer contains ALL Navigator routes composited together.
+    RenderObject root = renderObject;
+    while (root.parent != null) {
+      root = root.parent!;
+    }
+
+    // ignore: invalid_use_of_protected_member
+    final layer = root.layer;
+    if (layer is OffsetLayer) {
+      // RenderView's TransformLayer includes a device-pixel-ratio scale.
+      // Use physical bounds and adjust pixelRatio to produce logical-sized output.
+      final view = binding.platformDispatcher.views.first;
+      final physicalSize = view.physicalSize;
+      final dpr = view.devicePixelRatio;
+      return layer.toImage(
+        Offset.zero & physicalSize,
+        pixelRatio: pixelRatio / dpr,
+      );
+    }
+
+    // Fallback: try a RepaintBoundary (pre-navigation or single-route apps)
+    if (renderObject is RenderRepaintBoundary) {
+      return renderObject.toImage(pixelRatio: pixelRatio);
+    }
+
+    RenderRepaintBoundary? boundary;
+    void findBoundary(RenderObject obj) {
+      if (boundary != null) return;
+      if (obj is RenderRepaintBoundary) {
+        boundary = obj;
+        return;
+      }
+      obj.visitChildren(findBoundary);
+    }
+
+    renderObject.visitChildren(findBoundary);
+    if (boundary == null) {
+      _log('No RenderRepaintBoundary found');
+      return null;
+    }
+    return boundary!.toImage(pixelRatio: pixelRatio);
+  }
+
   static Future<String?> _takeScreenshot(
       {double quality = 1.0, int? maxWidth}) async {
     try {
-      final binding = WidgetsBinding.instance;
-      // ignore: invalid_use_of_protected_member
-      final renderObject = binding.rootElement?.renderObject;
-
-      RenderRepaintBoundary? boundary;
-      if (renderObject is RenderRepaintBoundary) {
-        boundary = renderObject;
-      } else {
-        // Try to find a RenderRepaintBoundary
-        void findBoundary(RenderObject obj) {
-          if (boundary != null) return;
-          if (obj is RenderRepaintBoundary) {
-            boundary = obj;
-            return;
-          }
-          obj.visitChildren(findBoundary);
-        }
-
-        renderObject?.visitChildren(findBoundary);
-      }
-
-      if (boundary == null) {
-        _log('No RenderRepaintBoundary found');
-        return null;
-      }
-
-      // Wait for current frame to finish rendering (fixes stale screenshots after navigation)
-      await WidgetsBinding.instance.endOfFrame;
-
       // Use quality as pixel ratio (lower = smaller image)
       var pixelRatio = quality.clamp(0.1, 1.0);
-      var image = await boundary!.toImage(pixelRatio: pixelRatio);
+      var image = await _captureFullScene(pixelRatio: pixelRatio);
+      if (image == null) {
+        _log('Screenshot capture failed');
+        return null;
+      }
 
       // Scale down if maxWidth is specified
       if (maxWidth != null && image.width > maxWidth) {
@@ -2056,32 +2087,11 @@ class FlutterSkillBinding {
   static Future<String?> _takeRegionScreenshot(
       double x, double y, double width, double height) async {
     try {
-      final binding = WidgetsBinding.instance;
-      // ignore: invalid_use_of_protected_member
-      final renderObject = binding.rootElement?.renderObject;
-
-      RenderRepaintBoundary? boundary;
-      if (renderObject is RenderRepaintBoundary) {
-        boundary = renderObject;
-      } else {
-        void findBoundary(RenderObject obj) {
-          if (boundary != null) return;
-          if (obj is RenderRepaintBoundary) {
-            boundary = obj;
-            return;
-          }
-          obj.visitChildren(findBoundary);
-        }
-
-        renderObject?.visitChildren(findBoundary);
-      }
-
-      if (boundary == null) {
-        _log('No RenderRepaintBoundary found');
+      final fullImage = await _captureFullScene(pixelRatio: 1.0);
+      if (fullImage == null) {
+        _log('Region screenshot capture failed');
         return null;
       }
-
-      final fullImage = await boundary!.toImage(pixelRatio: 1.0);
 
       // Crop to specified region
       final recorder = ui.PictureRecorder();

@@ -1,3 +1,34 @@
+## 0.7.1
+
+**Bug fixes, screenshot reliability, enter_text without key, network monitoring**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
+## 0.7.1
+
+**Bug fixes, screenshot reliability, and new features**
+
+### Bug Fixes
+- **Screenshot after navigation**: Fixed stale screenshot showing old page after `Navigator.push()`. Now captures from the RenderView layer instead of first RepaintBoundary, correctly rendering the current visible page
+- **enter_text without key**: Can now enter text into the currently focused TextField without providing a widget key. Tap a field first, then call `enter_text(text: "...")`
+- **assert_text on buttons**: `assert_text` now reads child Text widgets from buttons, labels, and other non-TextField elements
+- **Session auto-switch**: `connect_app`, `launch_app`, and `scan_and_connect` now always switch the active session to the newly connected app
+- **screenshot_region**: Added `save_to_file` support (saves to temp file like regular screenshot)
+- **get_errors pagination**: Added `limit` and `offset` parameters to prevent massive responses
+- **inspect page filter**: Added `current_page_only` parameter to filter out elements from old Navigator routes
+
+### New Features
+- **Network monitoring**: 3 new MCP tools (`enable_network_monitoring`, `get_network_requests`, `clear_network_requests`) for tracking HTTP traffic via VM Service profiling
+- **README rewrite**: Clearer positioning as an AI-powered E2E testing tool with better examples and discoverability
+
+### Region Screenshot
+- `screenshot_region` now reuses the same RenderView layer capture, fixing the same stale-page issue as regular screenshots
+
+---
+
 ## 0.7.0
 
 **Enhanced developer experience: install scripts, CLI tips, and doctor command**
