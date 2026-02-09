@@ -583,4 +583,60 @@ URI: $wsUri''');
   Future<Map<String, dynamic>> getIndicatorStatus() async {
     return await _call('ext.flutter.flutter_skill.getIndicatorStatus');
   }
+
+  // ==================== HTTP MONITORING ====================
+
+  /// Enable HTTP timeline logging via VM Service
+  Future<bool> enableHttpTimelineLogging({bool enable = true}) async {
+    try {
+      await _service!.callServiceExtension(
+        'ext.dart.io.httpEnableTimelineLogging',
+        isolateId: _isolateId,
+        args: {'enabled': enable},
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Get HTTP profile from VM Service (built-in Dart HTTP profiling)
+  Future<Map<String, dynamic>> getHttpProfile() async {
+    try {
+      final response = await _service!.callServiceExtension(
+        'ext.dart.io.getHttpProfile',
+        isolateId: _isolateId,
+      );
+      return response.json ?? {};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  /// Get HTTP request details from VM Service
+  Future<Map<String, dynamic>> getHttpProfileRequest(int id) async {
+    try {
+      final response = await _service!.callServiceExtension(
+        'ext.dart.io.getHttpProfileRequest',
+        isolateId: _isolateId,
+        args: {'id': id},
+      );
+      return response.json ?? {};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  /// Get manually logged HTTP requests from the app
+  Future<Map<String, dynamic>> getHttpRequests({int limit = 50, int offset = 0}) async {
+    return await _call('ext.flutter.flutter_skill.getHttpRequests', {
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    });
+  }
+
+  /// Clear manually logged HTTP requests
+  Future<Map<String, dynamic>> clearHttpRequests() async {
+    return await _call('ext.flutter.flutter_skill.clearHttpRequests');
+  }
 }

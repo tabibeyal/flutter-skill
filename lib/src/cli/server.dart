@@ -548,6 +548,10 @@ All action tools support optional session_id parameter. If omitted, uses the act
               "type": "string",
               "description": "Optional session ID (defaults to active session)"
             },
+            "current_page_only": {
+              "type": "boolean",
+              "description": "Filter to only show elements on the current visible page (excludes elements with negative coordinates or not visible). Default: true"
+            },
           },
         },
       },
@@ -671,15 +675,19 @@ Type text into text fields (email, password, search, forms, etc.). Simulates rea
 • Automating data entry in UI flows
 
 [WORKFLOW]
-Call inspect() first to find TextField keys, then use enter_text() with key and text value.
+Option 1: Call inspect() to find TextField keys, then enter_text(key: "field_key", text: "value").
+Option 2: Tap a TextField first, then enter_text(text: "value") without key - enters into focused field.
 """,
         "inputSchema": {
           "type": "object",
           "properties": {
-            "key": {"type": "string", "description": "TextField key"},
+            "key": {
+              "type": "string",
+              "description": "TextField key (optional - if omitted, enters text into the currently focused TextField)"
+            },
             "text": {"type": "string", "description": "Text to enter"},
           },
-          "required": ["key", "text"],
+          "required": ["text"],
         },
       },
       {
@@ -869,7 +877,7 @@ By default, saves screenshot to a temporary file and returns file path. Optional
       },
       {
         "name": "screenshot_region",
-        "description": "Take a screenshot of a specific screen region",
+        "description": "Take a screenshot of a specific screen region. Defaults to saving as file to prevent token overflow.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -883,6 +891,10 @@ By default, saves screenshot to a temporary file and returns file path. Optional
             },
             "width": {"type": "number", "description": "Width of region"},
             "height": {"type": "number", "description": "Height of region"},
+            "save_to_file": {
+              "type": "boolean",
+              "description": "Save to temp file instead of returning base64 (default: true)"
+            },
           },
           "required": ["x", "y", "width", "height"],
         },
@@ -924,8 +936,20 @@ By default, saves screenshot to a temporary file and returns file path. Optional
       },
       {
         "name": "get_errors",
-        "description": "Get application errors",
-        "inputSchema": {"type": "object", "properties": {}},
+        "description": "Get application errors with pagination support",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of errors to return (default: 50)"
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of errors to skip (default: 0)"
+            },
+          },
+        },
       },
       {
         "name": "clear_logs",
@@ -935,6 +959,61 @@ By default, saves screenshot to a temporary file and returns file path. Optional
       {
         "name": "get_performance",
         "description": "Get performance metrics",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+
+      // HTTP / Network Monitoring
+      {
+        "name": "get_network_requests",
+        "description": """⚡ NETWORK MONITOR ⚡
+
+[TRIGGER KEYWORDS]
+api response | network request | http response | check api | what api called | network traffic | http status | api result
+
+[PRIMARY PURPOSE]
+View HTTP/API requests made by the app. Shows URL, method, status code, duration, and response body.
+Use after tap/interaction to verify what API calls were triggered.
+
+[USE WHEN]
+• After tapping a button to check what API was called
+• Verifying login/signup API responses
+• Debugging network issues
+• Checking API response data after user actions
+
+[WORKFLOW]
+1. Call enable_network_monitoring() first (one-time setup)
+2. Perform actions (tap, enter_text, etc.)
+3. Call get_network_requests() to see API calls made
+
+[OUTPUT]
+Each request includes: method, url, status_code, duration_ms, response_body (truncated)
+""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of requests to return (default: 20)"
+            },
+          },
+        },
+      },
+      {
+        "name": "enable_network_monitoring",
+        "description": "Enable HTTP/network request monitoring. Call once before using get_network_requests.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean",
+              "description": "Enable (true) or disable (false) monitoring. Default: true"
+            },
+          },
+        },
+      },
+      {
+        "name": "clear_network_requests",
+        "description": "Clear captured network request history",
         "inputSchema": {"type": "object", "properties": {}},
       },
 
@@ -1647,16 +1726,15 @@ Detailed diagnostic report with:
             vmServiceUri: uri,
           );
 
-          // Set as active session if it's the first one
-          if (_activeSessionId == null) {
-            _activeSessionId = sessionId;
-          }
+          // Always switch to the newly created session
+          _activeSessionId = sessionId;
 
           return {
             "success": true,
             "message": "Connected to $uri",
             "uri": uri,
             "session_id": sessionId,
+            "active_session": true,
             "attempts": attempt,
           };
         } catch (e) {
@@ -1773,10 +1851,8 @@ Detailed diagnostic report with:
                 vmServiceUri: uri,
               );
 
-              // Set as active session if it's the first one
-              if (_activeSessionId == null) {
-                _activeSessionId = sessionId;
-              }
+              // Always switch to the newly launched session
+              _activeSessionId = sessionId;
 
               completer.complete("Launched and connected to $uri");
             }).catchError((e) {
@@ -1956,15 +2032,14 @@ Detailed diagnostic report with:
         vmServiceUri: uri,
       );
 
-      // Set as active session if it's the first one
-      if (_activeSessionId == null) {
-        _activeSessionId = sessionId;
-      }
+      // Always switch to the newly connected session
+      _activeSessionId = sessionId;
 
       return {
         "success": true,
         "connected": uri,
         "session_id": sessionId,
+        "active_session": true,
         "available": vmServices
       };
     }
@@ -2357,7 +2432,22 @@ Detailed diagnostic report with:
     switch (name) {
       // Inspection
       case 'inspect':
-        return await client!.getInteractiveElements();
+        final elements = await client!.getInteractiveElements();
+        final currentPageOnly = args['current_page_only'] ?? true;
+        if (currentPageOnly) {
+          final filtered = elements.where((e) {
+            if (e is! Map) return true;
+            final bounds = e['bounds'];
+            if (bounds == null) return true;
+            final x = bounds['x'] as int? ?? 0;
+            final y = bounds['y'] as int? ?? 0;
+            final visible = e['visible'] ?? true;
+            // Exclude elements with negative coordinates (off-screen / background pages)
+            return visible == true && x >= -10 && y >= -10;
+          }).toList();
+          return filtered;
+        }
+        return elements;
       case 'get_widget_tree':
         final maxDepth = args['max_depth'] ?? 10;
         return await client!.getWidgetTree(maxDepth: maxDepth);
@@ -2521,10 +2611,37 @@ Detailed diagnostic report with:
         final y = (args['y'] as num).toDouble();
         final width = (args['width'] as num).toDouble();
         final height = (args['height'] as num).toDouble();
+        final saveToFile = args['save_to_file'] ?? true;
         final image = await client!.takeRegionScreenshot(x, y, width, height);
+
+        if (image == null) {
+          return {
+            "success": false,
+            "error": "Failed to capture region screenshot",
+          };
+        }
+
+        if (saveToFile) {
+          final tempDir = Directory.systemTemp;
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final filename = 'flutter_skill_region_$timestamp.png';
+          final file = File('${tempDir.path}/$filename');
+          final bytes = base64.decode(image);
+          await file.writeAsBytes(bytes);
+          return {
+            "success": true,
+            "file_path": file.path,
+            "size_bytes": bytes.length,
+            "region": {"x": x, "y": y, "width": width, "height": height},
+            "message": "Region screenshot saved to ${file.path}"
+          };
+        }
+
         return {
+          "success": true,
           "image": image,
-          "region": {"x": x, "y": y, "width": width, "height": height}
+          "region": {"x": x, "y": y, "width": width, "height": height},
+          "warning": "Returning base64 data. Consider using save_to_file=true for large regions."
         };
 
       case 'screenshot_element':
@@ -2577,15 +2694,22 @@ Detailed diagnostic report with:
           }
         };
       case 'get_errors':
-        final errors = await client!.getErrors();
+        final allErrors = await client!.getErrors();
+        final limit = args['limit'] as int? ?? 50;
+        final offset = args['offset'] as int? ?? 0;
+        final pagedErrors = allErrors.skip(offset).take(limit).toList();
         return {
-          "errors": errors,
+          "errors": pagedErrors,
           "summary": {
-            "total_count": errors.length,
-            "has_errors": errors.isNotEmpty,
-            "message": errors.isEmpty
-                ? "No errors found ✅"
-                : "${errors.length} error(s) found ⚠️"
+            "total_count": allErrors.length,
+            "returned_count": pagedErrors.length,
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < allErrors.length,
+            "has_errors": allErrors.isNotEmpty,
+            "message": allErrors.isEmpty
+                ? "No errors found"
+                : "${allErrors.length} error(s) total, showing ${pagedErrors.length} (offset: $offset)"
           }
         };
       case 'clear_logs':
@@ -2596,6 +2720,80 @@ Detailed diagnostic report with:
         };
       case 'get_performance':
         return await client!.getPerformance();
+
+      // === HTTP / Network Monitoring ===
+      case 'enable_network_monitoring':
+        final enable = args['enable'] ?? true;
+        final success = await client!.enableHttpTimelineLogging(enable: enable);
+        return {
+          "success": success,
+          "enabled": enable,
+          "message": success
+              ? "HTTP monitoring ${enable ? 'enabled' : 'disabled'}"
+              : "Failed to enable HTTP monitoring (VM Service extension not available)",
+          "usage": enable
+              ? "Now perform actions, then call get_network_requests() to see API calls"
+              : null,
+        };
+
+      case 'get_network_requests':
+        final limit = args['limit'] as int? ?? 20;
+        // Try VM Service HTTP profile first (captures all dart:io HTTP)
+        final profile = await client!.getHttpProfile();
+        if (profile.containsKey('requests') && !profile.containsKey('error')) {
+          final allRequests = (profile['requests'] as List?) ?? [];
+          // Take latest N requests, format for readability
+          final recentRequests = allRequests.length > limit
+              ? allRequests.sublist(allRequests.length - limit)
+              : allRequests;
+
+          final formatted = recentRequests.map((r) {
+            if (r is Map) {
+              return {
+                'id': r['id'],
+                'method': r['method'],
+                'uri': r['uri'],
+                'status_code': r['response']?['statusCode'],
+                'start_time': r['startTime'] != null
+                    ? DateTime.fromMicrosecondsSinceEpoch(r['startTime']).toIso8601String()
+                    : null,
+                'end_time': r['endTime'] != null
+                    ? DateTime.fromMicrosecondsSinceEpoch(r['endTime']).toIso8601String()
+                    : null,
+                'duration_ms': (r['endTime'] != null && r['startTime'] != null)
+                    ? ((r['endTime'] - r['startTime']) / 1000).round()
+                    : null,
+                'content_type': r['response']?['headers']?['content-type']?.toString(),
+              };
+            }
+            return r;
+          }).toList();
+
+          return {
+            "success": true,
+            "source": "vm_service_http_profile",
+            "requests": formatted,
+            "total": allRequests.length,
+            "returned": formatted.length,
+            "message": "${formatted.length} of ${allRequests.length} HTTP requests"
+          };
+        }
+
+        // Fallback: try manually logged requests from the binding
+        final manualRequests = await client.getHttpRequests(limit: limit);
+        return {
+          "success": true,
+          "source": "manual_log",
+          ...manualRequests,
+          "hint": "For automatic HTTP capture, call enable_network_monitoring() first"
+        };
+
+      case 'clear_network_requests':
+        await client!.clearHttpRequests();
+        return {
+          "success": true,
+          "message": "Network request history cleared"
+        };
 
       // === NEW: Batch Operations ===
       case 'execute_batch':

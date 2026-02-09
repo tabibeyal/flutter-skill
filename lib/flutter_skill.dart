@@ -59,6 +59,7 @@ class FlutterSkillBinding {
   static bool _registered = false;
   static final List<String> _logs = [];
   static final List<Map<String, dynamic>> _errors = [];
+  static final List<Map<String, dynamic>> _httpRequests = [];
   static int _pointerCounter = 1;
 
   // Test indicators
@@ -674,6 +675,64 @@ class FlutterSkillBinding {
       }
     });
 
+    // 25. Log HTTP Request (manual API for apps to call)
+    developer.registerExtension('ext.flutter.flutter_skill.logHttpRequest',
+        (method, parameters) async {
+      try {
+        final entry = <String, dynamic>{
+          'method': parameters['method'] ?? 'GET',
+          'url': parameters['url'] ?? '',
+          'status_code': int.tryParse(parameters['status_code'] ?? ''),
+          'duration_ms': int.tryParse(parameters['duration_ms'] ?? ''),
+          'response_body': parameters['response_body'],
+          'error': parameters['error'],
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+        // Remove null values
+        entry.removeWhere((_, v) => v == null);
+        _httpRequests.add(entry);
+        if (_httpRequests.length > 500) {
+          _httpRequests.removeAt(0);
+        }
+        return developer.ServiceExtensionResponse.result(
+            jsonEncode({'logged': true, 'total': _httpRequests.length}));
+      } catch (e, stack) {
+        return _errorResponse(e, stack);
+      }
+    });
+
+    // 26. Get HTTP Requests (manually logged)
+    developer.registerExtension('ext.flutter.flutter_skill.getHttpRequests',
+        (method, parameters) async {
+      try {
+        final limit = int.tryParse(parameters['limit'] ?? '50') ?? 50;
+        final offset = int.tryParse(parameters['offset'] ?? '0') ?? 0;
+        final paged = _httpRequests.skip(offset).take(limit).toList();
+        return developer.ServiceExtensionResponse.result(jsonEncode({
+          'requests': paged,
+          'total': _httpRequests.length,
+          'returned': paged.length,
+          'offset': offset,
+          'limit': limit,
+        }));
+      } catch (e, stack) {
+        return _errorResponse(e, stack);
+      }
+    });
+
+    // 27. Clear HTTP Requests
+    developer.registerExtension('ext.flutter.flutter_skill.clearHttpRequests',
+        (method, parameters) async {
+      try {
+        final count = _httpRequests.length;
+        _httpRequests.clear();
+        return developer.ServiceExtensionResponse.result(
+            jsonEncode({'cleared': count}));
+      } catch (e, stack) {
+        return _errorResponse(e, stack);
+      }
+    });
+
     // Setup error handler
     FlutterError.onError = (FlutterErrorDetails details) {
       _errors.add({
@@ -1027,20 +1086,91 @@ class FlutterSkillBinding {
     return true;
   }
 
+  /// Find the currently focused TextField's EditableTextState
+  static EditableTextState? _findFocusedTextField() {
+    EditableTextState? focused;
+
+    void visit(Element element) {
+      if (focused != null) return;
+      if (element is StatefulElement && element.state is EditableTextState) {
+        final state = element.state as EditableTextState;
+        if (state.widget.focusNode.hasFocus) {
+          focused = state;
+          return;
+        }
+      }
+      element.visitChildren(visit);
+    }
+
+    final binding = WidgetsBinding.instance;
+    // ignore: invalid_use_of_protected_member
+    if (binding.rootElement != null) {
+      visit(binding.rootElement!);
+    }
+    return focused;
+  }
+
   /// Enhanced enter text with detailed error information
   static Future<Map<String, dynamic>> _performEnterTextWithDetails(
       {String? key, required String text}) async {
+    // If no key provided, try to enter text into the currently focused TextField
+    if (key == null) {
+      final focusedField = _findFocusedTextField();
+      if (focusedField != null) {
+        focusedField.updateEditingValue(TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        ));
+        _log('Entered text "$text" into focused TextField');
+        return {
+          'success': true,
+          'message': 'Text entered into focused TextField',
+          'method': 'focused_field',
+          'enteredText': text,
+        };
+      }
+
+      // No focused field found, try system channel as last resort
+      try {
+        await SystemChannels.textInput.invokeMethod('TextInput.setEditingState', {
+          'text': text,
+          'selectionBase': text.length,
+          'selectionExtent': text.length,
+          'composingBase': -1,
+          'composingExtent': -1,
+        });
+        _log('Text input sent via system channel (no key, no focus)');
+        return {
+          'success': true,
+          'message': 'Text entered via system channel (no focused TextField found)',
+          'method': 'system_channel',
+          'enteredText': text,
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'error': {
+            'code': ErrorCode.elementNotFound,
+            'message': 'No focused TextField found and system channel failed',
+          },
+          'suggestions': [
+            'Tap on a TextField first to focus it, then call enter_text(text: "...")',
+            'Or provide a key: enter_text(key: "field_key", text: "...")',
+            'Use inspect() to find TextField elements with keys',
+          ],
+        };
+      }
+    }
+
     final element = _findElement(key: key);
 
     if (element == null) {
       final suggestions = <String>[];
 
-      if (key != null) {
-        final similarKeys = _findSimilarKeys(key);
-        if (similarKeys.isNotEmpty) {
-          suggestions
-              .add('Similar keys found: ${similarKeys.take(5).toList()}');
-        }
+      final similarKeys = _findSimilarKeys(key);
+      if (similarKeys.isNotEmpty) {
+        suggestions
+            .add('Similar keys found: ${similarKeys.take(5).toList()}');
       }
 
       // Find TextField keys specifically
@@ -1056,6 +1186,7 @@ class FlutterSkillBinding {
       }
 
       suggestions.add('Use inspect() to find TextField elements');
+      suggestions.add('Or omit key to enter text into the currently focused TextField');
 
       return {
         'success': false,
@@ -1784,6 +1915,7 @@ class FlutterSkillBinding {
     final element = _findElementByKey(key);
     if (element == null) return null;
 
+    // First try: look for EditableTextState (TextField/TextFormField)
     EditableTextState? editableTextState;
     void findEditable(Element e) {
       if (editableTextState != null) return;
@@ -1796,7 +1928,12 @@ class FlutterSkillBinding {
 
     findEditable(element);
 
-    return editableTextState?.textEditingValue.text;
+    if (editableTextState != null) {
+      return editableTextState!.textEditingValue.text;
+    }
+
+    // Fallback: read child Text widget content (for buttons, labels, etc.)
+    return _extractTextFrom(element);
   }
 
   static bool? _getCheckboxState(String key) {
@@ -1880,6 +2017,9 @@ class FlutterSkillBinding {
         _log('No RenderRepaintBoundary found');
         return null;
       }
+
+      // Wait for current frame to finish rendering (fixes stale screenshots after navigation)
+      await WidgetsBinding.instance.endOfFrame;
 
       // Use quality as pixel ratio (lower = smaller image)
       var pixelRatio = quality.clamp(0.1, 1.0);
