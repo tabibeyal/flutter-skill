@@ -113,7 +113,10 @@ echo "  ✓ homebrew/flutter-skill.rb"
 echo ""
 echo -e "${BLUE}📝 Updating CHANGELOG.md...${NC}"
 
-CHANGELOG_ENTRY="## $VERSION
+if grep -q "^## $VERSION" CHANGELOG.md; then
+    echo -e "  ${GREEN}✓ CHANGELOG.md already has $VERSION entry${NC}"
+else
+    CHANGELOG_ENTRY="## $VERSION
 
 **$DESCRIPTION**
 
@@ -123,11 +126,11 @@ CHANGELOG_ENTRY="## $VERSION
 ---
 
 "
-
-# Prepend to CHANGELOG.md
-echo "$CHANGELOG_ENTRY$(cat CHANGELOG.md)" > CHANGELOG.md
-echo "  ✓ Added $VERSION entry"
-echo -e "  ${YELLOW}⚠️  Edit CHANGELOG.md to add release details before confirming${NC}"
+    # Prepend to CHANGELOG.md
+    echo "$CHANGELOG_ENTRY$(cat CHANGELOG.md)" > CHANGELOG.md
+    echo "  ✓ Added $VERSION entry"
+    echo -e "  ${YELLOW}⚠️  Edit CHANGELOG.md to add release details before confirming${NC}"
+fi
 
 # Step 4: Show changes and confirm
 echo ""
