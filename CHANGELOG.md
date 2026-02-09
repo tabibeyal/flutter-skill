@@ -2,15 +2,6 @@
 
 **Fix type cast errors in get_errors and get_network_requests**
 
-### Changes
-- TODO: Add your changes here
-
----
-
-## 0.7.2
-
-**Fix type cast errors in get_errors and get_network_requests**
-
 ### Bug Fixes
 - Fixed `get_errors` crashing with `type 'String' is not a subtype of type 'int?'` when passing limit/offset parameters
 - Fixed `get_network_requests` with same type cast issue for limit parameter
