@@ -12,7 +12,7 @@
 <h3>1. Install (choose one)</h3>
 <pre><code>
 # npm (recommended - includes native binary for instant startup)
-npm install -g flutter-skill-mcp
+npm install -g flutter-skill
 
 # Homebrew (macOS/Linux)
 brew tap ai-dashboad/flutter-skill
@@ -140,7 +140,7 @@ flutter-skill.inspect()
 <h2>Installation Methods</h2>
 <table>
 <tr><th>Method</th><th>Command</th><th>Auto-Update</th><th>Native Binary</th></tr>
-<tr><td>npm</td><td><code>npm install -g flutter-skill-mcp</code></td><td>Manual</td><td>Auto-download</td></tr>
+<tr><td>npm</td><td><code>npm install -g flutter-skill</code></td><td>Manual</td><td>Auto-download</td></tr>
 <tr><td>Homebrew</td><td><code>brew install ai-dashboad/flutter-skill/flutter-skill</code></td><td><code>brew upgrade</code></td><td>Pre-compiled</td></tr>
 <tr><td>VSCode</td><td>Extensions → "Flutter Skill"</td><td>Auto</td><td>Auto-download</td></tr>
 <tr><td>IntelliJ</td><td>Plugins → "Flutter Skill"</td><td>Auto</td><td>Auto-download</td></tr>
@@ -276,7 +276,7 @@ flutter pub add flutter_skill
 <p>The native binary should auto-download. If not:</p>
 <pre><code>
 # For npm
-npm update -g flutter-skill-mcp
+npm update -g flutter-skill
 
 # For Homebrew
 brew upgrade flutter-skill
@@ -286,7 +286,7 @@ brew upgrade flutter-skill
 <ul>
 <li><a href="https://github.com/ai-dashboad/flutter-skill">GitHub</a></li>
 <li><a href="https://pub.dev/packages/flutter_skill">pub.dev</a></li>
-<li><a href="https://www.npmjs.com/package/flutter-skill-mcp">npm</a></li>
+<li><a href="https://www.npmjs.com/package/flutter-skill">npm</a></li>
 <li><a href="https://marketplace.visualstudio.com/items?itemName=ai-dashboad.flutter-skill">VSCode Marketplace</a></li>
 <li><a href="https://plugins.jetbrains.com/plugin/PLUGIN_ID">JetBrains Marketplace</a></li>
 </ul>

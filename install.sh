@@ -59,8 +59,8 @@ install_tool_priority_rules() {
     # Fallback: try using the CLI if available
     if command -v flutter-skill &> /dev/null; then
         flutter-skill setup --silent 2>/dev/null && printf '%b\n' "  ${GREEN}[OK] Tool priority rules installed${NC}" && return 0
-    elif command -v flutter-skill-mcp &> /dev/null; then
-        flutter-skill-mcp setup --silent 2>/dev/null && printf '%b\n' "  ${GREEN}[OK] Tool priority rules installed${NC}" && return 0
+    elif command -v flutter-skill &> /dev/null; then
+        flutter-skill setup --silent 2>/dev/null && printf '%b\n' "  ${GREEN}[OK] Tool priority rules installed${NC}" && return 0
     fi
 
     printf '%b\n' "  ${YELLOW}[!] Could not install tool priority rules automatically${NC}"
@@ -105,7 +105,7 @@ with open(file_path, 'w') as f:
 
 # Configure IDE MCP settings (auto-write)
 configure_ide() {
-    local CMD_NAME="$1"  # flutter-skill or flutter-skill-mcp
+    local CMD_NAME="$1"  # flutter-skill or flutter-skill
 
     echo ""
     printf '%b\n' "${BLUE}Configuring IDE integration...${NC}"
@@ -257,13 +257,13 @@ if command -v npm &> /dev/null; then
     printf '%b\n' "${GREEN}[OK] npm detected, installing via npm (recommended)${NC}"
     echo ""
 
-    if command -v flutter-skill &> /dev/null || command -v flutter-skill-mcp &> /dev/null; then
+    if command -v flutter-skill &> /dev/null || command -v flutter-skill &> /dev/null; then
         printf '%b\n' "${YELLOW}Updating flutter-skill to latest version...${NC}"
     fi
-    echo "Running: npm install -g flutter-skill-mcp"
-    npm install -g flutter-skill-mcp
+    echo "Running: npm install -g flutter-skill"
+    npm install -g flutter-skill
 
-    CMD="flutter-skill-mcp"
+    CMD="flutter-skill"
     if command -v flutter-skill &> /dev/null; then
         CMD="flutter-skill"
     fi
@@ -310,7 +310,7 @@ if command -v dart &> /dev/null || command -v flutter &> /dev/null; then
         echo "Please install Flutter first: https://flutter.dev/docs/get-started/install"
         echo ""
         echo "Or use one of the following methods:"
-        echo "  npm install -g flutter-skill-mcp  (recommended)"
+        echo "  npm install -g flutter-skill  (recommended)"
         echo "  brew install flutter-skill        (macOS)"
         exit 1
     fi

@@ -9,10 +9,10 @@ $removed = 0
 
 # 1. Remove npm global package
 if (Get-Command npm -ErrorAction SilentlyContinue) {
-    $npmList = npm list -g flutter-skill-mcp 2>$null
+    $npmList = npm list -g flutter-skill 2>$null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Removing npm package flutter-skill-mcp..." -ForegroundColor Yellow
-        npm uninstall -g flutter-skill-mcp
+        Write-Host "Removing npm package flutter-skill..." -ForegroundColor Yellow
+        npm uninstall -g flutter-skill
         Write-Host "  Removed npm package" -ForegroundColor Green
         $removed++
     }

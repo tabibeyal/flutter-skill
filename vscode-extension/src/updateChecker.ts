@@ -17,7 +17,7 @@ interface NpmPackageInfo {
  */
 async function getLatestVersion(): Promise<string | null> {
     return new Promise((resolve) => {
-        const req = https.get('https://registry.npmjs.org/flutter-skill-mcp', (res) => {
+        const req = https.get('https://registry.npmjs.org/flutter-skill', (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {

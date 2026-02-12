@@ -11,7 +11,7 @@
  * 5. Drag indicators (purple trails)
  *
  * Prerequisites:
- * 1. Install flutter-skill-mcp: npm i -g flutter-skill-mcp
+ * 1. Install flutter-skill: npm i -g flutter-skill
  * 2. Configure MCP in Claude/Cursor
  * 3. Start the demo app (see instructions below)
  *

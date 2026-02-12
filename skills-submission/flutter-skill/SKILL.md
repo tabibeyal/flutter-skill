@@ -14,7 +14,7 @@ Give your AI Agent eyes and hands inside your Flutter app. This skill enables co
 {
   "flutter-skill": {
     "command": "npx",
-    "args": ["flutter-skill-mcp"]
+    "args": ["flutter-skill"]
   }
 }
 ```
@@ -126,4 +126,4 @@ ElevatedButton(
 
 - [GitHub Repository](https://github.com/ai-dashboad/flutter-skill)
 - [pub.dev Package](https://pub.dev/packages/flutter_skill)
-- [npm Package](https://www.npmjs.com/package/flutter-skill-mcp)
+- [npm Package](https://www.npmjs.com/package/flutter-skill)

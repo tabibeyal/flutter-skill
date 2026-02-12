@@ -53,6 +53,6 @@ class FlutterSkill < Formula
   end
 
   test do
-    assert_match "flutter-skill-mcp", shell_output("#{bin}/flutter-skill server --help 2>&1", 1)
+    assert_match "flutter-skill", shell_output("#{bin}/flutter-skill server --help 2>&1", 1)
   end
 end

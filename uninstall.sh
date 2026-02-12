@@ -18,9 +18,9 @@ removed=0
 
 # 1. Remove npm global package
 if command -v npm &> /dev/null; then
-    if npm list -g flutter-skill-mcp &> /dev/null; then
-        printf '%b\n' "${YELLOW}Removing npm package flutter-skill-mcp...${NC}"
-        npm uninstall -g flutter-skill-mcp
+    if npm list -g flutter-skill &> /dev/null; then
+        printf '%b\n' "${YELLOW}Removing npm package flutter-skill...${NC}"
+        npm uninstall -g flutter-skill
         printf '%b\n' "${GREEN}  Removed npm package${NC}"
         removed=$((removed + 1))
     fi

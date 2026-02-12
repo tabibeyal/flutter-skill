@@ -37,7 +37,7 @@ brew install flutter-skill
 
 # Use
 flutter-skill --help
-flutter-skill-mcp  # Start MCP server
+flutter-skill  # Start MCP server
 ```
 
 ## MCP Configuration
@@ -45,7 +45,7 @@ flutter-skill-mcp  # Start MCP server
 ```json
 {
   "flutter-skill": {
-    "command": "flutter-skill-mcp"
+    "command": "flutter-skill"
   }
 }
 ```

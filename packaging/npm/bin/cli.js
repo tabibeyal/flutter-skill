@@ -223,7 +223,7 @@ function checkForUpdates() {
     }));
 
     // Check npm registry for latest version (async, non-blocking)
-    https.get('https://registry.npmjs.org/flutter-skill-mcp', (res) => {
+    https.get('https://registry.npmjs.org/flutter-skill', (res) => {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
@@ -234,7 +234,7 @@ function checkForUpdates() {
           if (latestVersion && compareVersions(latestVersion, VERSION) > 0) {
             if (skippedVersion !== latestVersion) {
               console.error(`\n[flutter-skill] Update available: ${VERSION} → ${latestVersion}`);
-              console.error(`[flutter-skill] Run: npm update -g flutter-skill-mcp\n`);
+              console.error(`[flutter-skill] Run: npm update -g flutter-skill\n`);
             }
           }
         } catch {}
@@ -277,8 +277,8 @@ function showTips() {
   console.log('  --version       Show version');
   console.log('');
   console.log('Quick Start:');
-  console.log('  flutter-skill-mcp doctor              Check your environment is ready');
-  console.log('  flutter-skill-mcp launch ./my_app      Launch and connect to your app');
+  console.log('  flutter-skill doctor              Check your environment is ready');
+  console.log('  flutter-skill launch ./my_app      Launch and connect to your app');
   console.log('');
   console.log('What can AI agents do with Flutter Skill?');
   console.log('  - Launch your Flutter app and auto-connect');

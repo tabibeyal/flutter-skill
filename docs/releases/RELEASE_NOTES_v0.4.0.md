@@ -218,7 +218,7 @@ iwr https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.ps1
 
 ```bash
 # npm
-npm update -g flutter-skill-mcp
+npm update -g flutter-skill
 
 # Homebrew
 brew upgrade flutter-skill

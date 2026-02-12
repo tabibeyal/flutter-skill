@@ -50,7 +50,7 @@ For Cursor/Windsurf:
 {
   "flutter-skill": {
     "command": "npx",
-    "args": ["flutter-skill-mcp"]
+    "args": ["flutter-skill"]
   }
 }
 ```
@@ -72,4 +72,4 @@ For Cursor/Windsurf:
 
 - [GitHub](https://github.com/ai-dashboad/flutter-skill)
 - [pub.dev](https://pub.dev/packages/flutter_skill)
-- [npm](https://www.npmjs.com/package/flutter-skill-mcp)
+- [npm](https://www.npmjs.com/package/flutter-skill)

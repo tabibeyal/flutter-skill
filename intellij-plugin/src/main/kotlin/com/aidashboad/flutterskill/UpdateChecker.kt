@@ -137,7 +137,7 @@ class UpdateChecker {
 
     private fun getLatestVersionFromNpm(): String? {
         return try {
-            val url = URL("https://registry.npmjs.org/flutter-skill-mcp")
+            val url = URL("https://registry.npmjs.org/flutter-skill")
             val connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 5000
             connection.readTimeout = 5000

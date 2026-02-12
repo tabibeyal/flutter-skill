@@ -3,7 +3,7 @@
 > **AI-Powered End-to-End Testing for Flutter Apps**
 
 ![Version](https://img.shields.io/pub/v/flutter_skill.svg)
-![npm](https://img.shields.io/npm/v/flutter-skill-mcp.svg)
+![npm](https://img.shields.io/npm/v/flutter-skill.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Flutter-02569B)
 
@@ -49,7 +49,7 @@ AI Agent:
 curl -fsSL https://raw.githubusercontent.com/ai-dashboad/flutter-skill/main/install.sh | bash
 
 # Or: npm (all platforms)
-npm install -g flutter-skill-mcp
+npm install -g flutter-skill
 
 # Or: Homebrew (macOS/Linux)
 brew tap ai-dashboad/flutter-skill && brew install flutter-skill
@@ -65,7 +65,7 @@ dart pub global activate flutter_skill
 |--------|---------|----------|
 | **One-click** | `curl -fsSL .../install.sh \| bash` | macOS/Linux |
 | **Windows** | `iwr .../install.ps1 -useb \| iex` | Windows |
-| **npm** | `npm install -g flutter-skill-mcp` | All |
+| **npm** | `npm install -g flutter-skill` | All |
 | **Homebrew** | `brew install ai-dashboad/flutter-skill/flutter-skill` | macOS/Linux |
 | **Scoop** | `scoop install flutter-skill` | Windows |
 | **Docker** | `docker pull ghcr.io/ai-dashboad/flutter-skill` | All |
@@ -334,7 +334,7 @@ Then restart the app (hot reload is not enough for new packages).
 
 - [GitHub](https://github.com/ai-dashboad/flutter-skill)
 - [pub.dev](https://pub.dev/packages/flutter_skill)
-- [npm](https://www.npmjs.com/package/flutter-skill-mcp)
+- [npm](https://www.npmjs.com/package/flutter-skill)
 - [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=ai-dashboad.flutter-skill)
 - [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/29991-flutter-skill)
 - [Roadmap](docs/ROADMAP.md)

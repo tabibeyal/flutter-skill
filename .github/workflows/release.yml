@@ -491,7 +491,7 @@ jobs:
           AI agents → Flutter apps bridge via Dart VM Service
 
           📦 Install:
-          npm i -g flutter-skill-mcp
+          npm i -g flutter-skill
           brew install ai-dashboad/flutter-skill/flutter-skill
           winget install AIDashboard.FlutterSkill
 

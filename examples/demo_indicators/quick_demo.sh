@@ -31,7 +31,7 @@ fi
 if ! command -v flutter-skill &> /dev/null && ! command -v flutter_skill &> /dev/null; then
     echo -e "${YELLOW}⚠️  flutter-skill not found.${NC}"
     echo "Install it with one of:"
-    echo "  npm i -g flutter-skill-mcp"
+    echo "  npm i -g flutter-skill"
     echo "  brew install ai-dashboad/flutter-skill/flutter-skill"
     echo "  dart pub global activate flutter_skill"
     exit 1

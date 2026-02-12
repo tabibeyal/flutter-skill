@@ -91,7 +91,7 @@ Future<void> _checkForUpdates() async {
         stderr.writeln(
             '║  Or:                                                     ║');
         stderr.writeln(
-            '║    npm update -g flutter-skill-mcp                       ║');
+            '║    npm update -g flutter-skill                       ║');
         stderr.writeln(
             '╚══════════════════════════════════════════════════════════╝');
         stderr.writeln('');
@@ -187,7 +187,7 @@ class FlutterMcpServer {
           "capabilities": {"tools": {}, "resources": {}},
           "protocolVersion": "2024-11-05",
           "serverInfo": {
-            "name": "flutter-skill-mcp",
+            "name": "flutter-skill",
             "version": currentVersion
           },
         });

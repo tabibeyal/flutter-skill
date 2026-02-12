@@ -35,7 +35,7 @@ function Install-ToolPriorityRules {
             return
         } catch {}
         try {
-            & flutter-skill-mcp setup --silent 2>$null
+            & flutter-skill setup --silent 2>$null
             Write-Host "  [OK] Tool priority rules installed" -ForegroundColor Green
             return
         } catch {}
@@ -164,10 +164,10 @@ Write-Host ""
 if (Get-Command npm -ErrorAction SilentlyContinue) {
     Write-Host "[OK] npm detected, installing via npm (recommended)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Running: npm install -g flutter-skill-mcp"
-    npm install -g flutter-skill-mcp
+    Write-Host "Running: npm install -g flutter-skill"
+    npm install -g flutter-skill
 
-    $cmd = "flutter-skill-mcp"
+    $cmd = "flutter-skill"
     if (Get-Command flutter-skill -ErrorAction SilentlyContinue) {
         $cmd = "flutter-skill"
     }
@@ -216,7 +216,7 @@ if ((Get-Command dart -ErrorAction SilentlyContinue) -or (Get-Command flutter -E
         Write-Host "Please install Flutter first: https://flutter.dev/docs/get-started/install"
         Write-Host ""
         Write-Host "Or use one of the following methods:"
-        Write-Host "  npm install -g flutter-skill-mcp  (recommended)"
+        Write-Host "  npm install -g flutter-skill  (recommended)"
         Write-Host "  scoop install flutter-skill"
         exit 1
     }
