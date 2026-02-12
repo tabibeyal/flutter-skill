@@ -39,9 +39,20 @@ The codebase has two main parts:
 - Target apps call `FlutterSkillBinding.ensureInitialized()` in main.dart
 
 **2. CLI/Server Tools** (`lib/src/`)
-- `FlutterSkillClient` (`flutter_skill_client.dart`) - Connects to VM Service, calls extensions
+- `lib/src/drivers/` - Framework-specific app drivers
+  - `app_driver.dart` - Abstract `AppDriver` interface (connect, tap, screenshot, etc.)
+  - `flutter_driver.dart` - `FlutterSkillClient implements AppDriver` — VM Service client
+  - `native_driver.dart` - Native OS-level interaction (macOS Accessibility API, adb)
+  - `drivers.dart` - Barrel export
+- `lib/src/discovery/` - VM Service auto-discovery
+  - `unified_discovery.dart` - Smart multi-strategy discovery orchestrator
+  - `process_based_discovery.dart` - Discovers apps from running Flutter processes
+  - `dtd_service_discovery.dart` - DTD-based discovery
+  - `quick_port_check.dart` - Parallel port scanning
+  - `discovery.dart` - Barrel export
 - `lib/src/cli/` - CLI command implementations (launch, inspect, act, server, setup)
-- MCP Server mode (`server.dart`) - JSON-RPC interface for IDEs like Cursor
+- `lib/src/diagnostics/` - Error reporting
+- MCP Server mode (`cli/server.dart`) - JSON-RPC interface for IDEs like Cursor
 
 **Entry Points:**
 - `bin/flutter_skill.dart` - Main CLI entry point, routes to subcommands
@@ -54,10 +65,15 @@ The codebase has two main parts:
 3. `FlutterSkillClient` connects via WebSocket, finds main isolate
 4. Commands invoke registered extensions on the running app
 
+**Backward Compatibility:**
+- `lib/src/flutter_skill_client.dart` is a re-export shim pointing to `drivers/flutter_driver.dart`
+
 ## Key Files
 
 - `lib/flutter_skill.dart` - The binding that target apps import
-- `lib/src/flutter_skill_client.dart` - VM Service client wrapper
+- `lib/src/drivers/app_driver.dart` - Abstract driver interface for multi-framework support
+- `lib/src/drivers/flutter_driver.dart` - VM Service client wrapper (`FlutterSkillClient`)
+- `lib/src/discovery/unified_discovery.dart` - Smart VM Service discovery
 - `lib/src/cli/setup.dart` - Auto-patches pubspec.yaml and main.dart
 - `test/bin/flutter` - Mock flutter CLI for integration tests
 
@@ -212,10 +228,7 @@ The error should be extremely rare now that auto-configuration is enabled.
 - All PR descriptions and issue comments
 
 ### Files that need translation (currently contain Chinese):
-- `lib/src/dtd_service_discovery.dart` - Chinese comments
-- `lib/src/experimental/dtd_service_discovery.dart` - Chinese comments
-- `lib/src/protocol_detector.dart` - Chinese comments
-- `lib/src/experimental/protocol_detector.dart` - Chinese comments
+- `lib/src/discovery/dtd_service_discovery.dart` - Chinese comments
 - `lib/src/cli/server.dart` - Chinese in tool descriptions
 - `test/flutter_skill_complete_test.dart` - Chinese test output
 
