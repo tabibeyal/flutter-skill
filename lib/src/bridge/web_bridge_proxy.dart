@@ -75,7 +75,21 @@ class WebBridgeProxy {
 
     final wsUrl = page['webSocketDebuggerUrl'] as String;
     _cdpWs = await WebSocket.connect(wsUrl);
-    _cdpWs!.listen(_onCdpMessage, onDone: () => _cdpWs = null);
+    _cdpWs!.listen(_onCdpMessage, onDone: _onCdpDisconnect);
+  }
+
+  void _onCdpDisconnect() {
+    _cdpWs = null;
+    _failAllCdpPending('CDP connection lost');
+    // Auto-reconnect after a short delay
+    Future.delayed(const Duration(seconds: 2), () async {
+      try {
+        await _connectCdp();
+        await _injectSdkIfNeeded();
+      } catch (_) {
+        // Retry will happen on next bridge call via _cdpCall check
+      }
+    });
   }
 
   void _onCdpMessage(dynamic data) {
@@ -96,7 +110,14 @@ class WebBridgeProxy {
 
   Future<Map<String, dynamic>> _cdpCall(
       String method, Map<String, dynamic> params) async {
-    if (_cdpWs == null) throw Exception('CDP not connected');
+    if (_cdpWs == null) {
+      // Attempt reconnection before failing
+      try {
+        await _connectCdp();
+      } catch (e) {
+        throw Exception('CDP not connected and reconnection failed: $e');
+      }
+    }
     final id = _cdpId++;
     final completer = Completer<Map<String, dynamic>>();
     _cdpPending[id] = completer;
@@ -260,9 +281,10 @@ class WebBridgeProxy {
 
   Future<Map<String, dynamic>> _evaluateInPage(
       String method, Map<String, dynamic> params) async {
-    final paramsJson = jsonEncode(params).replaceAll("'", "\\'");
+    // Base64-encode params to avoid JS injection/escaping issues
+    final paramsB64 = base64.encode(utf8.encode(jsonEncode(params)));
     final expression =
-        "JSON.parse(window.__FLUTTER_SKILL_CALL__('$method', JSON.parse('$paramsJson')))";
+        "JSON.parse(window.__FLUTTER_SKILL_CALL__('$method', JSON.parse(atob('$paramsB64'))))";
 
     final result = await _cdpCall('Runtime.evaluate', {
       'expression': expression,

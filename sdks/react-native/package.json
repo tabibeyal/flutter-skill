@@ -1,0 +1,35 @@
+{
+  "name": "flutter-skill-react-native",
+  "version": "1.0.0",
+  "description": "React Native bridge SDK for flutter-skill — enables AI agents to automate React Native apps",
+  "main": "FlutterSkill.js",
+  "files": [
+    "FlutterSkill.js",
+    "README.md"
+  ],
+  "keywords": [
+    "flutter-skill",
+    "react-native",
+    "testing",
+    "automation",
+    "bridge",
+    "ai-agent",
+    "mcp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-dashboad/flutter-skill",
+    "directory": "sdks/react-native"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-native": ">=0.68.0",
+    "react-native-tcp-socket": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native-tcp-socket": {
+      "optional": false
+    }
+  }
+}

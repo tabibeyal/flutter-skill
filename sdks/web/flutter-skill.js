@@ -117,18 +117,13 @@
   methods.enter_text = function (params) {
     var el = findElement({ key: params.key, selector: params.selector });
     if (!el) return { success: false, message: "Element not found" };
-    // Focus and set value
+    // Focus and set value — pick the correct prototype for React/Vue change detection
     el.focus();
-    var nativeSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      "value"
-    );
-    if (!nativeSetter) {
-      nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLTextAreaElement.prototype,
-        "value"
-      );
-    }
+    var proto =
+      el.tagName === "TEXTAREA"
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+    var nativeSetter = Object.getOwnPropertyDescriptor(proto, "value");
     if (nativeSetter && nativeSetter.set) {
       nativeSetter.set.call(el, params.text);
     } else {
