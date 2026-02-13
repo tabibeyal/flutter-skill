@@ -18,6 +18,16 @@ coverage/
 
 # Project Specific
 .flutter_skill_uri
+
+# Dependencies
+node_modules/
+.gradle/
+bin/
+obj/
+
+# Build outputs
+*.lock
+Cargo.lock
 test_dummy/
 tests/bin/flutter 
 # We keep tests/mock_app.dart and tests/integration_test.dart but maybe ignore the wrapper script if it's considered localized? 
@@ -69,3 +79,4 @@ intellij-plugin/.intellijPlatform/
 intellij-plugin/build/
 # Note: gradle/, gradlew, gradlew.bat are NOT ignored - needed for CI/CD
 .mcp.json
+node_modules

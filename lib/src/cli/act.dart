@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import '../drivers/flutter_driver.dart';
 
@@ -57,6 +58,65 @@ Future<void> runAct(List<String> args) async {
           throw ArgumentError('scroll_to requires a key or text');
         await client.scrollTo(key: param1);
         print('Scrolled to "$param1"');
+        break;
+
+      case 'scroll':
+        if (param1 == null)
+          throw ArgumentError('scroll requires a key or text to scroll to');
+        await client.scrollTo(key: param1);
+        print('Scrolled to "$param1"');
+        break;
+
+      case 'screenshot':
+        final image = await client.takeScreenshot();
+        if (image != null) {
+          // Save to file if path given, otherwise print base64 length
+          if (param1 != null) {
+            final bytes = base64Decode(image);
+            await File(param1).writeAsBytes(bytes);
+            print('Screenshot saved to $param1 (${bytes.length} bytes)');
+          } else {
+            print('Screenshot captured (${image.length} base64 chars)');
+          }
+        } else {
+          print('Screenshot failed');
+          exit(1);
+        }
+        break;
+
+      case 'get_text':
+        if (param1 == null)
+          throw ArgumentError('get_text requires a key');
+        final text = await client.getTextValue(param1);
+        print(text ?? '(null)');
+        break;
+
+      case 'find_element':
+        if (param1 == null)
+          throw ArgumentError('find_element requires a key or text');
+        final found = await client.waitForElement(key: param1, timeout: 2000);
+        print(found ? 'Found "$param1"' : 'Not found "$param1"');
+        break;
+
+      case 'wait_for_element':
+        if (param1 == null)
+          throw ArgumentError('wait_for_element requires a key or text');
+        final timeout = param2 != null ? int.tryParse(param2) ?? 5000 : 5000;
+        final appeared = await client.waitForElement(key: param1, timeout: timeout);
+        print(appeared ? 'Found "$param1"' : 'Timeout waiting for "$param1"');
+        if (!appeared) exit(1);
+        break;
+
+      case 'go_back':
+        await client.goBack();
+        print('Navigated back');
+        break;
+
+      case 'swipe':
+        final direction = param1 ?? 'up';
+        final distance = param2 != null ? double.tryParse(param2) ?? 300 : 300.0;
+        await client.swipe(direction: direction, distance: distance);
+        print('Swiped $direction by $distance');
         break;
 
       case 'assert_visible':

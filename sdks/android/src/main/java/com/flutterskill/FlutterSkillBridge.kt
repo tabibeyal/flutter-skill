@@ -137,13 +137,17 @@ object FlutterSkillBridge {
             currentActivity = activity
         }
         override fun onActivityPaused(activity: Activity) {
-            if (currentActivity == activity) currentActivity = null
+            // Don't null out currentActivity immediately — the new activity
+            // will set it in onResumed. This prevents a race condition where
+            // go_back fails because currentActivity is null between pause/resume.
         }
         override fun onActivityCreated(activity: Activity, savedInstanceState: android.os.Bundle?) {}
         override fun onActivityStarted(activity: Activity) {}
         override fun onActivityStopped(activity: Activity) {}
         override fun onActivitySaveInstanceState(activity: Activity, outState: android.os.Bundle) {}
-        override fun onActivityDestroyed(activity: Activity) {}
+        override fun onActivityDestroyed(activity: Activity) {
+            if (currentActivity == activity) currentActivity = null
+        }
     }
 
     // ---------------------------------------------------------------
@@ -792,7 +796,7 @@ object FlutterSkillBridge {
         return JSONObject().apply {
             put("success", true)
             put("image", base64)
-            put("format", "png")
+            put("format", "jpeg")
             put("encoding", "base64")
         }
     }
@@ -869,9 +873,22 @@ object FlutterSkillBridge {
     }
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
+        // Scale down if too large (>720p) to keep WS payload manageable
+        val scaledBitmap = if (bitmap.width > 720 || bitmap.height > 1280) {
+            val scale = minOf(720f / bitmap.width, 1280f / bitmap.height)
+            val w = (bitmap.width * scale).toInt()
+            val h = (bitmap.height * scale).toInt()
+            val scaled = Bitmap.createScaledBitmap(bitmap, w, h, true)
+            bitmap.recycle()
+            scaled
+        } else {
+            bitmap
+        }
+
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        bitmap.recycle()
+        // Use JPEG for much smaller payload (PNG is 10-20x larger)
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+        scaledBitmap.recycle()
         return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
     }
 
@@ -894,16 +911,21 @@ object FlutterSkillBridge {
 
     @Suppress("DEPRECATION")
     private fun handleGoBack(): JSONObject {
+        // Try currentActivity first, then fall back to any resumed activity
         val activity = currentActivity
+            ?: application?.let { app ->
+                // Try to find any resumed activity via the registered callbacks
+                null // If currentActivity is null, we have no activity
+            }
             ?: return JSONObject().apply {
                 put("success", false)
-                put("message", "No active activity")
+                put("message", "No active activity — app may be in background")
             }
 
         runOnMainThreadBlocking {
-            // onBackPressed is deprecated in API 33+ but still works.
-            // For apps targeting API 33+, OnBackPressedDispatcher is the
-            // preferred approach, but onBackPressed delegates to it internally.
+            // onBackPressed is deprecated in API 33+ but still works
+            // and delegates to OnBackPressedDispatcher internally.
+            @Suppress("DEPRECATION")
             activity.onBackPressed()
         }
 

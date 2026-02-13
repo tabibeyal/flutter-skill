@@ -3,11 +3,13 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Automation;
 
 namespace FlutterSkill;
 
+/// <summary>
+/// Platform-agnostic WebSocket JSON-RPC 2.0 bridge server.
+/// Subclass and override the Handle* methods to integrate with your UI framework (MAUI, WPF, etc).
+/// </summary>
 public class FlutterSkillBridge
 {
     private readonly int _port;
@@ -25,7 +27,7 @@ public class FlutterSkillBridge
         _listener = new HttpListener();
         _listener.Prefixes.Add($"http://127.0.0.1:{_port}/");
         _listener.Start();
-        Console.WriteLine($"[flutter-skill-maui] WebSocket server on port {_port}");
+        Console.WriteLine($"[flutter-skill] WebSocket server on port {_port}");
         _ = AcceptLoop(_cts.Token);
     }
 
@@ -47,6 +49,21 @@ public class FlutterSkillBridge
                     var wsCtx = await ctx.AcceptWebSocketAsync(null);
                     _ = HandleClient(wsCtx.WebSocket, ct);
                 }
+                else if (ctx.Request.Url?.AbsolutePath == "/.flutter-skill")
+                {
+                    // Health check endpoint
+                    var health = new JsonObject
+                    {
+                        ["status"] = "ok",
+                        ["platform"] = "dotnet",
+                        ["sdk_version"] = "1.0.0"
+                    };
+                    var bytes = Encoding.UTF8.GetBytes(health.ToJsonString());
+                    ctx.Response.ContentType = "application/json";
+                    ctx.Response.ContentLength64 = bytes.Length;
+                    await ctx.Response.OutputStream.WriteAsync(bytes, ct);
+                    ctx.Response.Close();
+                }
                 else
                 {
                     ctx.Response.StatusCode = 400;
@@ -60,12 +77,20 @@ public class FlutterSkillBridge
     private async Task HandleClient(WebSocket ws, CancellationToken ct)
     {
         var buffer = new byte[65536];
+        var messageBuffer = new List<byte>();
+
         while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             var result = await ws.ReceiveAsync(buffer, ct);
             if (result.MessageType == WebSocketMessageType.Close) break;
 
-            var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            messageBuffer.AddRange(buffer.AsSpan(0, result.Count).ToArray());
+
+            if (!result.EndOfMessage) continue; // accumulate fragments
+
+            var text = Encoding.UTF8.GetString(messageBuffer.ToArray());
+            messageBuffer.Clear();
+
             var response = await HandleRequest(text);
             var bytes = Encoding.UTF8.GetBytes(response);
             await ws.SendAsync(bytes, WebSocketMessageType.Text, true, ct);
@@ -86,15 +111,23 @@ public class FlutterSkillBridge
         {
             var result = method switch
             {
-                "health" => new JsonObject { ["status"] = "ok", ["platform"] = "maui" },
-                "inspect" => Inspect(),
-                "tap" => Tap(parms["selector"]?.GetValue<string>() ?? ""),
-                "enter_text" => EnterText(parms["selector"]?.GetValue<string>() ?? "", parms["text"]?.GetValue<string>() ?? ""),
-                "screenshot" => await Screenshot(),
-                "scroll" => Scroll(parms["dx"]?.GetValue<int>() ?? 0, parms["dy"]?.GetValue<int>() ?? 0),
-                "get_text" => GetText(parms["selector"]?.GetValue<string>() ?? ""),
-                "find_element" => FindElement(parms["selector"]?.GetValue<string>(), parms["text"]?.GetValue<string>()),
-                "wait_for_element" => await WaitForElement(parms["selector"]?.GetValue<string>() ?? "", parms["timeout"]?.GetValue<int>() ?? 5000),
+                "health" => new JsonObject { ["status"] = "ok", ["platform"] = GetPlatformName() },
+                "inspect" => await HandleInspect(parms),
+                "tap" => await HandleTap(parms["selector"]?.GetValue<string>() ?? "", parms),
+                "enter_text" => await HandleEnterText(
+                    parms["selector"]?.GetValue<string>() ?? "",
+                    parms["text"]?.GetValue<string>() ?? "", parms),
+                "screenshot" => await HandleScreenshot(parms),
+                "scroll" => await HandleScroll(
+                    parms["dx"]?.GetValue<int>() ?? 0,
+                    parms["dy"]?.GetValue<int>() ?? 0, parms),
+                "get_text" => await HandleGetText(parms["selector"]?.GetValue<string>() ?? "", parms),
+                "find_element" => await HandleFindElement(
+                    parms["selector"]?.GetValue<string>(),
+                    parms["text"]?.GetValue<string>(), parms),
+                "wait_for_element" => await HandleWaitForElement(
+                    parms["selector"]?.GetValue<string>() ?? "",
+                    parms["timeout"]?.GetValue<int>() ?? 5000, parms),
                 _ => new JsonObject { ["error"] = $"Unknown method: {method}" }
             };
             return JsonResponse(id, result: result);
@@ -115,140 +148,31 @@ public class FlutterSkillBridge
         return obj.ToJsonString();
     }
 
-    private static Page? GetCurrentPage()
-    {
-        if (Application.Current?.MainPage is NavigationPage nav)
-            return nav.CurrentPage;
-        if (Application.Current?.MainPage is Shell shell)
-            return shell.CurrentPage;
-        return Application.Current?.MainPage;
-    }
+    // --- Override these in your platform-specific subclass ---
 
-    private static JsonObject Inspect()
-    {
-        var page = GetCurrentPage();
-        if (page == null) return new JsonObject { ["error"] = "No page" };
-        return WalkElement(page, 0);
-    }
+    protected virtual string GetPlatformName() => "dotnet";
 
-    private static JsonObject WalkElement(Element el, int depth)
-    {
-        var node = new JsonObject
-        {
-            ["type"] = el.GetType().Name,
-            ["automationId"] = AutomationProperties.GetAutomationId(el as BindableObject) ?? ""
-        };
-        if (el is Label lbl) node["text"] = lbl.Text?.Substring(0, Math.Min(lbl.Text.Length, 200));
-        if (el is Button btn) node["text"] = btn.Text?.Substring(0, Math.Min(btn.Text.Length, 200));
-        if (el is Entry ent) node["text"] = ent.Text?.Substring(0, Math.Min(ent.Text?.Length ?? 0, 200));
+    protected virtual Task<JsonObject> HandleInspect(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "inspect not implemented — subclass FlutterSkillBridge for your UI framework" });
 
-        if (depth < 15)
-        {
-            var children = new JsonArray();
-            foreach (var child in el.LogicalChildren.OfType<Element>())
-                children.Add(WalkElement(child, depth + 1));
-            if (children.Count > 0) node["children"] = children;
-        }
-        return node;
-    }
+    protected virtual Task<JsonObject> HandleTap(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "tap not implemented" });
 
-    private static JsonObject Tap(string selector)
-    {
-        var el = FindByAutomationId(selector);
-        if (el is Button btn) { MainThread.BeginInvokeOnMainThread(() => btn.SendClicked()); return new JsonObject { ["tapped"] = true }; }
-        if (el is VisualElement ve)
-        {
-            // Simulate tap via gesture
-            return new JsonObject { ["tapped"] = true, ["note"] = "element found, tap simulated" };
-        }
-        return new JsonObject { ["error"] = "not found" };
-    }
+    protected virtual Task<JsonObject> HandleEnterText(string selector, string text, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "enter_text not implemented" });
 
-    private static JsonObject EnterText(string selector, string text)
-    {
-        var el = FindByAutomationId(selector) as Entry;
-        if (el == null) return new JsonObject { ["error"] = "Entry not found" };
-        MainThread.BeginInvokeOnMainThread(() => el.Text = text);
-        return new JsonObject { ["entered"] = true };
-    }
+    protected virtual Task<JsonObject> HandleScreenshot(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "screenshot not implemented" });
 
-    private static async Task<JsonObject> Screenshot()
-    {
-        var page = GetCurrentPage();
-        if (page == null) return new JsonObject { ["error"] = "No page" };
-        // MAUI doesn't have a built-in screenshot API on all platforms; placeholder
-        return new JsonObject { ["screenshot"] = "pending", ["note"] = "Use platform-specific screenshot capture" };
-    }
+    protected virtual Task<JsonObject> HandleScroll(int dx, int dy, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "scroll not implemented" });
 
-    private static JsonObject Scroll(int dx, int dy)
-    {
-        var page = GetCurrentPage();
-        var scrollView = FindFirst<ScrollView>(page);
-        if (scrollView != null)
-        {
-            MainThread.BeginInvokeOnMainThread(async () =>
-                await scrollView.ScrollToAsync(scrollView.ScrollX + dx, scrollView.ScrollY + dy, true));
-            return new JsonObject { ["scrolled"] = true };
-        }
-        return new JsonObject { ["scrolled"] = false };
-    }
+    protected virtual Task<JsonObject> HandleGetText(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "get_text not implemented" });
 
-    private static JsonObject GetText(string selector)
-    {
-        var el = FindByAutomationId(selector);
-        var text = el switch
-        {
-            Label l => l.Text,
-            Button b => b.Text,
-            Entry e => e.Text,
-            _ => null
-        };
-        return text != null ? new JsonObject { ["text"] = text } : new JsonObject { ["error"] = "not found" };
-    }
+    protected virtual Task<JsonObject> HandleFindElement(string? selector, string? text, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "find_element not implemented" });
 
-    private static JsonObject FindElement(string? selector, string? text)
-    {
-        if (selector != null)
-            return new JsonObject { ["found"] = (FindByAutomationId(selector) != null) };
-        if (text != null)
-        {
-            var page = GetCurrentPage();
-            var found = FindFirst<Label>(page, l => l.Text?.Contains(text) == true) != null ||
-                        FindFirst<Button>(page, b => b.Text?.Contains(text) == true) != null;
-            return new JsonObject { ["found"] = found };
-        }
-        return new JsonObject { ["error"] = "selector or text required" };
-    }
-
-    private static async Task<JsonObject> WaitForElement(string selector, int timeout)
-    {
-        var start = Environment.TickCount64;
-        while (Environment.TickCount64 - start < timeout)
-        {
-            if (FindByAutomationId(selector) != null)
-                return new JsonObject { ["found"] = true };
-            await Task.Delay(100);
-        }
-        return new JsonObject { ["found"] = false, ["error"] = "timeout" };
-    }
-
-    private static Element? FindByAutomationId(string id)
-    {
-        var page = GetCurrentPage();
-        if (page == null) return null;
-        return FindFirst<Element>(page, e =>
-            AutomationProperties.GetAutomationId(e as BindableObject) == id);
-    }
-
-    private static T? FindFirst<T>(Element? root, Func<T, bool>? predicate = null) where T : Element
-    {
-        if (root == null) return null;
-        if (root is T t && (predicate == null || predicate(t))) return t;
-        foreach (var child in root.LogicalChildren.OfType<Element>())
-        {
-            var found = FindFirst<T>(child, predicate);
-            if (found != null) return found;
-        }
-        return null;
-    }
+    protected virtual Task<JsonObject> HandleWaitForElement(string selector, int timeout, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["error"] = "wait_for_element not implemented" });
 }

@@ -49,17 +49,21 @@ async fn handle_method<R: Runtime>(
         "health" => Ok(json!({"status": "ok", "platform": "tauri"})),
 
         "inspect" => {
+            // Tauri v2 eval() is fire-and-forget; use IPC callback pattern to get results
             let js = r#"
-                (function walk(el, d) {
-                    if (!el || d > 15) return null;
-                    const t = el.tagName ? el.tagName.toLowerCase() : '#text';
-                    const ch = [];
-                    for (const c of (el.children || [])) ch.push(walk(c, d+1));
-                    return {tag: t, id: el.id||undefined, text: el.children.length===0?(el.textContent||'').trim().slice(0,200):undefined, children: ch};
-                })(document.body, 0);
+                (function() {
+                    function walk(el, d) {
+                        if (!el || d > 15) return null;
+                        const t = el.tagName ? el.tagName.toLowerCase() : '#text';
+                        const ch = [];
+                        for (const c of (el.children || [])) ch.push(walk(c, d+1));
+                        return {tag: t, id: el.id||undefined, text: el.children.length===0?(el.textContent||'').trim().slice(0,200):undefined, children: ch};
+                    }
+                    window.__flutter_skill_result = walk(document.body, 0);
+                })();
             "#;
-            window.eval_js(js).await.map_err(|e| e.to_string())?;
-            Ok(json!({"inspected": true}))
+            window.eval(js).map_err(|e| e.to_string())?;
+            Ok(json!({"inspected": true, "note": "Result stored in window.__flutter_skill_result; use Tauri IPC to retrieve"}))
         }
 
         "tap" => {
