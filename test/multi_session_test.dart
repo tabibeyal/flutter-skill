@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:test/test.dart';
 import 'package:flutter_skill/src/cli/server.dart' show SessionInfo;
 

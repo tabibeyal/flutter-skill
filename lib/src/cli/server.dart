@@ -132,11 +132,7 @@ class FlutterMcpServer {
           ? _clients.values.first
           : null;
 
-  set _client(AppDriver? client) {
-    if (client != null && _activeSessionId != null) {
-      _clients[_activeSessionId!] = client;
-    }
-  }
+
 
   Process? _flutterProcess;
 
@@ -2981,7 +2977,7 @@ Detailed diagnostic report with:
         switch (actionName) {
           case 'tap':
             final tapResult =
-                await client!.tap(key: action['key'], text: action['text']);
+                await client.tap(key: action['key'], text: action['text']);
             if (tapResult['success'] != true) {
               throw Exception(tapResult['message'] ?? "Element not found");
             }
@@ -2989,7 +2985,7 @@ Detailed diagnostic report with:
             break;
 
           case 'enter_text':
-            final enterResult = await client!
+            final enterResult = await client
                 .enterText(action['key'], action['text'] ?? action['value']);
             if (enterResult['success'] != true) {
               throw Exception(enterResult['message'] ?? "TextField not found");
@@ -2999,7 +2995,7 @@ Detailed diagnostic report with:
 
           case 'swipe':
             final distance = (action['distance'] ?? 300).toDouble();
-            await client!.swipe(
+            await client.swipe(
               direction: action['direction'] ?? 'down',
               distance: distance,
               key: action['key'],
@@ -3014,13 +3010,13 @@ Detailed diagnostic report with:
             break;
 
           case 'screenshot':
-            final image = await client!.takeScreenshot();
+            final image = await client.takeScreenshot();
             result = {"image": image};
             break;
 
           case 'assert_visible':
             final timeout = action['timeout'] ?? 5000;
-            final found = await client!.waitForElement(
+            final found = await client.waitForElement(
               key: action['key'],
               text: action['text'],
               timeout: timeout,
@@ -3030,7 +3026,7 @@ Detailed diagnostic report with:
             break;
 
           case 'assert_text':
-            final actual = await client!.getTextValue(action['key']);
+            final actual = await client.getTextValue(action['key']);
             final expected = action['expected'];
             if (actual != expected) {
               throw Exception(
@@ -3041,18 +3037,18 @@ Detailed diagnostic report with:
 
           case 'long_press':
             final duration = action['duration'] ?? 500;
-            await client!.longPress(
+            await client.longPress(
                 key: action['key'], text: action['text'], duration: duration);
             result = "Long pressed";
             break;
 
           case 'double_tap':
-            await client!.doubleTap(key: action['key'], text: action['text']);
+            await client.doubleTap(key: action['key'], text: action['text']);
             result = "Double tapped";
             break;
 
           case 'scroll_to':
-            await client!.scrollTo(key: action['key'], text: action['text']);
+            await client.scrollTo(key: action['key'], text: action['text']);
             result = "Scrolled";
             break;
 
@@ -3197,7 +3193,7 @@ Detailed diagnostic report with:
     }
 
     // Get screen size to convert ratios to pixels
-    final layoutTree = await client!.getLayoutTree();
+    final layoutTree = await client.getLayoutTree();
     final screenWidth =
         (layoutTree['size']?['width'] as num?)?.toDouble() ?? 400.0;
     final screenHeight =
@@ -3209,7 +3205,7 @@ Detailed diagnostic report with:
     final endX = toX <= 1.0 ? toX * screenWidth : toX;
     final endY = toY <= 1.0 ? toY * screenHeight : toY;
 
-    await client!.swipeCoordinates(startX, startY, endX, endY,
+    await client.swipeCoordinates(startX, startY, endX, endY,
         duration: gestureDuration);
 
     return {
@@ -3233,7 +3229,7 @@ Detailed diagnostic report with:
 
     while (stopwatch.elapsedMilliseconds < timeout) {
       // Get current widget tree snapshot
-      final tree = await client!.getWidgetTree(maxDepth: 3);
+      final tree = await client.getWidgetTree(maxDepth: 3);
       final currentTree = tree.toString();
 
       if (currentTree == previousTree) {
@@ -3277,7 +3273,7 @@ Detailed diagnostic report with:
 
     for (var i = 0; i < maxScrolls; i++) {
       // Check if element is visible
-      final found = await client!.waitForElement(
+      final found = await client.waitForElement(
         key: key,
         text: text,
         timeout: 500,
@@ -3292,7 +3288,7 @@ Detailed diagnostic report with:
       }
 
       // Scroll
-      await client!.swipe(
+      await client.swipe(
         direction: direction,
         distance: 300,
         key: scrollableKey,
@@ -3319,7 +3315,7 @@ Detailed diagnostic report with:
 
     if (shouldBeVisible) {
       final found =
-          await client!.waitForElement(key: key, text: text, timeout: timeout);
+          await client.waitForElement(key: key, text: text, timeout: timeout);
       return {
         "success": found,
         "assertion": "visible",
@@ -3330,7 +3326,7 @@ Detailed diagnostic report with:
       };
     } else {
       final gone =
-          await client!.waitForGone(key: key, text: text, timeout: timeout);
+          await client.waitForGone(key: key, text: text, timeout: timeout);
       return {
         "success": gone,
         "assertion": "not_visible",
@@ -3349,7 +3345,7 @@ Detailed diagnostic report with:
     final expected = args['expected'] as String;
     final useContains = args['contains'] ?? false;
 
-    final actual = await client!.getTextValue(key);
+    final actual = await client.getTextValue(key);
 
     bool matches;
     if (useContains) {
@@ -3382,10 +3378,10 @@ Detailed diagnostic report with:
     int count = 0;
 
     if (type != null) {
-      final elements = await client!.findByType(type);
+      final elements = await client.findByType(type);
       count = elements.length;
     } else if (text != null) {
-      final allText = await client!.getTextContent();
+      final allText = await client.getTextContent();
       count = RegExp(RegExp.escape(text)).allMatches(allText.toString()).length;
     }
 
@@ -3421,9 +3417,9 @@ Detailed diagnostic report with:
 
   /// Get complete page state snapshot
   Future<Map<String, dynamic>> _getPageState(FlutterSkillClient client) async {
-    final route = await client!.getCurrentRoute();
-    final interactables = await client!.getInteractiveElements();
-    final textContent = await client!.getTextContent();
+    final route = await client.getCurrentRoute();
+    final interactables = await client.getInteractiveElements();
+    final textContent = await client.getTextContent();
 
     return {
       "route": route,
@@ -3759,7 +3755,7 @@ if (mounted) {
     // Analyze logs if scope includes logs
     if (scope == 'all' || scope == 'logs') {
       try {
-        final logs = await client!.getLogs();
+        final logs = await client.getLogs();
         final logsStr = logs.toString();
 
         // Check each pattern
@@ -3800,7 +3796,7 @@ if (mounted) {
     // Analyze UI state if scope includes UI
     if (scope == 'all' || scope == 'ui') {
       try {
-        final elements = await client!.getInteractiveElements();
+        final elements = await client.getInteractiveElements();
 
         // Check for empty state
         if (elements.isEmpty) {
@@ -3840,7 +3836,7 @@ if (mounted) {
     // Analyze performance if scope includes performance
     if (scope == 'all' || scope == 'performance') {
       try {
-        final memoryStats = await client!.getMemoryStats();
+        final memoryStats = await client.getMemoryStats();
         final heapUsed = memoryStats['heapUsed'] as int? ?? 0;
         final heapMB = heapUsed / (1024 * 1024);
 
@@ -3906,7 +3902,7 @@ if (mounted) {
     // Include screenshot if requested
     if (includeScreenshot) {
       try {
-        final screenshot = await client!.takeScreenshot();
+        final screenshot = await client.takeScreenshot();
         result['screenshot'] = screenshot;
       } catch (e) {
         // Screenshot failed

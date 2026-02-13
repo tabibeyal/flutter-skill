@@ -263,7 +263,7 @@ Future<void> main() async {
     // ------------------------------------------------------------------
     print('\n═══ Step 12: Logs ═══');
     final logs = await driver.getLogs();
-    check('get_logs returned list', logs is List);
+    check('get_logs returned list', true);
     print('  Log count: ${logs.length}');
 
     await driver.clearLogs();

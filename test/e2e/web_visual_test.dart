@@ -98,11 +98,11 @@ Future<void> main() async {
     }
 
     final hasHelloBtn = elements.any((e) =>
-        (e as Map)['testId'] == 'hello-btn' || (e as Map)['id'] == 'btn-hello');
+        e['testId'] == 'hello-btn' || e['id'] == 'btn-hello');
     check('Found hello button', hasHelloBtn);
 
     final hasNameField = elements.any((e) =>
-        (e as Map)['testId'] == 'name-field' || (e as Map)['id'] == 'name-input');
+        e['testId'] == 'name-field' || e['id'] == 'name-input');
     check('Found name input', hasNameField);
 
     // ── Step 5: Tap "Say Hello" button ──
@@ -154,7 +154,7 @@ Future<void> main() async {
     // ── Step 10: Logs ──
     stepHeader('Console Logs');
     final logs = await driver.getLogs();
-    check('Got logs', logs is List, '${logs.length} entries');
+    check('Got logs', true, '${logs.length} entries');
     if (logs.isNotEmpty) {
       for (final log in logs.take(5)) {
         print('    $log');

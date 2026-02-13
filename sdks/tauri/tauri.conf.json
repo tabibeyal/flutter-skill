@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicorevin/tauri-docs/refs/heads/main/src/content/docs/_schema/config.schema.json",
+  "productName": "flutter-skill-tauri-plugin",
+  "version": "1.0.0",
+  "identifier": "com.flutterskill.tauri-plugin",
+  "build": {
+    "frontendDist": "../guest-js"
+  },
+  "app": {
+    "windows": []
+  },
+  "bundle": {
+    "active": false
+  }
+}
