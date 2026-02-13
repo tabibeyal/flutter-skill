@@ -925,9 +925,8 @@ class FlutterSkillBinding {
   /// (e.g., when an overlay intercepts events or hit testing fails).
   static void _tryInvokeCallback(Element element) {
     final widget = element.widget;
-    
+
     if (widget is ElevatedButton && widget.onPressed != null) {
-      
       widget.onPressed!();
     } else if (widget is TextButton && widget.onPressed != null) {
       widget.onPressed!();

@@ -28,10 +28,15 @@
 ---
 
 <p align="center">
-  <a href="https://github.com/ai-dashboad/flutter-skill/releases/download/v0.7.5/demo-tiktok.mp4">
-    <img src="assets/demo-cover.jpg" alt="▶️ Watch: AI tests a full TikTok clone — 28 actions, zero test code" width="720">
-  </a>
-  <br><em>▶️ AI tests a full TikTok clone — 28 actions, zero test code</em>
+  <strong>🎬 AI tests a full TikTok clone — 28 actions, zero test code</strong>
+</p>
+
+<p align="center">
+  <video src="https://github.com/ai-dashboad/flutter-skill/releases/download/v0.7.5/demo-tiktok.mp4" controls autoplay muted loop width="720">
+    <a href="https://github.com/ai-dashboad/flutter-skill/releases/download/v0.7.5/demo-tiktok.mp4">
+      <img src="assets/demo-cover.jpg" alt="▶️ Watch Demo Video" width="720">
+    </a>
+  </video>
 </p>
 
 ```

@@ -2,7 +2,6 @@
 .dart_tool/
 .packages
 build/
-pubspec.lock
 coverage/
 /android/
 /ios/
@@ -87,3 +86,5 @@ target/
 # Generated files
 **/gen/
 **/icons/icon.png
+test_tiktok/
+assets/demo-tiktok.mp4
