@@ -1,3 +1,12 @@
+## 0.7.8
+
+**Release 0.7.8**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
 ## 0.7.7
 
 **Release 0.7.7**
