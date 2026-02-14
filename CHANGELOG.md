@@ -1,3 +1,12 @@
+## 0.8.0
+
+**inspect_interactive, semantic refs, press_key, 75-test E2E suite**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
 ## 0.7.8
 
 **Release 0.7.8**
