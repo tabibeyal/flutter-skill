@@ -218,8 +218,8 @@ class TestBridge : FlutterSkillBridge
 
     protected override Task<JsonObject> HandleScreenshot(JsonObject parms)
     {
-        // Return a small fake screenshot (1x1 white PNG base64)
-        var fakePng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+        // Return a fake 20x20 red PNG base64 (>100 chars for tests)
+        var fakePng = "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAG0lEQVR4nGP4z8BANiJf56jmUc2jmkc1U0UzADHNjoAymaoJAAAAAElFTkSuQmCC";
         return Task.FromResult(new JsonObject
         {
             ["success"] = true,
