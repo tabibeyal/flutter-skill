@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'flutter_skill_semantic_refs.dart';
 
 // ==================== ERROR CODES ====================
 
@@ -61,6 +62,9 @@ class FlutterSkillBinding {
   static final List<Map<String, dynamic>> _errors = [];
   static final List<Map<String, dynamic>> _httpRequests = [];
   static int _pointerCounter = 1;
+
+  // Element cache for semantic ref system
+  static Map<String, Map<String, dynamic>>? _lastInspectResult;
 
   // Test indicators
   static TestIndicatorOverlay? _indicatorOverlay;
@@ -835,8 +839,64 @@ class FlutterSkillBinding {
     return null;
   }
 
-  /// Find element by ref ID from the structured inspect data
+  /// Find element by ref ID using caching and semantic ref system
   static Element? _findElementByRefId(String refId) {
+    // Check if this is a legacy ref format (btn_0, tf_1, etc.)
+    if (SemanticRefGenerator.isLegacyRef(refId)) {
+      return _findElementByLegacyRef(refId);
+    }
+    
+    // First, try cached element
+    final cachedElement = SemanticRefGenerator.getCachedElement(refId);
+    if (cachedElement != null) {
+      final weakRef = cachedElement['element'] as WeakReference<Element>?;
+      final element = weakRef?.target;
+      if (element != null) {
+        return element;
+      }
+    }
+    
+    // Check last inspect result cache
+    if (_lastInspectResult != null && _lastInspectResult!.containsKey(refId)) {
+      final targetElementData = _lastInspectResult![refId]!;
+      
+      // Extract bounds to find the element at center position
+      final bounds = targetElementData['bounds'] as Map<String, dynamic>?;
+      if (bounds != null) {
+        final x = bounds['x'] as int? ?? 0;
+        final y = bounds['y'] as int? ?? 0;
+        final w = bounds['w'] as int? ?? 0;
+        final h = bounds['h'] as int? ?? 0;
+        
+        if (w > 0 && h > 0) {
+          final centerX = x + w / 2;
+          final centerY = y + h / 2;
+          return _findElementAtPosition(Offset(centerX, centerY));
+        }
+      }
+      
+      // Fallback: try to find by text, label, or key if available
+      final text = targetElementData['text'] as String?;
+      final label = targetElementData['label'] as String?;
+      final key = targetElementData['key'] as String?;
+      
+      if (key != null) {
+        final found = _findElementByKey(key);
+        if (found != null) return found;
+      }
+      
+      if (text != null) {
+        final found = _findElementByText(text);
+        if (found != null) return found;
+      }
+      
+      if (label != null) {
+        final found = _findElementByText(label);
+        if (found != null) return found;
+      }
+    }
+    
+    // Cache miss - do fresh inspect to rebuild cache
     final structured = _findInteractiveElementsStructured();
     final elements = structured['elements'] as List<dynamic>? ?? [];
     
@@ -866,15 +926,45 @@ class FlutterSkillBinding {
       }
     }
     
-    // Fallback: try to find by text or key if available
-    final text = targetElementData['text'] as String?;
-    final label = targetElementData['label'] as String?;
+    return null;
+  }
+  
+  /// Handle legacy ref format for backward compatibility
+  static Element? _findElementByLegacyRef(String refId) {
+    final legacyData = SemanticRefGenerator.parseLegacyRef(refId);
+    if (legacyData == null) return null;
     
-    if (text != null) {
-      return _findElementByText(text);
+    // Re-run inspect to get current elements
+    final structured = _findInteractiveElementsStructured();
+    final elements = structured['elements'] as List<dynamic>? ?? [];
+    
+    final role = legacyData['role'] as String?;
+    final index = legacyData['index'] as int? ?? 0;
+    
+    if (role == null) return null;
+    
+    // Find elements of matching semantic role and get by index
+    final matchingElements = <Map<String, dynamic>>[];
+    for (final elementData in elements) {
+      if (elementData is Map<String, dynamic>) {
+        final refId = elementData['ref'] as String?;
+        if (refId != null && refId.startsWith('$role:')) {
+          matchingElements.add(elementData);
+        }
+      }
     }
-    if (label != null) {
-      return _findElementByText(label);
+    
+    if (matchingElements.isEmpty || index >= matchingElements.length) {
+      return null;
+    }
+    
+    // Get element at legacy index
+    final targetElementData = matchingElements[index];
+    
+    // Find by ref ID using the new system
+    final newRefId = targetElementData['ref'] as String?;
+    if (newRefId != null) {
+      return _findElementByRefId(newRefId);
     }
     
     return null;
@@ -1923,41 +2013,11 @@ class FlutterSkillBinding {
     return results;
   }
 
-  /// Enhanced interactive elements discovery for better automation with ref ID system.
-  /// Returns structured data with ref IDs, actions, bounds, and state information.
+  /// Enhanced interactive elements discovery for better automation with semantic ref ID system.
+  /// Returns structured data with semantic ref IDs, actions, bounds, and state information.
   static Map<String, dynamic> _findInteractiveElementsStructured() {
     final elements = <Map<String, dynamic>>[];
     final refCounts = <String, int>{};
-
-    String _generateRefId(String baseType, String? widgetType) {
-      String refPrefix;
-      
-      // Map widget types to ref prefixes according to ref generation rules
-      if (widgetType != null && (widgetType.contains('Button') || widgetType == 'FloatingActionButton' || widgetType == 'IconButton')) {
-        refPrefix = 'btn';
-      } else if (baseType == 'text_field') {
-        refPrefix = 'tf';
-      } else if (baseType == 'switch' || baseType == 'checkbox') {
-        refPrefix = 'sw';
-      } else if (baseType == 'slider') {
-        refPrefix = 'sl';
-      } else if (baseType == 'tab') {
-        refPrefix = 'tab';
-      } else if (baseType == 'dropdown') {
-        refPrefix = 'dd';
-      } else if (baseType == 'link' || baseType == 'clickable') {
-        refPrefix = 'lnk';
-      } else if (baseType == 'list_tile') {
-        refPrefix = 'item';
-      } else {
-        // Fallback for other interactive elements
-        refPrefix = baseType.substring(0, 3);
-      }
-
-      final count = refCounts[refPrefix] ?? 0;
-      refCounts[refPrefix] = count + 1;
-      return '${refPrefix}_$count';
-    }
 
     void visit(Element element) {
       final widget = element.widget;
@@ -2092,27 +2152,8 @@ class FlutterSkillBinding {
 
       // If this is an interactive element, add it to results
       if (type != null) {
-        // Generate ref ID based on element type
-        String baseType;
-        if (type.contains('Button') || type == 'FloatingActionButton' || type == 'IconButton') {
-          baseType = 'button';
-        } else if (type == 'TextField' || type == 'TextFormField') {
-          baseType = 'text_field';
-        } else if (type == 'Switch' || type == 'Checkbox') {
-          baseType = type == 'Switch' ? 'switch' : 'checkbox';
-        } else if (type == 'Slider') {
-          baseType = 'slider';
-        } else if (type == 'DropdownButton') {
-          baseType = 'dropdown';
-        } else if (type == 'InkWell' || type == 'GestureDetector') {
-          baseType = 'clickable';
-        } else if (type == 'ListTile') {
-          baseType = 'list_tile';
-        } else {
-          baseType = 'interactive';
-        }
-
-        final refId = _generateRefId(baseType, type);
+        // Generate semantic ref ID using the new system
+        final refId = SemanticRefGenerator.generateRefId(element, refCounts);
 
         final elementEntry = <String, dynamic>{
           'ref': refId,
@@ -2138,18 +2179,24 @@ class FlutterSkillBinding {
             return value.round();
           }
 
-          elementEntry['bounds'] = {
+          final bounds = {
             'x': safeRound(offset.dx),
             'y': safeRound(offset.dy),
             'w': safeRound(size.width),
             'h': safeRound(size.height),
           };
+          elementEntry['bounds'] = bounds;
 
           final isVisible = size.width > 0 && 
                            size.height > 0 &&
                            offset.dx.isFinite && 
                            offset.dy.isFinite;
           state['visible'] = isVisible;
+          
+          // Cache element for performance optimization
+          if (isVisible && refId.isNotEmpty) {
+            SemanticRefGenerator.cacheElement(refId, element, bounds);
+          }
         } else {
           // Element has no render box or size - set default bounds
           elementEntry['bounds'] = {'x': 0, 'y': 0, 'w': 0, 'h': 0};
@@ -2203,6 +2250,15 @@ class FlutterSkillBinding {
     final summary = summaryParts.isEmpty 
         ? 'No interactive elements found'
         : '${elements.length} interactive: ${summaryParts.join(', ')}';
+
+    // Cache the result for server.dart usage
+    _lastInspectResult = <String, Map<String, dynamic>>{};
+    for (final element in elements) {
+      final refId = element['ref'] as String?;
+      if (refId != null) {
+        _lastInspectResult![refId] = element;
+      }
+    }
 
     return {
       'elements': elements,

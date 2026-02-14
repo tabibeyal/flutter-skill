@@ -700,9 +700,10 @@ tap | click | press | select | activate | touch | hit button | click button | pr
 Tap/click a button or any interactive UI element. Simulates real user touch/click interaction.
 
 [SUPPORTED METHODS]
-1. By Widget key: tap(key: "submit_button")
-2. By visible text: tap(text: "Submit")
-3. By coordinates: tap(x: 100, y: 200)  // Use center coordinates from inspect()
+1. By semantic ref ID: tap(ref: "button:Login")  // From inspect_interactive() - RECOMMENDED
+2. By Widget key: tap(key: "submit_button")
+3. By visible text: tap(text: "Submit")
+4. By coordinates: tap(x: 100, y: 200)  // Use center coordinates from inspect()
 
 [USE WHEN]
 • User asks to click/press/tap a button or element
@@ -720,6 +721,7 @@ For elements without text (icons, images), use coordinates from inspect():
         "inputSchema": {
           "type": "object",
           "properties": {
+            "ref": {"type": "string", "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"},
             "key": {"type": "string", "description": "Widget key"},
             "text": {"type": "string", "description": "Text to find"},
             "x": {"type": "number", "description": "X coordinate (use with y)"},
@@ -744,12 +746,17 @@ Type text into text fields (email, password, search, forms, etc.). Simulates rea
 • Automating data entry in UI flows
 
 [WORKFLOW]
-Option 1: Call inspect() to find TextField keys, then enter_text(key: "field_key", text: "value").
-Option 2: Tap a TextField first, then enter_text(text: "value") without key - enters into focused field.
+Option 1 (RECOMMENDED): Call inspect_interactive() to find TextField refs, then enter_text(ref: "input:Email", text: "value").
+Option 2: Call inspect() to find TextField keys, then enter_text(key: "field_key", text: "value").
+Option 3: Tap a TextField first, then enter_text(text: "value") without key/ref - enters into focused field.
 """,
         "inputSchema": {
           "type": "object",
           "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"
+            },
             "key": {
               "type": "string",
               "description":
@@ -2629,8 +2636,12 @@ Detailed diagnostic report with:
           };
         }
 
-        // Method 1 & 2: Tap by key or text
-        final result = await client!.tap(key: args['key'], text: args['text']);
+        // Method 1 & 2: Tap by key, text, or semantic ref
+        final result = await client!.tap(
+          key: args['key'], 
+          text: args['text'],
+          ref: args['ref'],
+        );
         if (result['success'] != true) {
           // Return full error details including suggestions
           return {
@@ -2650,7 +2661,11 @@ Detailed diagnostic report with:
         };
 
       case 'enter_text':
-        final result = await client!.enterText(args['key'], args['text']);
+        final result = await client!.enterText(
+          args['key'], 
+          args['text'], 
+          ref: args['ref'],
+        );
         if (result['success'] != true) {
           return {
             "success": false,

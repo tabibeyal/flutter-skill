@@ -157,22 +157,26 @@ URI: $wsUri''');
   // ==================== EXISTING METHODS ====================
 
   /// Tap an element. Returns result with success status.
-  Future<Map<String, dynamic>> tap({String? key, String? text}) async {
-    if (key == null && text == null) {
-      throw ArgumentError('Must provide key or text for tap');
+  /// Supports semantic ref IDs from inspect_interactive for reliable targeting.
+  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref}) async {
+    if (key == null && text == null && ref == null) {
+      throw ArgumentError('Must provide key, text, or ref for tap');
     }
     final result = await _call('ext.flutter.flutter_skill.tap', {
       if (key != null) 'key': key,
       if (text != null) 'text': text,
+      if (ref != null) 'ref': ref,
     });
     return result;
   }
 
   /// Enter text into a field. Returns result with success status.
-  Future<Map<String, dynamic>> enterText(String key, String text) async {
+  /// Supports semantic ref IDs from inspect_interactive for reliable targeting.
+  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref}) async {
     final result = await _call('ext.flutter.flutter_skill.enterText', {
-      'key': key,
+      if (key != null) 'key': key,
       'text': text,
+      if (ref != null) 'ref': ref,
     });
     return result;
   }

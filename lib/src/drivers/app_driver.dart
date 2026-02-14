@@ -16,11 +16,11 @@ abstract class AppDriver {
   /// Tear down the connection.
   Future<void> disconnect();
 
-  /// Tap an element identified by key or text.
-  Future<Map<String, dynamic>> tap({String? key, String? text});
+  /// Tap an element identified by key, text, or semantic ref.
+  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref});
 
-  /// Enter text into a field identified by key.
-  Future<Map<String, dynamic>> enterText(String key, String text);
+  /// Enter text into a field identified by key or semantic ref.
+  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref});
 
   /// Swipe in a direction, optionally anchored to an element.
   Future<bool> swipe(

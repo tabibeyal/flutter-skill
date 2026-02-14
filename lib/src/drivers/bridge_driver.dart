@@ -75,16 +75,21 @@ class BridgeDriver implements AppDriver {
   }
 
   @override
-  Future<Map<String, dynamic>> tap({String? key, String? text}) async {
+  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref}) async {
     return _call('tap', {
       if (key != null) 'key': key,
       if (text != null) 'text': text,
+      if (ref != null) 'ref': ref,
     });
   }
 
   @override
-  Future<Map<String, dynamic>> enterText(String key, String text) async {
-    return _call('enter_text', {'key': key, 'text': text});
+  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref}) async {
+    return _call('enter_text', {
+      if (key != null) 'key': key,
+      'text': text,
+      if (ref != null) 'ref': ref,
+    });
   }
 
   @override
