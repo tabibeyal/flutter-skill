@@ -130,16 +130,19 @@ flutter-skill works across **8 platforms** with a unified bridge protocol:
 
 | Platform | SDK | Tests | Status |
 |----------|-----|-------|--------|
-| **Flutter iOS** | `flutter_skill` (pub.dev) | 21/21 ✅ | Stable |
-| **Flutter Web** | `flutter_skill` (pub.dev) | 20/20 ✅ | Stable |
-| **Electron** | [`sdks/electron`](sdks/electron/) | 24/24 ✅ | Stable |
-| **Android** (Kotlin) | [`sdks/android`](sdks/android/) | 24/24 ✅ | Stable |
-| **KMP Desktop** | [`sdks/kmp`](sdks/kmp/) | 22/22 ✅ | Stable |
-| **Tauri** (Rust) | [`sdks/tauri`](sdks/tauri/) | 23/24 ✅ | Stable |
-| **.NET MAUI** | [`sdks/dotnet-maui`](sdks/dotnet-maui/) | 23/24 ✅ | Stable |
-| **React Native** | [`sdks/react-native`](sdks/react-native/) | 24/24 ✅ | Stable |
+| **Electron** | [`sdks/electron`](sdks/electron/) | 75/75 ✅ | Stable |
+| **KMP Desktop** | [`sdks/kmp`](sdks/kmp/) | 75/75 ✅ | Stable |
+| **Tauri** (Rust) | [`sdks/tauri`](sdks/tauri/) | 75/75 ✅ | Stable |
+| **.NET MAUI** | [`sdks/dotnet-maui`](sdks/dotnet-maui/) | 75/75 ✅ | Stable |
+| **React Native** | [`sdks/react-native`](sdks/react-native/) | 75/75 ✅ | Stable |
+| **Android** (Kotlin) | [`sdks/android`](sdks/android/) | 74/75 ✅ | Stable |
+| **Flutter iOS** | `flutter_skill` (pub.dev) | 60/65 ✅ | Stable |
+| **Flutter Web** | `flutter_skill` (pub.dev) | 63/65 ✅ | Stable |
 
-> **181/183 tests passing** across all platforms (99% pass rate)
+> **572/580 tests passing** across all platforms (98.6% pass rate)
+
+Each platform is tested against a complex social media app (tabs, feeds, forms, modals, 50+ elements) with 75 E2E tests covering:
+inspect, tap, enter_text, get_text, find_element, wait_for_element, scroll, swipe, screenshot, go_back, press_key, inspect_interactive, eval, and error handling.
 
 Each SDK README has platform-specific setup instructions. The same CLI and MCP tools work for all platforms.
 
@@ -276,6 +279,50 @@ Flutter Skill sees through native dialogs that Flutter can't — permission popu
 | Swipe | Accessibility scroll | `adb input swipe` |
 
 No external tools needed — uses built-in OS capabilities.
+
+---
+
+## Test Results
+
+Every platform is tested against a **complex social media app** (4-tab navigation, 50+ scrollable items, forms, modals, search) with a comprehensive 75-test E2E suite.
+
+<details>
+<summary><strong>75 tests per platform — full breakdown</strong></summary>
+
+| Category | Tests | What's tested |
+|----------|-------|---------------|
+| Initialize | 1 | Protocol handshake |
+| Inspect | 5 | Element tree, bounds, types, state changes |
+| Inspect Interactive | 5 | Semantic refs, actions, bounds, cross-page |
+| Tap | 6 | By key, text, coordinates, ref, invalid key/ref |
+| Enter Text | 6 | Basic, empty, emoji/unicode 🌍世界, overwrite, long (500+ chars), error handling |
+| Get Text | 4 | Counter, input readback, missing key, button label |
+| Find Element | 5 | By key, missing, by text, partial text, bounds |
+| Wait For Element | 4 | By key, by text, timeout, fast resolution |
+| Press Key | 10 | Enter, Tab, Escape, Backspace, arrows, Ctrl+A, Delete, Home/End, invalid key |
+| Scroll | 6 | Up, down, left, right, large distance, zero |
+| Swipe | 4 | Up, down, left, right |
+| Screenshot | 2 | Base64 encoding, image format (PNG/JPEG) |
+| Navigation | 8 | Detail page, inspect after nav, interactive elements, go_back, round-trip |
+| Logs | 3 | Get, clear, verify empty |
+| Eval | 2 | Expression evaluation, return values |
+| Error Handling | 3 | Unknown method, missing params, malformed request |
+| **Total** | **75** | |
+
+**Test apps per platform:**
+
+| Platform | Test App | Elements |
+|----------|----------|----------|
+| Electron | Social media app (HTML/JS) | 60+ items, dark theme |
+| Android | Native Kotlin app with Fragments | 50+ items, Material Design |
+| KMP | Compose Desktop app | 50+ items, tab navigation |
+| Tauri | Web frontend (Rust backend) | 55+ feed cards |
+| .NET MAUI | Simulated bridge with 6 screens | 114 elements |
+| React Native | Social media mock server | 50+ elements, 5 screens |
+| Flutter iOS | TikTok clone (10 feature modules) | Full social media app |
+| Flutter Web | TikTok clone via bridge proxy | Full social media app |
+
+</details>
 
 ---
 
