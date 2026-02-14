@@ -688,6 +688,47 @@ async fn handle_method<R: Runtime>(
         "get_logs" => Ok(json!({"logs": []})),
         "clear_logs" => Ok(json!({"success": true})),
 
+        "press_key" => {
+            let key_name = params.get("key").and_then(|v| v.as_str()).unwrap_or("");
+            if key_name.is_empty() {
+                return Err("Missing key parameter".into());
+            }
+            let modifiers = params.get("modifiers").and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
+                .unwrap_or_default();
+            let mapped_key = match key_name.to_lowercase().as_str() {
+                "enter" => "Enter", "tab" => "Tab", "escape" => "Escape",
+                "backspace" => "Backspace", "delete" => "Delete", "space" => " ",
+                "up" => "ArrowUp", "down" => "ArrowDown", "left" => "ArrowLeft", "right" => "ArrowRight",
+                "home" => "Home", "end" => "End", "pageup" => "PageUp", "pagedown" => "PageDown",
+                _ => key_name,
+            };
+            let ctrl = modifiers.contains(&"ctrl");
+            let meta = modifiers.contains(&"meta");
+            let shift = modifiers.contains(&"shift");
+            let alt = modifiers.contains(&"alt");
+            let enter_extra = if mapped_key == "Enter" {
+                "target.dispatchEvent(new KeyboardEvent('keypress', opts));"
+            } else { "" };
+            let js = format!(
+                r#"(function() {{
+                    try {{
+                        var target = document.activeElement || document.body;
+                        var opts = {{ key: {key}, code: {key}, bubbles: true, cancelable: true,
+                            ctrlKey: {ctrl}, metaKey: {meta}, shiftKey: {shift}, altKey: {alt} }};
+                        target.dispatchEvent(new KeyboardEvent('keydown', opts));
+                        {enter_extra}
+                        target.dispatchEvent(new KeyboardEvent('keyup', opts));
+                        return {{ success: true }};
+                    }} catch(e) {{ return {{ success: false, error: e.message }}; }}
+                }})()"#,
+                key = serde_json::to_string(mapped_key).unwrap(),
+                ctrl = ctrl, meta = meta, shift = shift, alt = alt,
+                enter_extra = enter_extra
+            );
+            eval_js_with_result(window, &js, 5000, result_tx).await
+        }
+
         _ => Err(format!("Unknown method: {method}")),
     }
 }
@@ -757,8 +798,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                             let health = json!({
                                 "framework": "tauri", "app_name": "tauri-app",
                                 "platform": "tauri", "sdk_version": SDK_VERSION,
-                                "capabilities": ["initialize","inspect","tap","enter_text","get_text",
-                                    "find_element","wait_for_element","scroll","swipe","go_back","get_logs","clear_logs"]
+                                "capabilities": ["initialize","inspect","inspect_interactive","tap","enter_text","get_text",
+                                    "find_element","wait_for_element","scroll","swipe","go_back","get_logs","clear_logs","press_key"]
                             });
                             let body = health.to_string();
                             let resp = format!(

@@ -366,6 +366,13 @@ const methods = {
 
   get_logs: () => ({ logs }),
   clear_logs: () => { logs = []; return { success: true }; },
+  
+  press_key: (p) => {
+    const key = p.key;
+    if (!key) return { success: false, error: 'Missing key parameter' };
+    logs.push(`press_key: ${key} modifiers=${JSON.stringify(p.modifiers || [])}`);
+    return { success: true };
+  },
 };
 
 function handleJsonRpc(raw) {

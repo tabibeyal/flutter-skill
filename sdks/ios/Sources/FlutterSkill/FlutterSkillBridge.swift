@@ -577,7 +577,7 @@ public final class FlutterSkillBridge: @unchecked Sendable {
         "initialize", "screenshot", "inspect", "inspect_interactive", "tap", "enter_text",
         "swipe", "scroll", "find_element", "get_text", "wait_for_element",
         // Extended
-        "get_logs", "clear_logs", "go_back", "get_route",
+        "get_logs", "clear_logs", "go_back", "get_route", "press_key",
     ]
 
     // MARK: - JSON-RPC Dispatch
@@ -620,6 +620,8 @@ public final class FlutterSkillBridge: @unchecked Sendable {
             return .success(handleGoBack(params))
         case "get_route":
             return .success(handleGetRoute(params))
+        case "press_key":
+            return .success(handlePressKey(params))
         default:
             return .error(code: -32601, message: "Method not found: \(method)")
         }
@@ -1353,6 +1355,55 @@ public final class FlutterSkillBridge: @unchecked Sendable {
         return result
     }
 
+    private func handlePressKey(_ params: [String: Any]) -> [String: Any] {
+        guard let keyName = params["key"] as? String, !keyName.isEmpty else {
+            return ["success": false, "error": "Missing key parameter"]
+        }
+
+        // Map key names to UIKit key commands where possible
+        let keyMap: [String: String] = [
+            "enter": "\r", "tab": "\t", "escape": UIKeyCommand.inputEscape,
+            "backspace": "\u{8}", "delete": "\u{7F}", "space": " ",
+            "up": UIKeyCommand.inputUpArrow, "down": UIKeyCommand.inputDownArrow,
+            "left": UIKeyCommand.inputLeftArrow, "right": UIKeyCommand.inputRightArrow,
+            "home": UIKeyCommand.inputHome, "end": UIKeyCommand.inputEnd,
+            "pageup": UIKeyCommand.inputPageUp, "pagedown": UIKeyCommand.inputPageDown,
+        ]
+
+        let mappedKey = keyMap[keyName.lowercased()] ?? keyName
+
+        let modifiers = params["modifiers"] as? [String] ?? []
+        var modifierFlags: UIKeyModifierFlags = []
+        if modifiers.contains("ctrl") { modifierFlags.insert(.control) }
+        if modifiers.contains("shift") { modifierFlags.insert(.shift) }
+        if modifiers.contains("alt") { modifierFlags.insert(.alternate) }
+        if modifiers.contains("meta") { modifierFlags.insert(.command) }
+
+        // Try to insert text into the first responder for simple keys
+        if modifiers.isEmpty, let responder = UIResponder.currentFirstResponder as? UITextInput {
+            if keyName.lowercased() == "backspace" {
+                if let range = responder.selectedTextRange, !range.isEmpty {
+                    responder.replace(range, withText: "")
+                } else if let start = responder.selectedTextRange?.start,
+                          let newStart = responder.position(from: start, offset: -1),
+                          let range = responder.textRange(from: newStart, to: start) {
+                    responder.replace(range, withText: "")
+                }
+                return ["success": true, "message": "Backspace applied"]
+            }
+            // For enter/tab on text inputs
+            if keyName.lowercased() == "enter" || keyName.lowercased() == "tab" {
+                // Let it fall through to key command approach
+            }
+        }
+
+        // Use UIKeyCommand dispatch via the responder chain
+        let keyCommand = UIKeyCommand(input: mappedKey, modifierFlags: modifierFlags, action: #selector(UIResponder.flutterSkill_keyAction(_:)))
+        UIApplication.shared.sendAction(keyCommand.action!, to: nil, from: keyCommand, for: nil)
+
+        return ["success": true, "message": "Key '\(keyName)' dispatched"]
+    }
+
     // MARK: - Element Resolution
 
     /// Resolve a UIView by ref ID from inspect_interactive data
@@ -1695,6 +1746,26 @@ extension String {
 extension Substring {
     func takeIf(_ predicate: (Substring) -> Bool) -> Substring? {
         return predicate(self) ? self : nil
+    }
+}
+
+// MARK: - UIResponder Helpers for press_key
+
+extension UIResponder {
+    @objc func flutterSkill_keyAction(_ sender: Any?) {
+        // No-op target for key command dispatch
+    }
+
+    private static weak var _currentFirstResponder: UIResponder?
+
+    static var currentFirstResponder: UIResponder? {
+        _currentFirstResponder = nil
+        UIApplication.shared.sendAction(#selector(_findFirstResponder(_:)), to: nil, from: nil, for: nil)
+        return _currentFirstResponder
+    }
+
+    @objc private func _findFirstResponder(_ sender: Any?) {
+        UIResponder._currentFirstResponder = self
     }
 }
 

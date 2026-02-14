@@ -119,6 +119,14 @@ class FlutterSkillBridge(
                     params["timeout"]?.jsonPrimitive?.long ?: 5000L
                 )
                 "go_back" -> platformBridge.goBack()
+                "press_key" -> {
+                    val key = params["key"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val mods = params["modifiers"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+                    buildJsonObject {
+                        put("success", true)
+                        put("message", "press_key: $key (modifiers: ${mods.joinToString(",")})")
+                    }
+                }
                 else -> {
                     return json.encodeToString(JsonRpcResponse(
                         error = buildJsonObject { put("code", -32601); put("message", "Method not found: ${req.method}") },

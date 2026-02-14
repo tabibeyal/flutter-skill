@@ -709,6 +709,39 @@
     return { logs: sdk._logs || [] };
   };
 
+  methods.press_key = function (params) {
+    var keyName = params.key;
+    if (!keyName) return { success: false, error: "Missing key parameter" };
+    var modifiers = params.modifiers || [];
+
+    var keyMap = {
+      enter: "Enter", tab: "Tab", escape: "Escape",
+      backspace: "Backspace", "delete": "Delete", space: " ",
+      up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight",
+      home: "Home", end: "End", pageup: "PageUp", pagedown: "PageDown"
+    };
+    var mappedKey = keyMap[keyName.toLowerCase()] || keyName;
+
+    try {
+      var target = document.activeElement || document.body;
+      var opts = {
+        key: mappedKey, code: mappedKey, bubbles: true, cancelable: true,
+        ctrlKey: modifiers.indexOf("ctrl") !== -1,
+        metaKey: modifiers.indexOf("meta") !== -1,
+        shiftKey: modifiers.indexOf("shift") !== -1,
+        altKey: modifiers.indexOf("alt") !== -1
+      };
+      target.dispatchEvent(new KeyboardEvent("keydown", opts));
+      if (mappedKey === "Enter") {
+        target.dispatchEvent(new KeyboardEvent("keypress", opts));
+      }
+      target.dispatchEvent(new KeyboardEvent("keyup", opts));
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message || String(e) };
+    }
+  };
+
   methods.clear_logs = function () {
     sdk._logs = [];
     return { success: true };

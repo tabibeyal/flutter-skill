@@ -4,10 +4,16 @@ import 'dart:developer' as developer;
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'flutter_skill_semantic_refs.dart';
+
+// Conditional web import for JS interop
+import 'flutter_skill_web_stub.dart'
+    if (dart.library.js_interop) 'flutter_skill_web_interop.dart'
+    as web_interop;
 
 // ==================== ERROR CODES ====================
 
@@ -38,6 +44,11 @@ class FlutterSkillBinding {
     if (_registered) return;
     _registered = true;
     _registerExtensions();
+
+    // On web, expose Dart-side element lookup to JavaScript
+    if (kIsWeb) {
+      web_interop.registerWebBridge(_handleWebBridgeCall);
+    }
 
     // Auto-enable test indicators after a short delay
     if (autoEnableIndicators) {
@@ -71,6 +82,118 @@ class FlutterSkillBinding {
   static bool _indicatorsEnabled = false;
   static Offset?
       _lastCharacterPosition; // Track character position for walking effect
+
+  /// Handle a bridge call from the web JS bridge.
+  /// Returns JSON string result.
+  static String _handleWebBridgeCall(String method, String paramsJson) {
+    try {
+      final params = jsonDecode(paramsJson) as Map<String, dynamic>;
+      switch (method) {
+        case 'find_element':
+          final key = params['key'] as String?;
+          final text = params['text'] as String?;
+          final element = _findElement(key: key, text: text);
+          if (element == null) return jsonEncode({'found': false});
+          final renderObj = element.renderObject;
+          if (renderObj is RenderBox) {
+            final offset = renderObj.localToGlobal(Offset.zero);
+            final size = renderObj.size;
+            return jsonEncode({
+              'found': true,
+              'element': {
+                'type': element.widget.runtimeType.toString(),
+                'key': key,
+                'text': _extractTextFrom(element),
+                'bounds': {
+                  'x': offset.dx.round(),
+                  'y': offset.dy.round(),
+                  'width': size.width.round(),
+                  'height': size.height.round(),
+                },
+              },
+            });
+          }
+          return jsonEncode({'found': true, 'element': {'type': element.widget.runtimeType.toString(), 'key': key}});
+
+        case 'get_text':
+          final key = params['key'] as String?;
+          final text = params['text'] as String?;
+          final element = _findElement(key: key, text: text);
+          if (element == null) return jsonEncode({'text': null});
+          // For text fields, get the current value
+          if (key != null) {
+            final value = _getTextFieldValue(key);
+            if (value != null) return jsonEncode({'text': value});
+          }
+          final extracted = _extractTextFrom(element);
+          return jsonEncode({'text': extracted});
+
+        case 'tap':
+          final key = params['key'] as String?;
+          final text = params['text'] as String?;
+          final element = _findElement(key: key, text: text);
+          if (element == null) return jsonEncode({'success': false, 'message': 'Element not found'});
+          final renderObj = element.renderObject;
+          if (renderObj is RenderBox) {
+            final center = renderObj.localToGlobal(renderObj.size.center(Offset.zero));
+            // Schedule the tap
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _performTapAt(center.dx, center.dy);
+            });
+            return jsonEncode({'success': true, 'message': 'Tap scheduled'});
+          }
+          return jsonEncode({'success': false, 'message': 'No render object'});
+
+        case 'enter_text':
+          final key = params['key'] as String?;
+          final textVal = params['text'] as String? ?? '';
+          final element = key != null ? _findElementByKey(key) : null;
+          if (element == null) return jsonEncode({'success': false, 'message': 'Element not found'});
+          final renderObj = element.renderObject;
+          if (renderObj is RenderBox) {
+            final center = renderObj.localToGlobal(renderObj.size.center(Offset.zero));
+            // Tap to focus, then enter text
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await _performTapAt(center.dx, center.dy);
+              await Future.delayed(const Duration(milliseconds: 100));
+              // Use test text input to set the value
+              final controller = _findTextEditingController(element);
+              if (controller != null) {
+                controller.text = textVal;
+              }
+            });
+            return jsonEncode({'success': true, 'message': 'Text entry scheduled'});
+          }
+          return jsonEncode({'success': false, 'message': 'No render object'});
+
+        case 'wait_for_element':
+          final key = params['key'] as String?;
+          final text = params['text'] as String?;
+          final element = _findElement(key: key, text: text);
+          return jsonEncode({'found': element != null});
+
+        default:
+          return jsonEncode({'error': 'Unknown web bridge method: $method'});
+      }
+    } catch (e) {
+      return jsonEncode({'error': e.toString()});
+    }
+  }
+
+  static TextEditingController? _findTextEditingController(Element element) {
+    TextEditingController? controller;
+    void visit(Element el) {
+      if (controller != null) return;
+      final widget = el.widget;
+      if (widget is EditableText) {
+        controller = widget.controller;
+        return;
+      }
+      el.visitChildren(visit);
+    }
+    visit(element);
+    return controller;
+  }
 
   static void _registerExtensions() {
     // ==================== EXISTING EXTENSIONS ====================
@@ -565,6 +688,95 @@ class FlutterSkillBinding {
             'enabled': _indicatorsEnabled,
             'style': _indicatorOverlay?._style.name ?? 'standard',
           }),
+        );
+      } catch (e, stack) {
+        return _errorResponse(e, stack);
+      }
+    });
+
+    // ==================== PRESS KEY ====================
+
+    developer.registerExtension('ext.flutter.flutter_skill.pressKey',
+        (method, parameters) async {
+      try {
+        final key = parameters['key'];
+        if (key == null || key.isEmpty) {
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'success': false, 'error': 'Missing key parameter'}),
+          );
+        }
+        final modifiers = (parameters['modifiers'] ?? '').split(',').where((s) => s.isNotEmpty).toList();
+        
+        final keyMap = <String, LogicalKeyboardKey>{
+          'enter': LogicalKeyboardKey.enter,
+          'tab': LogicalKeyboardKey.tab,
+          'escape': LogicalKeyboardKey.escape,
+          'backspace': LogicalKeyboardKey.backspace,
+          'delete': LogicalKeyboardKey.delete,
+          'space': LogicalKeyboardKey.space,
+          'up': LogicalKeyboardKey.arrowUp,
+          'down': LogicalKeyboardKey.arrowDown,
+          'left': LogicalKeyboardKey.arrowLeft,
+          'right': LogicalKeyboardKey.arrowRight,
+          'home': LogicalKeyboardKey.home,
+          'end': LogicalKeyboardKey.end,
+          'pageup': LogicalKeyboardKey.pageUp,
+          'pagedown': LogicalKeyboardKey.pageDown,
+        };
+
+        final logicalKey = keyMap[key.toLowerCase()]
+            ?? LogicalKeyboardKey.findKeyByKeyId(key.codeUnitAt(0));
+
+        if (logicalKey == null) {
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'success': false, 'error': 'Unknown key: $key'}),
+          );
+        }
+
+        // Build modifier key list
+        final isShift = modifiers.contains('shift');
+        final isCtrl = modifiers.contains('ctrl');
+        final isAlt = modifiers.contains('alt');
+        final isMeta = modifiers.contains('meta');
+
+        // Simulate key press through the focus system
+        final focusNode = FocusManager.instance.primaryFocus;
+        if (focusNode != null) {
+          // Use HardwareKeyboard simulation
+          final binding = WidgetsBinding.instance;
+          final pointer = _pointerCounter++;
+          
+          // Create a RawKeyDownEvent and dispatch through the focus system
+          final keyDown = KeyDownEvent(
+            physicalKey: PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter,
+            logicalKey: logicalKey,
+            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+          );
+
+          // Dispatch through ServicesBinding
+          await ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
+            type: ui.KeyEventType.down,
+            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter).usbHidUsage,
+            logical: logicalKey.keyId,
+            character: key.length == 1 ? key : null,
+            synthesized: false,
+          ));
+
+          await Future.delayed(const Duration(milliseconds: 50));
+
+          await ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
+            type: ui.KeyEventType.up,
+            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter).usbHidUsage,
+            logical: logicalKey.keyId,
+            character: null,
+            synthesized: false,
+          ));
+        }
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'message': 'Key pressed: $key'}),
         );
       } catch (e, stack) {
         return _errorResponse(e, stack);

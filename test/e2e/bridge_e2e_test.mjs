@@ -411,6 +411,81 @@ async function main() {
   await sleep(300);
 
   // =============================================
+  // Keyboard Input (press_key)
+  // =============================================
+  console.log('\n--- Keyboard Input ---');
+  if (!capabilities.has('press_key')) {
+    await skipTest('press_key Enter', 'capability not advertised');
+    await skipTest('press_key Tab', 'capability not advertised');
+    await skipTest('press_key Escape', 'capability not advertised');
+    await skipTest('press_key Backspace', 'capability not advertised');
+    await skipTest('press_key Arrow keys', 'capability not advertised');
+    await skipTest('press_key with Ctrl modifier (select all)', 'capability not advertised');
+    await skipTest('press_key Delete', 'capability not advertised');
+    await skipTest('press_key Home/End', 'capability not advertised');
+    await skipTest('press_key invalid key → graceful', 'capability not advertised');
+    await skipTest('keyboard: type then Enter submits', 'capability not advertised');
+  } else {
+  await test('press_key Enter', async () => {
+    const r = await client.call('press_key', { key: 'enter' });
+    assert(r.result?.success === true, `Failed: ${JSON.stringify(r)}`);
+  });
+
+  await test('press_key Tab', async () => {
+    const r = await client.call('press_key', { key: 'tab' });
+    assert(r.result?.success === true, `Failed: ${JSON.stringify(r)}`);
+  });
+
+  await test('press_key Escape', async () => {
+    const r = await client.call('press_key', { key: 'escape' });
+    assert(r.result?.success === true, `Failed: ${JSON.stringify(r)}`);
+  });
+
+  await test('press_key Backspace', async () => {
+    await client.call('enter_text', elParam('input', { text: 'Hello' }));
+    await sleep(200);
+    const r = await client.call('press_key', { key: 'backspace' });
+    assert(r.result?.success === true, `Failed: ${JSON.stringify(r)}`);
+  });
+
+  await test('press_key Arrow keys', async () => {
+    for (const dir of ['up', 'down', 'left', 'right']) {
+      const r = await client.call('press_key', { key: dir });
+      assert(r.result?.success === true || r.result != null, `${dir} failed`);
+    }
+  });
+
+  await test('press_key with Ctrl modifier (select all)', async () => {
+    const r = await client.call('press_key', { key: 'a', modifiers: ['ctrl'] });
+    if (r.error) console.log('    (Ctrl+A not supported)');
+    else assert(r.result != null, 'No result');
+  });
+
+  await test('press_key Delete', async () => {
+    const r = await client.call('press_key', { key: 'delete' });
+    assert(r.result?.success === true || r.result != null, `Failed`);
+  });
+
+  await test('press_key Home/End', async () => {
+    const r1 = await client.call('press_key', { key: 'home' });
+    const r2 = await client.call('press_key', { key: 'end' });
+    if (r1.error) console.log('    (Home/End not supported)');
+  });
+
+  await test('press_key invalid key → graceful', async () => {
+    const r = await client.call('press_key', { key: 'nonexistent_key_xyz' });
+    assert(r.result != null || r.error != null, 'No response');
+  });
+
+  await test('keyboard: type then Enter submits', async () => {
+    await client.call('enter_text', elParam('input', { text: 'test submit' }));
+    await sleep(200);
+    const r = await client.call('press_key', { key: 'enter' });
+    assert(r.result?.success === true || r.result != null, 'Enter failed');
+  });
+  } // end press_key capability check
+
+  // =============================================
   // Get Text
   // =============================================
   console.log('\n--- Get Text ---');

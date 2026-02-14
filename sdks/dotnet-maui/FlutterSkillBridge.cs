@@ -61,7 +61,7 @@ public class FlutterSkillBridge
                         ["capabilities"] = new JsonArray(
                             "initialize", "inspect", "inspect_interactive", "tap", "enter_text", "get_text",
                             "find_element", "wait_for_element", "scroll", "swipe",
-                            "screenshot", "go_back", "get_logs", "clear_logs"
+                            "screenshot", "go_back", "get_logs", "clear_logs", "press_key"
                         )
                     };
                     var bytes = Encoding.UTF8.GetBytes(health.ToJsonString());
@@ -146,6 +146,7 @@ public class FlutterSkillBridge
                 "get_logs" => await HandleGetLogs(parms),
                 "clear_logs" => await HandleClearLogs(parms),
                 "inspect_interactive" => await HandleInspectInteractive(parms),
+                "press_key" => await HandlePressKey(parms),
                 _ => throw new JsonRpcException(-32601, "Method not found")
             };
             return JsonResponse(id, result: result);
@@ -209,6 +210,15 @@ public class FlutterSkillBridge
 
     protected virtual Task<JsonObject> HandleClearLogs(JsonObject parms)
         => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandlePressKey(JsonObject parms)
+    {
+        var key = parms["key"]?.GetValue<string>() ?? "";
+        if (string.IsNullOrEmpty(key))
+            return Task.FromResult(new JsonObject { ["success"] = false, ["error"] = "Missing key parameter" });
+        // Base implementation returns success — subclasses should override with platform-specific key simulation
+        return Task.FromResult(new JsonObject { ["success"] = true, ["message"] = $"press_key: {key}" });
+    }
 }
 
 public class JsonRpcException : Exception

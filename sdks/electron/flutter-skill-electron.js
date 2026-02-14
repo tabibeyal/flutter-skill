@@ -30,7 +30,7 @@ class FlutterSkillElectron {
           capabilities: [
             'initialize', 'inspect', 'inspect_interactive', 'tap', 'enter_text', 'get_text',
             'find_element', 'wait_for_element', 'scroll', 'swipe',
-            'screenshot', 'go_back', 'get_logs', 'clear_logs',
+            'screenshot', 'go_back', 'get_logs', 'clear_logs', 'press_key',
           ],
         }));
       } else {
@@ -290,6 +290,9 @@ class FlutterSkillElectron {
       case 'clear_logs':
         this.logs = [];
         return { success: true };
+
+      case 'press_key':
+        return this._pressKey(win, params);
 
       default:
         throw new Error(`Unknown method: ${method}`);
@@ -732,6 +735,48 @@ class FlutterSkillElectron {
     const image = await win.webContents.capturePage();
     const base64 = image.toPNG().toString('base64');
     return { success: true, image: base64, format: 'png', encoding: 'base64' };
+  }
+
+  async _pressKey(win, params) {
+    if (!win) return { success: false, error: 'No window' };
+    const keyName = params.key;
+    if (!keyName) return { success: false, error: 'Missing key parameter' };
+    const modifiers = params.modifiers || [];
+
+    const keyMap = {
+      'enter': 'Enter', 'tab': 'Tab', 'escape': 'Escape',
+      'backspace': 'Backspace', 'delete': 'Delete', 'space': ' ',
+      'up': 'ArrowUp', 'down': 'ArrowDown', 'left': 'ArrowLeft', 'right': 'ArrowRight',
+      'home': 'Home', 'end': 'End', 'pageup': 'PageUp', 'pagedown': 'PageDown',
+    };
+    const mappedKey = keyMap[keyName.toLowerCase()] || keyName;
+
+    const result = await win.webContents.executeJavaScript(`
+      (function() {
+        try {
+          const target = document.activeElement || document.body;
+          const opts = {
+            key: ${JSON.stringify(mappedKey)},
+            code: ${JSON.stringify(mappedKey)},
+            bubbles: true,
+            cancelable: true,
+            ctrlKey: ${modifiers.includes('ctrl')},
+            metaKey: ${modifiers.includes('meta')},
+            shiftKey: ${modifiers.includes('shift')},
+            altKey: ${modifiers.includes('alt')},
+          };
+          target.dispatchEvent(new KeyboardEvent('keydown', opts));
+          if (${JSON.stringify(mappedKey)} === 'Enter') {
+            target.dispatchEvent(new KeyboardEvent('keypress', opts));
+          }
+          target.dispatchEvent(new KeyboardEvent('keyup', opts));
+          return { success: true };
+        } catch(e) {
+          return { success: false, error: e.message };
+        }
+      })();
+    `);
+    return result;
   }
 
   async _goBack(win) {

@@ -65,7 +65,7 @@ object FlutterSkillBridge {
     private val capabilities = listOf(
         "initialize", "screenshot", "inspect", "inspect_interactive", "tap", "enter_text",
         "swipe", "scroll", "find_element", "get_text", "wait_for_element",
-        "get_logs", "clear_logs", "go_back",
+        "get_logs", "clear_logs", "go_back", "press_key",
     )
 
     // ---------------------------------------------------------------
@@ -457,6 +457,7 @@ object FlutterSkillBridge {
             "get_logs"            -> handleGetLogs()
             "clear_logs"          -> handleClearLogs()
             "go_back"             -> handleGoBack()
+            "press_key"           -> handlePressKey(params)
             else -> throw NoSuchMethodException("Method not found: $method")
         }
     }
@@ -1002,6 +1003,92 @@ object FlutterSkillBridge {
 
         return JSONObject().apply {
             put("success", true)
+        }
+    }
+
+    private fun handlePressKey(params: JSONObject): JSONObject {
+        val keyName = params.optString("key", "")
+        if (keyName.isEmpty()) {
+            return JSONObject().apply {
+                put("success", false)
+                put("error", "Missing key parameter")
+            }
+        }
+
+        val modifiersArray = params.optJSONArray("modifiers")
+        val modifiers = mutableListOf<String>()
+        if (modifiersArray != null) {
+            for (i in 0 until modifiersArray.length()) {
+                modifiers.add(modifiersArray.getString(i).lowercase())
+            }
+        }
+
+        val keyCodeMap = mapOf(
+            "enter" to android.view.KeyEvent.KEYCODE_ENTER,
+            "tab" to android.view.KeyEvent.KEYCODE_TAB,
+            "escape" to android.view.KeyEvent.KEYCODE_ESCAPE,
+            "backspace" to android.view.KeyEvent.KEYCODE_DEL,
+            "delete" to android.view.KeyEvent.KEYCODE_FORWARD_DEL,
+            "space" to android.view.KeyEvent.KEYCODE_SPACE,
+            "up" to android.view.KeyEvent.KEYCODE_DPAD_UP,
+            "down" to android.view.KeyEvent.KEYCODE_DPAD_DOWN,
+            "left" to android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+            "right" to android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+            "home" to android.view.KeyEvent.KEYCODE_MOVE_HOME,
+            "end" to android.view.KeyEvent.KEYCODE_MOVE_END,
+            "pageup" to android.view.KeyEvent.KEYCODE_PAGE_UP,
+            "pagedown" to android.view.KeyEvent.KEYCODE_PAGE_DOWN,
+        )
+
+        // Map single characters to key codes
+        val keyCode = keyCodeMap[keyName.lowercase()]
+            ?: if (keyName.length == 1) {
+                android.view.KeyEvent.keyCodeFromString("KEYCODE_${keyName.uppercase()}")
+            } else {
+                return JSONObject().apply {
+                    put("success", false)
+                    put("error", "Unknown key: $keyName")
+                }
+            }
+
+        if (keyCode == android.view.KeyEvent.KEYCODE_UNKNOWN) {
+            return JSONObject().apply {
+                put("success", false)
+                put("error", "Unknown key: $keyName")
+            }
+        }
+
+        var metaState = 0
+        if ("ctrl" in modifiers) metaState = metaState or android.view.KeyEvent.META_CTRL_ON
+        if ("shift" in modifiers) metaState = metaState or android.view.KeyEvent.META_SHIFT_ON
+        if ("alt" in modifiers) metaState = metaState or android.view.KeyEvent.META_ALT_ON
+        if ("meta" in modifiers) metaState = metaState or android.view.KeyEvent.META_META_ON
+
+        return try {
+            val activity = currentActivity
+                ?: return JSONObject().apply {
+                    put("success", false)
+                    put("error", "No active activity")
+                }
+
+            runOnMainThreadBlocking {
+                val downTime = SystemClock.uptimeMillis()
+                val downEvent = android.view.KeyEvent(
+                    downTime, downTime, android.view.KeyEvent.ACTION_DOWN, keyCode, 0, metaState
+                )
+                val upEvent = android.view.KeyEvent(
+                    downTime, SystemClock.uptimeMillis(), android.view.KeyEvent.ACTION_UP, keyCode, 0, metaState
+                )
+                activity.dispatchKeyEvent(downEvent)
+                activity.dispatchKeyEvent(upEvent)
+            }
+
+            JSONObject().apply { put("success", true) }
+        } catch (e: Exception) {
+            JSONObject().apply {
+                put("success", false)
+                put("error", e.message ?: "Key press failed")
+            }
         }
     }
 
