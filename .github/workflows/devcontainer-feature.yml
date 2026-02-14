@@ -27,4 +27,4 @@ jobs:
         with:
           publish-features: 'true'
           base-path-to-features: './packaging/devcontainer-feature/src'
-          generate-docs: 'true'
+          generate-docs: 'false'
