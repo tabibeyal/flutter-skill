@@ -1,88 +1,461 @@
 <!DOCTYPE html>
-<html>
-<head><title>Flutter Skill Electron Test</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flutter Skill Electron Test</title>
 <style>
-  body { font-family: sans-serif; padding: 20px; }
-  button { padding: 8px 16px; margin: 4px; font-size: 16px; }
-  input { padding: 8px; font-size: 16px; margin: 4px; }
-  .page { display: none; } .page.active { display: block; }
-  #counter { font-size: 32px; margin: 16px 0; }
-  .list-item { padding: 8px; border-bottom: 1px solid #eee; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0a; --surface: #1a1a2e; --card: #16213e; --accent: #e94560;
+  --accent2: #0f3460; --text: #eee; --text2: #999; --border: #2a2a4a;
+  --success: #00c853; --radius: 14px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.app { flex: 1; overflow: hidden; position: relative; }
+.tab-content { display: none; height: 100%; overflow-y: auto; padding: 16px 16px 80px; scroll-behavior: smooth; }
+.tab-content.active { display: block; }
+.tab-content::-webkit-scrollbar { width: 6px; }
+.tab-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Bottom Nav */
+.bottom-nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); padding: 8px 0 12px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
+.nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: var(--text2); font-size: 10px; cursor: pointer; padding: 4px; transition: color .2s; }
+.nav-tab.active { color: var(--accent); }
+.nav-tab .icon { font-size: 22px; }
+
+/* Cards */
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; transition: transform .15s, box-shadow .15s; cursor: pointer; border: 1px solid var(--border); }
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(233,69,96,.15); }
+.card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.card-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.card-user { font-weight: 600; font-size: 14px; }
+.card-time { color: var(--text2); font-size: 12px; margin-left: auto; }
+.card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.card-desc { color: var(--text2); font-size: 13px; line-height: 1.4; margin-bottom: 12px; }
+.card-actions { display: flex; gap: 16px; }
+.card-action { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: color .2s; }
+.card-action:hover, .card-action.liked { color: var(--accent); }
+
+/* Search */
+.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-bar input { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; }
+.search-bar input:focus { border-color: var(--accent); }
+.search-bar button { background: var(--accent); border: none; border-radius: 10px; padding: 10px 16px; color: #fff; cursor: pointer; font-size: 14px; }
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text2); cursor: pointer; transition: all .2s; }
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Form elements */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.form-input, .form-textarea, .form-select { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+.form-textarea { min-height: 100px; resize: vertical; }
+.form-select { appearance: none; cursor: pointer; }
+.form-select option { background: var(--card); }
+
+/* Toggle switch */
+.toggle-container { display: flex; align-items: center; gap: 10px; }
+.toggle { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background .2s; border: none; padding: 0; }
+.toggle::after { content: ''; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform .2s; }
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(20px); }
+
+/* Checkbox */
+.checkbox-container { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox-container input { accent-color: var(--accent); width: 18px; height: 18px; }
+
+/* Buttons */
+.btn { background: var(--accent); border: none; border-radius: 10px; padding: 12px 24px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
+.btn:hover { opacity: .9; }
+.btn:active { transform: scale(.97); }
+.btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* Profile */
+.profile-header { text-align: center; padding: 20px 0; }
+.profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #ff6b6b); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+.profile-name { font-size: 20px; font-weight: 700; }
+.profile-handle { color: var(--text2); font-size: 14px; }
+.profile-stats { display: flex; justify-content: center; gap: 32px; margin: 16px 0; }
+.stat { text-align: center; }
+.stat-num { font-size: 18px; font-weight: 700; }
+.stat-label { font-size: 12px; color: var(--text2); }
+.profile-actions { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+
+/* Counter widget */
+.counter-widget { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); }
+.counter-value { font-size: 28px; font-weight: 700; min-width: 80px; text-align: center; }
+.counter-btn { width: 40px; height: 40px; border-radius: 50%; border: none; font-size: 20px; font-weight: 700; cursor: pointer; transition: transform .1s; display: flex; align-items: center; justify-content: center; }
+.counter-btn:active { transform: scale(.9); }
+.counter-btn.inc { background: var(--accent); color: #fff; }
+.counter-btn.dec { background: var(--accent2); color: #fff; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius); padding: 24px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-header h2 { font-size: 18px; }
+.modal-close { background: none; border: none; color: var(--text2); font-size: 24px; cursor: pointer; }
+.modal-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.modal-item:last-child { border: none; }
+
+/* Toast */
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 20px; font-size: 14px; z-index: 300; transition: transform .3s; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Detail view */
+.detail-view { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 150; overflow-y: auto; padding: 16px 16px 80px; }
+.detail-view.show { display: block; }
+.detail-back { background: none; border: none; color: var(--accent); font-size: 14px; cursor: pointer; margin-bottom: 16px; display: flex; align-items: center; gap: 4px; }
+.detail-img { width: 100%; height: 200px; background: linear-gradient(135deg, var(--accent2), var(--accent)); border-radius: var(--radius); margin-bottom: 16px; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+
+/* Section headers */
+.section-title { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+
+/* File upload */
+.file-upload { display: flex; align-items: center; gap: 8px; }
+.file-upload label { background: var(--card); border: 1px dashed var(--border); border-radius: 10px; padding: 12px 20px; cursor: pointer; font-size: 13px; color: var(--text2); }
+.file-upload input { display: none; }
+
+/* Long list items */
+.list-item { padding: 12px 16px; background: var(--card); border-radius: 10px; margin-bottom: 6px; font-size: 14px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.list-item .idx { color: var(--text2); font-size: 12px; }
 </style>
 </head>
 <body>
-  <div id="home-page" class="page active">
-    <h1>Electron Test App</h1>
-    <div id="counter">Count: 0</div>
-    <button id="increment-btn" onclick="increment()">+</button>
-    <button id="decrement-btn" onclick="decrement()">-</button>
-    <br><br>
-    <input id="text-input" type="text" placeholder="Enter text here">
-    <button id="submit-btn" onclick="submitText()">Submit</button>
-    <div id="result"></div>
-    <br>
-    <label><input type="checkbox" id="test-checkbox" onchange="toggleCheck()"> Toggle me</label>
-    <div id="check-status">Unchecked</div>
-    <br>
-    <button id="detail-btn" onclick="goToDetail()">Go to Detail</button>
-    <button id="form-btn" onclick="goToForm()">Go to Form</button>
-    <br><br>
-    <div id="item-list"></div>
-  </div>
-  
-  <div id="detail-page" class="page">
-    <h1>Detail Page</h1>
-    <div id="detail-counter"></div>
-    <button id="back-btn" onclick="goHome()">Go Back</button>
-  </div>
-  
-  <div id="form-page" class="page">
-    <h1>Form Page</h1>
-    <input id="form-name" type="text" placeholder="Name"><br>
-    <input id="form-email" type="text" placeholder="Email"><br>
-    <button id="form-submit" onclick="submitForm()">Submit Form</button>
-    <div id="form-result"></div>
-    <button id="form-back" onclick="goHome()">Go Back</button>
+
+<div class="app">
+  <!-- HOME TAB -->
+  <div id="tab-content-home" class="tab-content active">
+    <h1 style="font-size:24px;margin-bottom:16px">🔥 For You</h1>
+    
+    <!-- Counter widget for backward compat -->
+    <div class="counter-widget">
+      <button class="counter-btn dec" id="decrement-btn" onclick="decrement()">−</button>
+      <div class="counter-value" id="counter">Count: 0</div>
+      <button class="counter-btn inc" id="increment-btn" onclick="increment()">+</button>
+    </div>
+    
+    <!-- Backward compat elements -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="text-input" class="form-input" type="text" placeholder="What's on your mind?" style="flex:1">
+      <button id="submit-btn" class="btn" onclick="submitText()">Post</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <label class="checkbox-container"><input type="checkbox" id="test-checkbox" onchange="toggleCheck()"> <span>Show trending only</span></label>
+    </div>
+    <div id="result" style="color:var(--accent);font-size:13px;margin-bottom:12px"></div>
+    <div id="check-status" style="color:var(--text2);font-size:12px;margin-bottom:16px">Unchecked</div>
+    
+    <button id="detail-btn" class="btn btn-outline btn-sm" onclick="goToDetail()" style="margin-bottom:16px">📄 Open Detail View</button>
+    
+    <!-- Feed -->
+    <div id="feed"></div>
   </div>
 
+  <!-- SEARCH TAB -->
+  <div id="tab-content-search" class="tab-content">
+    <h1 style="font-size:24px;margin-bottom:16px">🔍 Discover</h1>
+    <div class="search-bar">
+      <input id="search-input" type="text" placeholder="Search posts, users..." oninput="onSearch()">
+      <button id="search-btn" onclick="onSearch()">🔍</button>
+    </div>
+    <div class="filters" id="search-filters">
+      <span class="filter-chip active" onclick="toggleFilter(this)">All</span>
+      <span class="filter-chip" onclick="toggleFilter(this)">Trending</span>
+      <span class="filter-chip" onclick="toggleFilter(this)">People</span>
+      <span class="filter-chip" onclick="toggleFilter(this)">Videos</span>
+      <span class="filter-chip" onclick="toggleFilter(this)">Music</span>
+    </div>
+    <div id="search-results"></div>
+    <!-- Long scrollable list: 50+ items -->
+    <div class="section-title" style="margin-top:16px">Browse All</div>
+    <div id="browse-list"></div>
+  </div>
+
+  <!-- CREATE TAB -->
+  <div id="tab-content-create" class="tab-content">
+    <h1 style="font-size:24px;margin-bottom:16px">✨ Create</h1>
+    <div class="form-group">
+      <label>Title</label>
+      <input id="create-title" class="form-input" type="text" placeholder="Give your post a title">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="textarea-input" class="form-textarea" placeholder="Tell your story..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="dropdown-select" class="form-select">
+        <option value="">Select a category</option>
+        <option value="comedy">😂 Comedy</option>
+        <option value="music">🎵 Music</option>
+        <option value="dance">💃 Dance</option>
+        <option value="food">🍕 Food</option>
+        <option value="travel">✈️ Travel</option>
+        <option value="tech">💻 Tech</option>
+        <option value="fitness">💪 Fitness</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="checkbox-container"><input type="checkbox" id="create-public"> Make public</label>
+    </div>
+    <div class="form-group">
+      <div class="toggle-container">
+        <span>Allow comments</span>
+        <button id="toggle-switch" class="toggle on" onclick="toggleSwitch(this)"></button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Attach media</label>
+      <div class="file-upload">
+        <label for="file-input">📎 Choose file</label>
+        <input id="file-input" type="file">
+        <span id="file-name" style="color:var(--text2);font-size:12px">No file chosen</span>
+      </div>
+    </div>
+    <button class="btn" style="width:100%" onclick="submitCreate()">🚀 Publish</button>
+  </div>
+
+  <!-- PROFILE TAB -->
+  <div id="tab-content-profile" class="tab-content">
+    <div class="profile-header">
+      <div class="profile-avatar">😎</div>
+      <div class="profile-name">Test User</div>
+      <div class="profile-handle">@testuser</div>
+    </div>
+    <div class="profile-stats">
+      <div class="stat"><div class="stat-num">12.5K</div><div class="stat-label">Followers</div></div>
+      <div class="stat"><div class="stat-num">842</div><div class="stat-label">Following</div></div>
+      <div class="stat"><div class="stat-num">98.1K</div><div class="stat-label">Likes</div></div>
+    </div>
+    <div class="profile-actions">
+      <button class="btn">Edit Profile</button>
+      <button id="settings-btn" class="btn btn-outline" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+    <div class="section-title">My Posts</div>
+    <div id="my-posts"></div>
+  </div>
+</div>
+
+<!-- Detail View -->
+<div id="detail-view" class="detail-view">
+  <button class="detail-back" onclick="closeDetail()">← Back</button>
+  <div class="detail-img" id="detail-img">🎬</div>
+  <h2 id="detail-title" style="margin-bottom:8px"></h2>
+  <p id="detail-desc" style="color:var(--text2);line-height:1.5;margin-bottom:16px"></p>
+  <div id="detail-counter" style="color:var(--text2);font-size:13px;margin-bottom:16px"></div>
+  <div style="display:flex;gap:12px;margin-bottom:24px">
+    <button class="btn" onclick="showToast('❤️ Liked!')">❤️ Like</button>
+    <button class="btn btn-outline" onclick="showToast('💬 Comment added')">💬 Comment</button>
+    <button class="btn btn-outline" onclick="showToast('🔗 Link copied!')">↗️ Share</button>
+  </div>
+  <div class="section-title">Related Posts</div>
+  <div id="detail-related"></div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙️ Settings</h2>
+      <button id="modal-close" class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-item"><span>Dark Mode</span><button class="toggle on" onclick="toggleSwitch(this)"></button></div>
+    <div class="modal-item"><span>Push Notifications</span><button class="toggle on" onclick="toggleSwitch(this)"></button></div>
+    <div class="modal-item"><span>Private Account</span><button class="toggle" onclick="toggleSwitch(this)"></button></div>
+    <div class="modal-item"><span>Auto-play Videos</span><button class="toggle on" onclick="toggleSwitch(this)"></button></div>
+    <div class="modal-item"><span>Data Saver</span><button class="toggle" onclick="toggleSwitch(this)"></button></div>
+    <div class="modal-item"><span>Show Activity Status</span><button class="toggle on" onclick="toggleSwitch(this)"></button></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+  <button id="tab-home" class="nav-tab active" onclick="switchTab('home')"><span class="icon">🏠</span>Home</button>
+  <button id="tab-search" class="nav-tab" onclick="switchTab('search')"><span class="icon">🔍</span>Search</button>
+  <button id="tab-create" class="nav-tab" onclick="switchTab('create')"><span class="icon">➕</span>Create</button>
+  <button id="tab-profile" class="nav-tab" onclick="switchTab('profile')"><span class="icon">👤</span>Profile</button>
+</nav>
+
 <script>
-  let count = 0;
-  // Generate list items
-  const list = document.getElementById('item-list');
+// ---- State ----
+let count = 0;
+const emojis = ['🎬','🎵','🎮','📸','🍕','💡','🚀','🎨','📚','🏋️','✈️','🎭','🐶','🌮','⚽','🎸','💻','🌿','🎯','🔥','🎪','🧪'];
+const users = ['Alex','Jordan','Sam','Riley','Casey','Morgan','Taylor','Quinn','Avery','Drew','Blake','Harper','Sage','Rowan','Sky','River','Phoenix','Ash','Storm','Luna'];
+const titles = ['Amazing sunset today','New recipe alert!','Check out this beat','Travel diaries pt.3','Gym transformation','My cat did WHAT','Code review gone wrong','Unboxing haul','Painting timelapse','Cooking challenge','Morning routine','Study with me','Room tour 2024','Life hack you need','Thrift flip','Day in my life','Book recommendations','Workout motivation','Street food review','Art process'];
+const descs = ['This is honestly one of the best things I\'ve ever seen. You won\'t believe what happens next!','Just tried this for the first time and I\'m obsessed. Let me know what you think in the comments!','Been working on this for weeks and finally ready to share with everyone. Hope you enjoy!','Something different today — stepping out of my comfort zone. Your support means everything 💕','Can\'t stop watching this on repeat. The vibes are immaculate ✨'];
+
+// ---- Tab Navigation ----
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-content-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ---- Counter (backward compat) ----
+function increment() { count++; updateCounter(); }
+function decrement() { count--; updateCounter(); }
+function updateCounter() { document.getElementById('counter').textContent = 'Count: ' + count; }
+
+// ---- Text submit (backward compat) ----
+function submitText() {
+  const text = document.getElementById('text-input').value;
+  document.getElementById('result').textContent = 'Submitted: ' + text;
+  if (text) showToast('📝 Posted: ' + text);
+}
+function toggleCheck() {
+  const checked = document.getElementById('test-checkbox').checked;
+  document.getElementById('check-status').textContent = checked ? 'Checked' : 'Unchecked';
+}
+
+// ---- Feed ----
+function buildFeed() {
+  const feed = document.getElementById('feed');
   for (let i = 0; i < 20; i++) {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.id = 'item-' + i;
-    div.textContent = 'Item ' + (i + 1);
-    list.appendChild(div);
+    const likes = Math.floor(Math.random() * 50000);
+    const comments = Math.floor(Math.random() * 5000);
+    const time = Math.floor(Math.random() * 24) + 'h ago';
+    feed.innerHTML += `
+      <div class="card" id="feed-item-${i}" onclick="openFeedDetail(${i})">
+        <div class="card-header">
+          <div class="card-avatar">${emojis[i % emojis.length]}</div>
+          <span class="card-user">${users[i % users.length]}</span>
+          <span class="card-time">${time}</span>
+        </div>
+        <div class="card-title">${titles[i]}</div>
+        <div class="card-desc">${descs[i % descs.length]}</div>
+        <div class="card-actions">
+          <button class="card-action" id="like-btn-${i}" onclick="event.stopPropagation();likePost(this,${likes})">❤️ ${formatNum(likes)}</button>
+          <button class="card-action" onclick="event.stopPropagation();showToast('💬 Comments opened')">💬 ${formatNum(comments)}</button>
+          <button class="card-action" onclick="event.stopPropagation();showToast('↗️ Shared!')">↗️ Share</button>
+        </div>
+      </div>`;
   }
-  
-  function increment() { count++; updateCounter(); }
-  function decrement() { count--; updateCounter(); }
-  function updateCounter() { document.getElementById('counter').textContent = 'Count: ' + count; }
-  function submitText() {
-    const text = document.getElementById('text-input').value;
-    document.getElementById('result').textContent = 'Submitted: ' + text;
+}
+
+function formatNum(n) { return n >= 1000 ? (n/1000).toFixed(1) + 'K' : n; }
+
+function likePost(btn, count) {
+  btn.classList.toggle('liked');
+  const liked = btn.classList.contains('liked');
+  const num = liked ? count + 1 : count;
+  btn.innerHTML = (liked ? '❤️' : '🤍') + ' ' + formatNum(num);
+  showToast(liked ? '❤️ Liked!' : '💔 Unliked');
+}
+
+// ---- Detail View ----
+function openFeedDetail(i) {
+  document.getElementById('detail-title').textContent = titles[i % titles.length];
+  document.getElementById('detail-desc').textContent = descs[i % descs.length] + '\n\n' + descs[(i+1) % descs.length];
+  document.getElementById('detail-img').textContent = emojis[i % emojis.length];
+  document.getElementById('detail-counter').textContent = 'Counter value: ' + count;
+  // Related posts
+  const rel = document.getElementById('detail-related');
+  rel.innerHTML = '';
+  for (let j = 0; j < 5; j++) {
+    const ri = (i + j + 1) % 20;
+    rel.innerHTML += `<div class="card" onclick="openFeedDetail(${ri})"><div class="card-title">${titles[ri]}</div><div class="card-desc">${descs[ri%descs.length].slice(0,60)}...</div></div>`;
   }
-  function toggleCheck() {
-    const checked = document.getElementById('test-checkbox').checked;
-    document.getElementById('check-status').textContent = checked ? 'Checked' : 'Unchecked';
+  document.getElementById('detail-view').classList.add('show');
+}
+
+function goToDetail() {
+  document.getElementById('detail-title').textContent = 'Detail Page';
+  document.getElementById('detail-desc').textContent = 'This is the detail view. Counter value is shown below.';
+  document.getElementById('detail-counter').textContent = 'Counter: ' + count;
+  document.getElementById('detail-view').classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detail-view').classList.remove('show'); }
+
+// ---- Search ----
+function onSearch() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const results = document.getElementById('search-results');
+  if (!q) { results.innerHTML = ''; return; }
+  let html = '';
+  titles.forEach((t, i) => {
+    if (t.toLowerCase().includes(q)) {
+      html += `<div class="card" onclick="openFeedDetail(${i})"><div class="card-title">${t}</div><div class="card-desc">by ${users[i%users.length]}</div></div>`;
+    }
+  });
+  results.innerHTML = html || '<p style="color:var(--text2);text-align:center;padding:20px">No results found</p>';
+}
+
+function toggleFilter(el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  showToast('Filter: ' + el.textContent);
+}
+
+// ---- Browse list (50+ items) ----
+function buildBrowseList() {
+  const list = document.getElementById('browse-list');
+  let html = '';
+  for (let i = 0; i < 60; i++) {
+    html += `<div class="list-item" id="item-${i}"><span>${emojis[i%emojis.length]} Trending item #${i+1}</span><span class="idx">#${i+1}</span></div>`;
   }
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+  list.innerHTML = html;
+}
+
+// ---- Create ----
+function toggleSwitch(el) { el.classList.toggle('on'); }
+function submitCreate() {
+  const title = document.getElementById('create-title').value;
+  const desc = document.getElementById('textarea-input').value;
+  const cat = document.getElementById('dropdown-select').value;
+  if (!title) { showToast('⚠️ Please add a title'); return; }
+  showToast('🚀 Published: ' + title);
+  document.getElementById('create-title').value = '';
+  document.getElementById('textarea-input').value = '';
+}
+
+document.getElementById('file-input').addEventListener('change', function() {
+  document.getElementById('file-name').textContent = this.files[0]?.name || 'No file chosen';
+});
+
+// ---- Profile ----
+function buildMyPosts() {
+  const posts = document.getElementById('my-posts');
+  let html = '';
+  for (let i = 0; i < 10; i++) {
+    html += `<div class="card" onclick="openFeedDetail(${i})"><div class="card-title">${titles[i]}</div><div class="card-desc">${descs[i%descs.length].slice(0,80)}...</div></div>`;
   }
-  function goToDetail() {
-    document.getElementById('detail-counter').textContent = 'Counter: ' + count;
-    showPage('detail-page');
-  }
-  function goToForm() { showPage('form-page'); }
-  function goHome() { showPage('home-page'); }
-  function submitForm() {
-    const name = document.getElementById('form-name').value;
-    const email = document.getElementById('form-email').value;
-    document.getElementById('form-result').textContent = 'Name: ' + name + ', Email: ' + email;
-  }
+  posts.innerHTML = html;
+}
+
+// ---- Settings Modal ----
+function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
+function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+
+// ---- Toast ----
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ---- Backward compat page navigation ----
+function showPage(id) {
+  // Legacy support
+  if (id === 'home-page') switchTab('home');
+}
+function goHome() { closeDetail(); switchTab('home'); }
+
+// ---- Init ----
+buildFeed();
+buildBrowseList();
+buildMyPosts();
 </script>
 </body>
 </html>
