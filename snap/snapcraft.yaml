@@ -1,6 +1,6 @@
 name: flutter-skill
 base: core22
-version: '0.2.21'
+version: '0.7.5'
 summary: AI Agent Bridge for Flutter Apps
 description: |
   Flutter Skill is a bridge that connects AI agents (Claude, Cursor, Windsurf)
@@ -38,15 +38,15 @@ parts:
       - curl
       - unzip
     override-build: |
-      # Install Dart SDK
-      curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg
-      echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list
-      apt-get update
-      apt-get install -y dart
+      # Install Flutter SDK
+      FLUTTER_VERSION="3.27.4"
+      curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o flutter.tar.xz
+      tar xf flutter.tar.xz -C /opt
+      rm flutter.tar.xz
+      export PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH"
 
       # Get dependencies and compile
-      export PATH="$PATH:/usr/lib/dart/bin"
-      dart pub get
+      flutter pub get
       dart compile exe bin/flutter_skill.dart -o $CRAFT_PART_INSTALL/bin/flutter-skill
     stage-packages:
       - libgcc-s1
