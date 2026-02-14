@@ -1,9 +1,9 @@
-name: flutter_skill
+name: flutter_skill_npm
 description: Give your AI Agent eyes and hands inside your Flutter app.
 version: 0.2.0
+publish_to: 'none'
 homepage: https://github.com/ai-dashboad/flutter-skill
 repository: https://github.com/ai-dashboad/flutter-skill
-# publish_to: 'none' # Remove this when ready to publish to pub.dev
 
 executables:
   flutter_skill: flutter_skill
