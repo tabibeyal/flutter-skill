@@ -1,3 +1,13 @@
+---
+name: flutter-skill-testing
+version: 0.7.6
+category: testing
+priority: high
+auto_activate: true
+tags: [flutter, e2e, testing, ai, mcp, ios, android, react-native, electron, tauri]
+description: AI-powered E2E testing for any app. Test 8 platforms with natural language — no test code needed.
+---
+
 # Flutter Skill — AI E2E Testing
 
 > Give your AI agent eyes and hands inside any running app.
