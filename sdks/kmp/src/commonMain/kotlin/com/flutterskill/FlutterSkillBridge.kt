@@ -117,7 +117,12 @@ class FlutterSkillBridge(
                     params["selector"]?.jsonPrimitive?.content ?: "",
                     params["timeout"]?.jsonPrimitive?.long ?: 5000L
                 )
-                else -> buildJsonObject { put("error", "Unknown method: ${req.method}") }
+                else -> {
+                    return json.encodeToString(JsonRpcResponse(
+                        error = buildJsonObject { put("code", -32601); put("message", "Method not found: ${req.method}") },
+                        id = req.id
+                    ))
+                }
             }
         } catch (e: Exception) {
             return json.encodeToString(JsonRpcResponse(
