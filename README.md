@@ -135,11 +135,12 @@ flutter-skill works across **8 platforms** with a unified bridge protocol:
 | **Tauri** (Rust) | [`sdks/tauri`](sdks/tauri/) | 75/75 ✅ | Stable |
 | **.NET MAUI** | [`sdks/dotnet-maui`](sdks/dotnet-maui/) | 75/75 ✅ | Stable |
 | **React Native** | [`sdks/react-native`](sdks/react-native/) | 75/75 ✅ | Stable |
+
 | **Android** (Kotlin) | [`sdks/android`](sdks/android/) | 74/75 ✅ | Stable |
 | **Flutter iOS** | `flutter_skill` (pub.dev) | 60/65 ✅ | Stable |
 | **Flutter Web** | `flutter_skill` (pub.dev) | 63/65 ✅ | Stable |
 
-> **572/580 tests passing** across all platforms (98.6% pass rate)
+> **582/590 tests passing** across all platforms (98.6% pass rate)
 
 Each platform is tested against a complex social media app (tabs, feeds, forms, modals, 50+ elements) with 75 E2E tests covering:
 inspect, tap, enter_text, get_text, find_element, wait_for_element, scroll, swipe, screenshot, go_back, press_key, inspect_interactive, eval, and error handling.
@@ -318,7 +319,7 @@ Every platform is tested against a **complex social media app** (4-tab navigatio
 | KMP | Compose Desktop app | 50+ items, tab navigation |
 | Tauri | Web frontend (Rust backend) | 55+ feed cards |
 | .NET MAUI | Simulated bridge with 6 screens | 114 elements |
-| React Native | Social media mock server | 50+ elements, 5 screens |
+| React Native | Real RN app on iOS simulator | Self-registering components |
 | Flutter iOS | TikTok clone (10 feature modules) | Full social media app |
 | Flutter Web | TikTok clone via bridge proxy | Full social media app |
 

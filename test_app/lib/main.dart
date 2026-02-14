@@ -5,9 +5,7 @@ import 'package:flutter_skill/flutter_skill.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
-  if (kDebugMode) {
-    FlutterSkillBinding.ensureInitialized();
-  }
+  FlutterSkillBinding.ensureInitialized();
   runApp(const TestApp());
 }
 
