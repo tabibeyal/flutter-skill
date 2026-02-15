@@ -4407,7 +4407,14 @@ Detailed diagnostic report with:
 
     for (var i = 0; i < actions.length; i++) {
       final action = actions[i] as Map<String, dynamic>;
-      final actionName = action['action'] as String;
+      final actionName = (action['action'] ?? action['tool'] ?? action['name']) as String;
+      // Merge nested args into action for backward compatibility
+      final actionArgs = action['args'] as Map<String, dynamic>?;
+      if (actionArgs != null) {
+        for (final e in actionArgs.entries) {
+          action.putIfAbsent(e.key, () => e.value);
+        }
+      }
       final startTime = DateTime.now();
 
       try {

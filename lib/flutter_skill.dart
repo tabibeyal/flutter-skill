@@ -1274,7 +1274,11 @@ class FlutterSkillBinding {
       e.visitChildren(findEditable);
     }
 
-    findEditable(element);
+    try {
+      findEditable(element);
+    } catch (_) {
+      // Element tree may be partially unmounted
+    }
 
     if (editableTextState != null) {
       editableTextState!.updateEditingValue(TextEditingValue(
