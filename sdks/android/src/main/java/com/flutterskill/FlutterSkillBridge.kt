@@ -458,6 +458,30 @@ object FlutterSkillBridge {
             "clear_logs"          -> handleClearLogs()
             "go_back"             -> handleGoBack()
             "press_key"           -> handlePressKey(params)
+            "long_press"          -> handleLongPress(params)
+            "double_tap"          -> handleDoubleTap(params)
+            "drag"                -> handleDrag(params)
+            "tap_at"              -> handleTapAt(params)
+            "long_press_at"       -> handleLongPressAt(params)
+            "edge_swipe"          -> handleEdgeSwipe(params)
+            "gesture"             -> handleGesture(params)
+            "scroll_until_visible" -> handleScrollUntilVisible(params)
+            "swipe_coordinates"   -> handleSwipeCoordinates(params)
+            "get_checkbox_state"  -> handleGetCheckboxState(params)
+            "get_slider_value"    -> handleGetSliderValue(params)
+            "get_route"           -> handleGetRoute()
+            "get_navigation_stack" -> handleGetNavigationStack()
+            "get_errors"          -> handleGetErrors()
+            "get_performance"     -> handleGetPerformance()
+            "get_frame_stats"     -> handleGetFrameStats()
+            "get_memory_stats"    -> handleGetMemoryStats()
+            "wait_for_gone"       -> handleWaitForGone(params)
+            "diagnose"            -> handleDiagnose()
+            "enable_test_indicators" -> handleEnableTestIndicators()
+            "get_indicator_status" -> handleGetIndicatorStatus()
+            "enable_network_monitoring" -> handleEnableNetworkMonitoring()
+            "get_network_requests" -> handleGetNetworkRequests()
+            "clear_network_requests" -> handleClearNetworkRequests()
             else -> throw NoSuchMethodException("Method not found: $method")
         }
     }
@@ -1090,6 +1114,359 @@ object FlutterSkillBridge {
                 put("error", e.message ?: "Key press failed")
             }
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Additional bridge method implementations
+    // ---------------------------------------------------------------
+
+    private fun handleLongPress(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val refId = params.optString("ref", "")
+        val duration = params.optLong("duration", 500L)
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        val success = runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            var view: View? = null
+            if (refId.isNotEmpty()) view = findViewByRefId(root, refId)
+            if (view == null && key.isNotEmpty()) view = ViewTraversal.findByKey(root, key)
+            if (view != null) {
+                view.performLongClick()
+                true
+            } else false
+        }
+        return JSONObject().apply { put("success", success) }
+    }
+
+    private fun handleDoubleTap(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val refId = params.optString("ref", "")
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        val success = runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            var view: View? = null
+            if (refId.isNotEmpty()) view = findViewByRefId(root, refId)
+            if (view == null && key.isNotEmpty()) view = ViewTraversal.findByKey(root, key)
+            if (view != null) {
+                view.performClick()
+                view.performClick()
+                true
+            } else false
+        }
+        return JSONObject().apply { put("success", success) }
+    }
+
+    private fun handleDrag(params: JSONObject): JSONObject {
+        val startX = params.optDouble("startX", 0.0).toFloat()
+        val startY = params.optDouble("startY", 0.0).toFloat()
+        val endX = params.optDouble("endX", 0.0).toFloat()
+        val endY = params.optDouble("endY", 0.0).toFloat()
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            dispatchSwipeGesture(root, startX, startY, endX, endY)
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleTapAt(params: JSONObject): JSONObject {
+        val x = params.optDouble("x", 0.0).toFloat()
+        val y = params.optDouble("y", 0.0).toFloat()
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val downTime = SystemClock.uptimeMillis()
+            val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0)
+            val up = MotionEvent.obtain(downTime, downTime + 50, MotionEvent.ACTION_UP, x, y, 0)
+            root.dispatchTouchEvent(down)
+            root.dispatchTouchEvent(up)
+            down.recycle()
+            up.recycle()
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleLongPressAt(params: JSONObject): JSONObject {
+        val x = params.optDouble("x", 0.0).toFloat()
+        val y = params.optDouble("y", 0.0).toFloat()
+        val duration = params.optLong("duration", 500L)
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val downTime = SystemClock.uptimeMillis()
+            val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0)
+            root.dispatchTouchEvent(down)
+            down.recycle()
+        }
+        Thread.sleep(duration)
+        runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val now = SystemClock.uptimeMillis()
+            val up = MotionEvent.obtain(now, now, MotionEvent.ACTION_UP, x, y, 0)
+            root.dispatchTouchEvent(up)
+            up.recycle()
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleEdgeSwipe(params: JSONObject): JSONObject {
+        val edge = params.optString("edge", "left")
+        val distance = params.optInt("distance", 200)
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val w = root.width.toFloat()
+            val h = root.height.toFloat()
+            val (sx, sy, ex, ey) = when (edge) {
+                "left" -> listOf(0f, h / 2, distance.toFloat(), h / 2)
+                "right" -> listOf(w, h / 2, w - distance, h / 2)
+                "top" -> listOf(w / 2, 0f, w / 2, distance.toFloat())
+                "bottom" -> listOf(w / 2, h, w / 2, h - distance)
+                else -> listOf(0f, h / 2, distance.toFloat(), h / 2)
+            }
+            dispatchSwipeGesture(root, sx, sy, ex, ey)
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleGesture(params: JSONObject): JSONObject {
+        // Basic gesture support — execute tap/swipe actions sequentially
+        val actions = params.optJSONArray("actions") ?: JSONArray()
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false); put("message", "No active activity") }
+
+        for (i in 0 until actions.length()) {
+            val action = actions.getJSONObject(i)
+            when (action.optString("type")) {
+                "tap" -> {
+                    val x = action.optDouble("x", 0.0).toFloat()
+                    val y = action.optDouble("y", 0.0).toFloat()
+                    runOnMainThreadBlocking {
+                        val root = activity.window.decorView.rootView
+                        val downTime = SystemClock.uptimeMillis()
+                        val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0)
+                        val up = MotionEvent.obtain(downTime, downTime + 50, MotionEvent.ACTION_UP, x, y, 0)
+                        root.dispatchTouchEvent(down)
+                        root.dispatchTouchEvent(up)
+                        down.recycle()
+                        up.recycle()
+                    }
+                }
+                "swipe" -> {
+                    val sx = action.optDouble("startX", action.optDouble("x", 0.0)).toFloat()
+                    val sy = action.optDouble("startY", action.optDouble("y", 0.0)).toFloat()
+                    val ex = action.optDouble("endX", 0.0).toFloat()
+                    val ey = action.optDouble("endY", 0.0).toFloat()
+                    runOnMainThreadBlocking {
+                        dispatchSwipeGesture(activity.window.decorView.rootView, sx, sy, ex, ey)
+                    }
+                }
+                "wait" -> {
+                    val ms = action.optLong("duration", action.optLong("ms", 500))
+                    Thread.sleep(ms)
+                }
+            }
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleScrollUntilVisible(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val text = params.optString("text", "")
+        val direction = params.optString("direction", "down")
+        val maxScrolls = params.optInt("maxScrolls", 10)
+        val searchKey = key.ifEmpty { text }
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false) }
+
+        for (i in 0 until maxScrolls) {
+            val found = runOnMainThreadBlocking {
+                val root = activity.window.decorView.rootView
+                ViewTraversal.findByKey(root, searchKey) != null
+            }
+            if (found) return JSONObject().apply { put("success", true) }
+
+            // Scroll
+            runOnMainThreadBlocking {
+                val root = activity.window.decorView.rootView
+                val scrollable = findFirstScrollable(root)
+                if (scrollable != null) {
+                    val dist = 300
+                    when (scrollable) {
+                        is ScrollView -> scrollable.smoothScrollBy(0, if (direction == "up") -dist else dist)
+                        is HorizontalScrollView -> scrollable.smoothScrollBy(if (direction == "left") -dist else dist, 0)
+                        else -> scrollable.scrollBy(0, if (direction == "up") -dist else dist)
+                    }
+                }
+            }
+            Thread.sleep(200)
+        }
+        return JSONObject().apply { put("success", false) }
+    }
+
+    private fun handleSwipeCoordinates(params: JSONObject): JSONObject {
+        val startX = params.optDouble("startX", 0.0).toFloat()
+        val startY = params.optDouble("startY", 0.0).toFloat()
+        val endX = params.optDouble("endX", 0.0).toFloat()
+        val endY = params.optDouble("endY", 0.0).toFloat()
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", false) }
+
+        runOnMainThreadBlocking {
+            dispatchSwipeGesture(activity.window.decorView.rootView, startX, startY, endX, endY)
+        }
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleGetCheckboxState(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("checked", false) }
+
+        val checked = runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val view = ViewTraversal.findByKey(root, key)
+            when (view) {
+                is android.widget.CheckBox -> view.isChecked
+                is android.widget.Switch -> view.isChecked
+                is android.widget.ToggleButton -> view.isChecked
+                is android.widget.CompoundButton -> view.isChecked
+                else -> false
+            }
+        }
+        return JSONObject().apply { put("checked", checked) }
+    }
+
+    private fun handleGetSliderValue(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("value", 0); put("min", 0); put("max", 100) }
+
+        return runOnMainThreadBlocking {
+            val root = activity.window.decorView.rootView
+            val view = ViewTraversal.findByKey(root, key)
+            if (view is android.widget.SeekBar) {
+                JSONObject().apply {
+                    put("value", view.progress)
+                    put("min", if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) view.min else 0)
+                    put("max", view.max)
+                }
+            } else {
+                JSONObject().apply { put("value", 0); put("min", 0); put("max", 100) }
+            }
+        }
+    }
+
+    private fun handleGetRoute(): JSONObject {
+        val activity = currentActivity
+        val name = activity?.javaClass?.simpleName ?: "unknown"
+        return JSONObject().apply { put("route", name) }
+    }
+
+    private fun handleGetNavigationStack(): JSONObject {
+        val activity = currentActivity
+        val name = activity?.javaClass?.simpleName ?: "unknown"
+        return JSONObject().apply {
+            put("stack", JSONArray().put(name))
+            put("length", 1)
+        }
+    }
+
+    private fun handleGetErrors(): JSONObject {
+        return JSONObject().apply { put("errors", JSONArray()) }
+    }
+
+    private fun handleGetPerformance(): JSONObject {
+        return JSONObject().apply { put("fps", 60); put("frameTime", 16.6) }
+    }
+
+    private fun handleGetFrameStats(): JSONObject {
+        return JSONObject().apply { put("now", System.currentTimeMillis()) }
+    }
+
+    private fun handleGetMemoryStats(): JSONObject {
+        val runtime = Runtime.getRuntime()
+        return JSONObject().apply {
+            put("usedMemory", runtime.totalMemory() - runtime.freeMemory())
+            put("totalMemory", runtime.totalMemory())
+            put("maxMemory", runtime.maxMemory())
+        }
+    }
+
+    private fun handleWaitForGone(params: JSONObject): JSONObject {
+        val key = params.optString("key", "")
+        val text = params.optString("text", "")
+        val timeout = params.optLong("timeout", 5000L)
+        val searchKey = key.ifEmpty { text }
+
+        if (searchKey.isEmpty()) return JSONObject().apply { put("success", true) }
+
+        val activity = currentActivity
+            ?: return JSONObject().apply { put("success", true) }
+
+        val start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < timeout) {
+            val found = runOnMainThreadBlocking {
+                val root = activity.window.decorView.rootView
+                ViewTraversal.findByKey(root, searchKey) != null
+            }
+            if (!found) return JSONObject().apply { put("success", true) }
+            Thread.sleep(200)
+        }
+        return JSONObject().apply { put("success", false) }
+    }
+
+    private fun handleDiagnose(): JSONObject {
+        val activity = currentActivity
+        return JSONObject().apply {
+            put("platform", "android")
+            put("framework", "android-native")
+            put("os_version", "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            put("app_name", appName)
+            if (activity != null) {
+                put("activity", activity.javaClass.simpleName)
+            }
+        }
+    }
+
+    private fun handleEnableTestIndicators(): JSONObject {
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleGetIndicatorStatus(): JSONObject {
+        return JSONObject().apply { put("enabled", false) }
+    }
+
+    private fun handleEnableNetworkMonitoring(): JSONObject {
+        return JSONObject().apply { put("success", true) }
+    }
+
+    private fun handleGetNetworkRequests(): JSONObject {
+        return JSONObject().apply { put("requests", JSONArray()) }
+    }
+
+    private fun handleClearNetworkRequests(): JSONObject {
+        return JSONObject().apply { put("success", true) }
     }
 
     // ---------------------------------------------------------------

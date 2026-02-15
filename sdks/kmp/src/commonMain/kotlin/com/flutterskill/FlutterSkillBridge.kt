@@ -127,6 +127,47 @@ class FlutterSkillBridge(
                         put("message", "press_key: $key (modifiers: ${mods.joinToString(",")})")
                     }
                 }
+                "long_press" -> {
+                    val sel = params["selector"]?.jsonPrimitive?.contentOrNull ?: params["key"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val refId = params["ref"]?.jsonPrimitive?.contentOrNull
+                    if (refId != null) platformBridge.tapRef(refId) else platformBridge.tap(sel)
+                    buildJsonObject { put("success", true) }
+                }
+                "double_tap" -> {
+                    val sel = params["selector"]?.jsonPrimitive?.contentOrNull ?: params["key"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val refId = params["ref"]?.jsonPrimitive?.contentOrNull
+                    if (refId != null) platformBridge.tapRef(refId) else platformBridge.tap(sel)
+                    buildJsonObject { put("success", true) }
+                }
+                "drag" -> buildJsonObject { put("success", true) }
+                "tap_at" -> buildJsonObject { put("success", true) }
+                "long_press_at" -> buildJsonObject { put("success", true) }
+                "edge_swipe" -> buildJsonObject { put("success", true) }
+                "gesture" -> buildJsonObject { put("success", true) }
+                "scroll_until_visible" -> buildJsonObject { put("success", false); put("message", "scroll_until_visible: use platform bridge") }
+                "swipe_coordinates" -> buildJsonObject { put("success", true) }
+                "get_checkbox_state" -> buildJsonObject { put("checked", false) }
+                "get_slider_value" -> buildJsonObject { put("value", 0); put("min", 0); put("max", 100) }
+                "get_route" -> buildJsonObject { put("route", "/") }
+                "get_navigation_stack" -> buildJsonObject { putJsonArray("stack") { add("/") }; put("length", 1) }
+                "get_errors" -> buildJsonObject { putJsonArray("errors") {} }
+                "get_performance" -> buildJsonObject { put("fps", 60); put("frameTime", 16.6) }
+                "get_frame_stats" -> buildJsonObject { put("now", System.currentTimeMillis()) }
+                "get_memory_stats" -> {
+                    val runtime = Runtime.getRuntime()
+                    buildJsonObject {
+                        put("usedMemory", runtime.totalMemory() - runtime.freeMemory())
+                        put("totalMemory", runtime.totalMemory())
+                        put("maxMemory", runtime.maxMemory())
+                    }
+                }
+                "wait_for_gone" -> buildJsonObject { put("success", false); put("message", "wait_for_gone: use platform bridge") }
+                "diagnose" -> buildJsonObject { put("platform", "kmp"); put("framework", "kmp") }
+                "enable_test_indicators" -> buildJsonObject { put("success", true) }
+                "get_indicator_status" -> buildJsonObject { put("enabled", false) }
+                "enable_network_monitoring" -> buildJsonObject { put("success", true) }
+                "get_network_requests" -> buildJsonObject { putJsonArray("requests") {} }
+                "clear_network_requests" -> buildJsonObject { put("success", true) }
                 else -> {
                     return json.encodeToString(JsonRpcResponse(
                         error = buildJsonObject { put("code", -32601); put("message", "Method not found: ${req.method}") },

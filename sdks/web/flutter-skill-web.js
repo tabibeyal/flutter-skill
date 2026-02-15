@@ -471,6 +471,255 @@
     return screenshotElement(params);
   };
 
+  // --------------- State for monitoring ---------------
+  var _testIndicatorsEnabled = false;
+  var _networkMonitoringEnabled = false;
+  var _capturedNetworkRequests = [];
+  var _capturedErrors = [];
+
+  // Capture console.error entries
+  var _origConsoleError = console.error;
+  console.error = function () {
+    var msg = Array.prototype.slice.call(arguments).join(' ');
+    _capturedErrors.push({ timestamp: Date.now(), message: msg });
+    if (_capturedErrors.length > 200) _capturedErrors.shift();
+    _origConsoleError.apply(console, arguments);
+  };
+
+  handlers.tap_at = function (params) {
+    var x = params.x || 0, y = params.y || 0;
+    var el = document.elementFromPoint(x, y) || document.body;
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }));
+    return { success: true };
+  };
+
+  handlers.long_press_at = function (params) {
+    var x = params.x || 0, y = params.y || 0;
+    var duration = params.duration || 500;
+    var el = document.elementFromPoint(x, y) || document.body;
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y }));
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: x, clientY: y }));
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y }));
+        el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: x, clientY: y }));
+        resolve({ success: true });
+      }, duration);
+    });
+  };
+
+  handlers.edge_swipe = function (params) {
+    var edge = params.edge || 'left';
+    var distance = params.distance || 200;
+    var w = window.innerWidth, h = window.innerHeight;
+    var startX, startY, endX, endY;
+    if (edge === 'left') { startX = 0; startY = h / 2; endX = distance; endY = h / 2; }
+    else if (edge === 'right') { startX = w; startY = h / 2; endX = w - distance; endY = h / 2; }
+    else if (edge === 'top') { startX = w / 2; startY = 0; endX = w / 2; endY = distance; }
+    else { startX = w / 2; startY = h; endX = w / 2; endY = h - distance; }
+    var target = document.elementFromPoint(startX, startY) || document.body;
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: startX, clientY: startY }));
+    target.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: endX, clientY: endY }));
+    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: endX, clientY: endY }));
+    return { success: true };
+  };
+
+  handlers.gesture = function (params) {
+    var actions = params.actions || [];
+    return new Promise(function (resolve) {
+      var i = 0;
+      function next() {
+        if (i >= actions.length) return resolve({ success: true });
+        var a = actions[i++];
+        if (a.type === 'tap') {
+          var el = document.elementFromPoint(a.x || 0, a.y || 0) || document.body;
+          el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: a.x || 0, clientY: a.y || 0 }));
+          next();
+        } else if (a.type === 'swipe') {
+          var t = document.elementFromPoint(a.startX || a.x || 0, a.startY || a.y || 0) || document.body;
+          t.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: a.startX || a.x || 0, clientY: a.startY || a.y || 0 }));
+          t.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: a.endX || 0, clientY: a.endY || 0 }));
+          t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: a.endX || 0, clientY: a.endY || 0 }));
+          next();
+        } else if (a.type === 'wait') {
+          setTimeout(next, a.duration || a.ms || 500);
+        } else {
+          next();
+        }
+      }
+      next();
+    });
+  };
+
+  handlers.scroll_until_visible = function (params) {
+    var direction = params.direction || 'down';
+    var maxScrolls = params.maxScrolls || 10;
+    return new Promise(function (resolve) {
+      var count = 0;
+      function attempt() {
+        var el = resolveElement(params);
+        if (el && isVisible(el)) return resolve({ success: true });
+        if (count >= maxScrolls) return resolve({ success: false });
+        count++;
+        var container = document.scrollingElement || document.body;
+        var dy = direction === 'down' ? 300 : direction === 'up' ? -300 : 0;
+        var dx = direction === 'right' ? 300 : direction === 'left' ? -300 : 0;
+        container.scrollBy(dx, dy);
+        setTimeout(attempt, 200);
+      }
+      attempt();
+    });
+  };
+
+  handlers.swipe_coordinates = function (params) {
+    var startX = params.startX || 0, startY = params.startY || 0;
+    var endX = params.endX || 0, endY = params.endY || 0;
+    var target = document.elementFromPoint(startX, startY) || document.body;
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: startX, clientY: startY }));
+    target.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: endX, clientY: endY }));
+    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: endX, clientY: endY }));
+    return { success: true };
+  };
+
+  handlers.get_route = function () {
+    return { route: window.location.hash || window.location.pathname };
+  };
+
+  handlers.get_navigation_stack = function () {
+    var route = window.location.hash || window.location.pathname;
+    return { stack: [route], length: 1 };
+  };
+
+  handlers.get_errors = function () {
+    return { errors: _capturedErrors.slice() };
+  };
+
+  handlers.get_performance = function () {
+    var fps = 60, frameTime = 16.6;
+    if (window.performance && window.performance.now) {
+      var entries = window.performance.getEntriesByType ? window.performance.getEntriesByType('frame') : [];
+      if (entries.length > 1) {
+        var last = entries[entries.length - 1];
+        var prev = entries[entries.length - 2];
+        frameTime = last.startTime - prev.startTime;
+        fps = Math.round(1000 / frameTime);
+      }
+    }
+    return { fps: fps, frameTime: frameTime };
+  };
+
+  handlers.get_frame_stats = function () {
+    var entries = (window.performance && window.performance.getEntriesByType) ? window.performance.getEntriesByType('navigation') : [];
+    var nav = entries[0] || {};
+    return {
+      now: window.performance ? window.performance.now() : 0,
+      navigationStart: nav.startTime || 0,
+      domContentLoaded: nav.domContentLoadedEventEnd || 0,
+      loadComplete: nav.loadEventEnd || 0
+    };
+  };
+
+  handlers.get_memory_stats = function () {
+    if (window.performance && window.performance.memory) {
+      return {
+        usedJSHeapSize: window.performance.memory.usedJSHeapSize,
+        totalJSHeapSize: window.performance.memory.totalJSHeapSize,
+        jsHeapSizeLimit: window.performance.memory.jsHeapSizeLimit
+      };
+    }
+    return { usedJSHeapSize: 0, totalJSHeapSize: 0, jsHeapSizeLimit: 0 };
+  };
+
+  handlers.wait_for_gone = function (params) {
+    var timeout = params.timeout || 5000;
+    return new Promise(function (resolve) {
+      var start = Date.now();
+      function check() {
+        var el = resolveElement(params);
+        if (!el || !isVisible(el)) return resolve({ success: true });
+        if (Date.now() - start > timeout) return resolve({ success: false });
+        requestAnimationFrame(check);
+      }
+      check();
+    });
+  };
+
+  handlers.diagnose = function () {
+    var count = 0;
+    walkAll(document.body, function () { count++; });
+    return {
+      platform: 'web',
+      elements: count,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      viewport: { width: window.innerWidth, height: window.innerHeight }
+    };
+  };
+
+  handlers.enable_test_indicators = function () {
+    if (!_testIndicatorsEnabled) {
+      _testIndicatorsEnabled = true;
+      document.addEventListener('click', function (e) {
+        if (!_testIndicatorsEnabled) return;
+        var dot = document.createElement('div');
+        dot.style.cssText = 'position:fixed;left:' + (e.clientX - 10) + 'px;top:' + (e.clientY - 10) + 'px;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);pointer-events:none;z-index:999999;transition:opacity 0.5s;';
+        document.body.appendChild(dot);
+        setTimeout(function () { dot.style.opacity = '0'; }, 300);
+        setTimeout(function () { dot.remove(); }, 800);
+      }, true);
+    }
+    return { success: true };
+  };
+
+  handlers.get_indicator_status = function () {
+    return { enabled: _testIndicatorsEnabled };
+  };
+
+  handlers.enable_network_monitoring = function () {
+    if (!_networkMonitoringEnabled) {
+      _networkMonitoringEnabled = true;
+      var origFetch = window.fetch;
+      window.fetch = function () {
+        var url = arguments[0];
+        if (typeof url === 'object' && url.url) url = url.url;
+        var entry = { type: 'fetch', url: String(url), timestamp: Date.now(), status: null };
+        _capturedNetworkRequests.push(entry);
+        return origFetch.apply(window, arguments).then(function (resp) {
+          entry.status = resp.status;
+          return resp;
+        }).catch(function (err) {
+          entry.error = err.message;
+          throw err;
+        });
+      };
+      var origOpen = XMLHttpRequest.prototype.open;
+      var origSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (method, url) {
+        this._fsUrl = url;
+        this._fsMethod = method;
+        return origOpen.apply(this, arguments);
+      };
+      XMLHttpRequest.prototype.send = function () {
+        var entry = { type: 'xhr', url: String(this._fsUrl), method: this._fsMethod, timestamp: Date.now(), status: null };
+        _capturedNetworkRequests.push(entry);
+        var xhr = this;
+        xhr.addEventListener('load', function () { entry.status = xhr.status; });
+        xhr.addEventListener('error', function () { entry.error = 'network error'; });
+        return origSend.apply(this, arguments);
+      };
+    }
+    return { success: true };
+  };
+
+  handlers.get_network_requests = function () {
+    return { requests: _capturedNetworkRequests.slice() };
+  };
+
+  handlers.clear_network_requests = function () {
+    _capturedNetworkRequests = [];
+    return { success: true };
+  };
+
   handlers.eval = function (params) {
     try {
       var result = eval(params.expression || params.code || '');

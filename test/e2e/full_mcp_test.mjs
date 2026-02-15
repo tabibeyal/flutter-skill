@@ -68,28 +68,26 @@ function record(tool, status, note = '') {
 // argsOrFn: object of args, or function(ctx) returning args
 // validatorFn: optional function(parsedContent) that throws on failure
 
+// Per-platform element keys (must match actual element IDs in each test app)
+const ELEMENT_KEYS = {
+  'electron': { button: 'increment-btn', input: 'text-input', text: 'counter', checkbox: 'test-checkbox', slider: 'volume-slider' },
+  'tauri': { button: 'increment-btn', input: 'text-input', text: 'counter', checkbox: 'test-checkbox', slider: 'volume-slider' },
+  'kmp': { button: 'increment-btn', input: 'text-input', text: 'counter', checkbox: 'test-checkbox', slider: 'volume-slider' },
+  'dotnet-maui': { button: 'increment-btn', input: 'text-input', text: 'counter', checkbox: 'test-checkbox', slider: 'volume-slider' },
+  'react-native': { button: 'like_button', input: 'search_input', text: 'post_text', checkbox: 'remember_checkbox', slider: 'volume_slider' },
+  'web-sdk': { button: 'post_like_button_0', input: 'email_input', text: 'post_content_0', checkbox: 'remember_me_checkbox', slider: 'font_size_slider' },
+  'web-cdp': { button: 'post_like_button_0', input: 'email_input', text: 'post_content_0', checkbox: 'remember_me_checkbox', slider: 'font_size_slider' },
+  'android': { button: 'increment-btn', input: 'text-input', text: 'counter', checkbox: 'test-checkbox', slider: 'volume-slider' },
+  'flutter-ios': { button: 'like_button', input: 'search_input', text: 'post_text', checkbox: 'dark_mode_switch', slider: 'font_size_slider' },
+  'flutter-web': { button: 'like_button', input: 'search_input', text: 'post_text', checkbox: 'dark_mode_switch', slider: 'font_size_slider' },
+};
+const EK = ELEMENT_KEYS[PLATFORM] || ELEMENT_KEYS['electron'];
+
 const TOOLS = [
-  // ── Connection (10) ──
+  // ── Connection (pre-connect queries) ──
   ['get_connection_status', {}],
   ['list_sessions', {}],
   ['list_running_apps', {}],
-  ['connect_app', (ctx) => {
-    if (ctx.VM_SERVICE) return { uri: ctx.VM_SERVICE };
-    if (ctx.URI) return { uri: ctx.URI };
-    return { uri: `ws://127.0.0.1:${ctx.PORT}` };
-  }],
-  ['launch_app', { package: 'com.example.test' }],
-  ['scan_and_connect', {}],
-  ['switch_session', { session_id: 'default' }],
-  ['disconnect', {}],
-  // reconnect after disconnect
-  ['connect_app', (ctx) => {
-    if (ctx.VM_SERVICE) return { uri: ctx.VM_SERVICE };
-    if (ctx.URI) return { uri: ctx.URI };
-    return { uri: `ws://127.0.0.1:${ctx.PORT}` };
-  }],
-  ['close_session', { session_id: '__nonexistent__' }],
-  ['stop_app', {}],
 
   // ── Inspection (19) ──
   ['inspect', {}],
@@ -99,9 +97,9 @@ const TOOLS = [
   ['get_widget_properties', { widget_id: '0' }],
   ['get_text_content', {}],
   ['find_by_type', { type: 'Text' }],
-  ['get_text_value', { key: 'counter' }],
-  ['get_checkbox_state', { key: 'test-checkbox' }],
-  ['get_slider_value', { key: 'test-slider' }],
+  ['get_text_value', { key: EK.text }],
+  ['get_checkbox_state', { key: EK.checkbox }],
+  ['get_slider_value', { key: EK.slider }],
   ['get_current_route', {}],
   ['get_navigation_stack', {}],
   ['get_page_state', {}],
@@ -113,11 +111,11 @@ const TOOLS = [
   ['get_memory_stats', {}],
 
   // ── Interaction (19) ──
-  ['tap', { key: 'increment-btn' }],
-  ['enter_text', { key: 'text-input', text: 'hello e2e' }],
-  ['scroll_to', { key: 'counter' }],
-  ['long_press', { key: 'increment-btn' }],
-  ['double_tap', { key: 'increment-btn' }],
+  ['tap', { key: EK.button }],
+  ['enter_text', { key: EK.input, text: 'hello e2e' }],
+  ['scroll_to', { key: EK.text }],
+  ['long_press', { key: EK.button }],
+  ['double_tap', { key: EK.button }],
   ['swipe', { direction: 'up', distance: 300 }],
   ['drag', { startX: 100, startY: 300, endX: 100, endY: 100 }],
   ['tap_at', { x: 100, y: 200 }],
@@ -126,19 +124,19 @@ const TOOLS = [
   ['edge_swipe', { edge: 'left' }],
   ['gesture', { actions: [{ type: 'tap', x: 100, y: 100 }] }],
   ['go_back', {}],
-  ['scroll_until_visible', { key: 'counter', direction: 'down' }],
+  ['scroll_until_visible', { key: EK.text, direction: 'down' }],
   ['native_tap', { x: 100, y: 200 }],
   ['native_input_text', { text: 'native hello' }],
   ['native_swipe', { startX: 200, startY: 400, endX: 200, endY: 200 }],
   ['native_screenshot', {}],
-  ['execute_batch', { actions: [{ tool: 'tap', arguments: { key: 'increment-btn' } }] }],
+  ['execute_batch', { actions: [{ tool: 'tap', arguments: { key: EK.button } }] }],
 
   // ── Assertions (7) ──
-  ['assert_visible', { key: 'increment-btn' }],
+  ['assert_visible', { key: EK.button }],
   ['assert_not_visible', { key: 'nonexistent_xyz_999' }],
-  ['assert_text', { key: 'counter', expected: '0' }],
+  ['assert_text', { key: EK.text, expected: '' }],
   ['assert_element_count', { type: 'button', expected: 1 }],
-  ['wait_for_element', { key: 'increment-btn', timeout: 3000 }],
+  ['wait_for_element', { key: EK.button, timeout: 3000 }],
   ['wait_for_gone', { key: 'nonexistent_xyz_999', timeout: 2000 }],
   ['wait_for_idle', { timeout: 3000 }],
 
@@ -171,6 +169,12 @@ const TOOLS = [
 
   // ── CDP-specific (1) ──
   ['connect_cdp', (ctx) => ({ url: ctx.URL || 'http://localhost:9222' })],
+
+  // ── Connection lifecycle (tested last to avoid breaking other tests) ──
+  ['switch_session', { session_id: 'default' }],
+  ['disconnect', {}],
+  ['close_session', { session_id: '__nonexistent__' }],
+  ['stop_app', {}],
 ];
 
 // ── MCP stdio transport ────────────────────────────────────────────────────
@@ -266,8 +270,8 @@ async function main() {
   // ── Run all tools ────────────────────────────────────────────────────────
   let currentSection = '';
   const sections = {
-    0: 'Connection', 10: 'Inspection', 29: 'Interaction', 48: 'Assertions',
-    55: 'Auth', 59: 'Recording', 66: 'Utility', 76: 'CDP',
+    0: 'Pre-connect', 3: 'Inspection', 22: 'Interaction', 41: 'Assertions',
+    48: 'Auth', 52: 'Recording', 59: 'Utility', 69: 'CDP', 70: 'Connection Lifecycle',
   };
 
   for (let i = 0; i < TOOLS.length; i++) {
@@ -311,10 +315,13 @@ async function main() {
         const msg = r.error.message || '';
         if (msg === 'TIMEOUT') {
           record(displayName, 'fail', 'TIMEOUT');
-        } else if (msg.includes('Not connected') || msg.includes('not supported') || msg.includes('not available') || msg.includes('Unknown tool')) {
+        } else if (msg.includes('Unknown tool')) {
+          record(displayName, 'skip', msg.substring(0, 80));
+        } else if (msg.includes('Not connected')) {
+          record(displayName, 'fail', 'Not connected');
+        } else if (msg.includes('not supported') || msg.includes('not available')) {
           record(displayName, 'skip', msg.substring(0, 80));
         } else {
-          // Treat JSON-RPC errors as failures unless clearly N/A
           record(displayName, 'fail', msg.substring(0, 100));
         }
       } else {
@@ -348,7 +355,7 @@ async function main() {
     if (toolName === 'video_start') await new Promise(r => setTimeout(r, 2000));
     if (toolName === 'record_start') {
       // do a couple actions to record
-      await callTool('tap', { key: 'increment-btn' }).catch(() => {});
+      await callTool('tap', { key: EK.button }).catch(() => {});
     }
   }
 

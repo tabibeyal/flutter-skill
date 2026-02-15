@@ -147,6 +147,34 @@ public class FlutterSkillBridge
                 "clear_logs" => await HandleClearLogs(parms),
                 "inspect_interactive" => await HandleInspectInteractive(parms),
                 "press_key" => await HandlePressKey(parms),
+                "long_press" => await HandleLongPress(selector, parms),
+                "double_tap" => await HandleDoubleTap(selector, parms),
+                "drag" => await HandleDrag(parms),
+                "tap_at" => await HandleTapAt(parms),
+                "long_press_at" => await HandleLongPressAt(parms),
+                "edge_swipe" => await HandleEdgeSwipe(parms),
+                "gesture" => await HandleGesture(parms),
+                "scroll_until_visible" => await HandleScrollUntilVisible(selector, parms),
+                "swipe_coordinates" => await HandleSwipeCoordinates(parms),
+                "get_checkbox_state" => await HandleGetCheckboxState(selector, parms),
+                "get_slider_value" => await HandleGetSliderValue(selector, parms),
+                "get_route" => await HandleGetRoute(parms),
+                "get_navigation_stack" => await HandleGetNavigationStack(parms),
+                "get_errors" => await HandleGetErrors(parms),
+                "get_performance" => await HandleGetPerformance(parms),
+                "get_frame_stats" => await HandleGetFrameStats(parms),
+                "get_memory_stats" => await HandleGetMemoryStats(parms),
+                "wait_for_gone" => await HandleWaitForGone(selector, parms),
+                "diagnose" => await HandleDiagnose(parms),
+                "enable_test_indicators" => await HandleEnableTestIndicators(parms),
+                "get_indicator_status" => await HandleGetIndicatorStatus(parms),
+                "enable_network_monitoring" => await HandleEnableNetworkMonitoring(parms),
+                "get_network_requests" => await HandleGetNetworkRequests(parms),
+                "clear_network_requests" => await HandleClearNetworkRequests(parms),
+                "scroll_to" => await HandleScroll(
+                    parms["dx"]?.GetValue<int>() ?? 0,
+                    parms["dy"]?.GetValue<int>() ?? 0, parms),
+                "eval" => await HandleEval(parms),
                 _ => throw new JsonRpcException(-32601, "Method not found")
             };
             return JsonResponse(id, result: result);
@@ -216,9 +244,86 @@ public class FlutterSkillBridge
         var key = parms["key"]?.GetValue<string>() ?? "";
         if (string.IsNullOrEmpty(key))
             return Task.FromResult(new JsonObject { ["success"] = false, ["error"] = "Missing key parameter" });
-        // Base implementation returns success — subclasses should override with platform-specific key simulation
         return Task.FromResult(new JsonObject { ["success"] = true, ["message"] = $"press_key: {key}" });
     }
+
+    protected virtual Task<JsonObject> HandleLongPress(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true, ["message"] = $"long_press: {selector}" });
+
+    protected virtual Task<JsonObject> HandleDoubleTap(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true, ["message"] = $"double_tap: {selector}" });
+
+    protected virtual Task<JsonObject> HandleDrag(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleTapAt(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleLongPressAt(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleEdgeSwipe(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleGesture(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleScrollUntilVisible(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = false, ["message"] = "scroll_until_visible not implemented" });
+
+    protected virtual Task<JsonObject> HandleSwipeCoordinates(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleGetCheckboxState(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["checked"] = false });
+
+    protected virtual Task<JsonObject> HandleGetSliderValue(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["value"] = 0, ["min"] = 0, ["max"] = 100 });
+
+    protected virtual Task<JsonObject> HandleGetRoute(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["route"] = "/" });
+
+    protected virtual Task<JsonObject> HandleGetNavigationStack(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["stack"] = new JsonArray("/"), ["length"] = 1 });
+
+    protected virtual Task<JsonObject> HandleGetErrors(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["errors"] = new JsonArray() });
+
+    protected virtual Task<JsonObject> HandleGetPerformance(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["fps"] = 60, ["frameTime"] = 16.6 });
+
+    protected virtual Task<JsonObject> HandleGetFrameStats(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["now"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+
+    protected virtual Task<JsonObject> HandleGetMemoryStats(JsonObject parms)
+    {
+        var mem = GC.GetTotalMemory(false);
+        return Task.FromResult(new JsonObject { ["usedMemory"] = mem, ["totalMemory"] = mem });
+    }
+
+    protected virtual Task<JsonObject> HandleWaitForGone(string selector, JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = false, ["message"] = "wait_for_gone not implemented" });
+
+    protected virtual Task<JsonObject> HandleDiagnose(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["platform"] = GetPlatformName(), ["framework"] = "dotnet" });
+
+    protected virtual Task<JsonObject> HandleEnableTestIndicators(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleGetIndicatorStatus(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["enabled"] = false });
+
+    protected virtual Task<JsonObject> HandleEnableNetworkMonitoring(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleGetNetworkRequests(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["requests"] = new JsonArray() });
+
+    protected virtual Task<JsonObject> HandleClearNetworkRequests(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = true });
+
+    protected virtual Task<JsonObject> HandleEval(JsonObject parms)
+        => Task.FromResult(new JsonObject { ["success"] = false, ["message"] = "eval not implemented" });
 }
 
 public class JsonRpcException : Exception

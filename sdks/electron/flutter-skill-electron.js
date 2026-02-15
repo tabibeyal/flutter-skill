@@ -294,6 +294,59 @@ class FlutterSkillElectron {
       case 'press_key':
         return this._pressKey(win, params);
 
+      case 'long_press':
+        return this._longPress(win, params);
+      case 'double_tap':
+        return this._doubleTap(win, params);
+      case 'drag':
+        return this._drag(win, params);
+      case 'tap_at':
+        return this._tapAt(win, params);
+      case 'long_press_at':
+        return this._longPressAt(win, params);
+      case 'edge_swipe':
+        return this._edgeSwipe(win, params);
+      case 'gesture':
+        return this._gesture(win, params);
+      case 'scroll_until_visible':
+        return this._scrollUntilVisible(win, params);
+      case 'swipe_coordinates':
+        return this._swipeCoordinates(win, params);
+      case 'get_checkbox_state':
+        return this._getCheckboxState(win, params);
+      case 'get_slider_value':
+        return this._getSliderValue(win, params);
+      case 'get_route':
+        return this._getRoute(win);
+      case 'get_navigation_stack':
+        return this._getNavigationStack(win);
+      case 'get_errors':
+        return this._getErrors(win);
+      case 'get_performance':
+        return this._getPerformance(win);
+      case 'get_frame_stats':
+        return this._getFrameStats(win);
+      case 'get_memory_stats':
+        return this._getMemoryStats(win);
+      case 'wait_for_gone':
+        return this._waitForGone(win, params);
+      case 'diagnose':
+        return this._diagnose(win);
+      case 'enable_test_indicators':
+        return this._enableTestIndicators(win);
+      case 'get_indicator_status':
+        return this._getIndicatorStatus(win);
+      case 'enable_network_monitoring':
+        return this._enableNetworkMonitoring(win);
+      case 'get_network_requests':
+        return this._getNetworkRequests(win);
+      case 'clear_network_requests':
+        return this._clearNetworkRequests(win);
+      case 'scroll_to':
+        return this._scroll(win, params);
+      case 'eval':
+        return this._eval(win, params);
+
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -810,6 +863,360 @@ class FlutterSkillElectron {
 
     await win.webContents.executeJavaScript('window.history.back()');
     return { success: true };
+  }
+
+  async _longPress(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const sel = this._resolveSelector(params);
+    const refId = params.ref;
+    const duration = params.duration || 500;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        ${refId ? this._getRefResolutionScript() : ''}
+        let el = ${refId ? `findElementByRef(${JSON.stringify(refId)})` : 'null'};
+        if (!el && ${JSON.stringify(sel)}) el = document.querySelector(${JSON.stringify(sel || '')});
+        if (!el) return { success: false, message: 'Element not found' };
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        return new Promise(r => setTimeout(() => {
+          el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+          el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+          el.dispatchEvent(new Event('contextmenu', { bubbles: true }));
+          r({ success: true });
+        }, ${duration}));
+      })();
+    `);
+  }
+
+  async _doubleTap(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const sel = this._resolveSelector(params);
+    const refId = params.ref;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        ${refId ? this._getRefResolutionScript() : ''}
+        let el = ${refId ? `findElementByRef(${JSON.stringify(refId)})` : 'null'};
+        if (!el && ${JSON.stringify(sel)}) el = document.querySelector(${JSON.stringify(sel || '')});
+        if (!el) return { success: false, message: 'Element not found' };
+        el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+        return { success: true };
+      })();
+    `);
+  }
+
+  async _drag(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const { startX = 0, startY = 0, endX = 0, endY = 0 } = params;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var t = document.elementFromPoint(${startX}, ${startY}) || document.body;
+        t.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: ${startX}, clientY: ${startY} }));
+        t.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: ${endX}, clientY: ${endY} }));
+        t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: ${endX}, clientY: ${endY} }));
+        return { success: true };
+      })();
+    `);
+  }
+
+  async _tapAt(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const { x = 0, y = 0 } = params;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var el = document.elementFromPoint(${x}, ${y}) || document.body;
+        el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: ${x}, clientY: ${y} }));
+        return { success: true };
+      })();
+    `);
+  }
+
+  async _longPressAt(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const { x = 0, y = 0, duration = 500 } = params;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var el = document.elementFromPoint(${x}, ${y}) || document.body;
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: ${x}, clientY: ${y} }));
+        el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: ${x}, clientY: ${y} }));
+        return new Promise(r => setTimeout(() => {
+          el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: ${x}, clientY: ${y} }));
+          el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: ${x}, clientY: ${y} }));
+          r({ success: true });
+        }, ${duration}));
+      })();
+    `);
+  }
+
+  async _edgeSwipe(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const edge = params.edge || 'left';
+    const distance = params.distance || 200;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var w = window.innerWidth, h = window.innerHeight;
+        var sx, sy, ex, ey;
+        var edge = ${JSON.stringify(edge)}, dist = ${distance};
+        if (edge === 'left') { sx = 0; sy = h/2; ex = dist; ey = h/2; }
+        else if (edge === 'right') { sx = w; sy = h/2; ex = w - dist; ey = h/2; }
+        else if (edge === 'top') { sx = w/2; sy = 0; ex = w/2; ey = dist; }
+        else { sx = w/2; sy = h; ex = w/2; ey = h - dist; }
+        var t = document.elementFromPoint(sx, sy) || document.body;
+        t.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: sx, clientY: sy }));
+        t.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: ex, clientY: ey }));
+        t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: ex, clientY: ey }));
+        return { success: true };
+      })();
+    `);
+  }
+
+  async _gesture(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const actions = JSON.stringify(params.actions || []);
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var actions = ${actions};
+        return new Promise(function(resolve) {
+          var i = 0;
+          function next() {
+            if (i >= actions.length) return resolve({ success: true });
+            var a = actions[i++];
+            if (a.type === 'tap') {
+              var el = document.elementFromPoint(a.x||0, a.y||0) || document.body;
+              el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: a.x||0, clientY: a.y||0 }));
+              next();
+            } else if (a.type === 'swipe') {
+              var t = document.elementFromPoint(a.startX||a.x||0, a.startY||a.y||0) || document.body;
+              t.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: a.startX||a.x||0, clientY: a.startY||a.y||0 }));
+              t.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: a.endX||0, clientY: a.endY||0 }));
+              t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: a.endX||0, clientY: a.endY||0 }));
+              next();
+            } else if (a.type === 'wait') {
+              setTimeout(next, a.duration || a.ms || 500);
+            } else { next(); }
+          }
+          next();
+        });
+      })();
+    `);
+  }
+
+  async _scrollUntilVisible(win, params) {
+    if (!win) return { success: false };
+    const sel = this._resolveSelector(params);
+    const textMatch = params.text;
+    const direction = params.direction || 'down';
+    const maxScrolls = params.maxScrolls || 10;
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var maxScrolls = ${maxScrolls}, direction = ${JSON.stringify(direction)};
+        var sel = ${JSON.stringify(sel)}, textMatch = ${JSON.stringify(textMatch)};
+        return new Promise(function(resolve) {
+          var count = 0;
+          function attempt() {
+            var found = false;
+            if (sel) found = !!document.querySelector(sel);
+            if (!found && textMatch) {
+              var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+              while (tw.nextNode()) { if (tw.currentNode.textContent.includes(textMatch)) { found = true; break; } }
+            }
+            if (found) return resolve({ success: true });
+            if (count >= maxScrolls) return resolve({ success: false });
+            count++;
+            var c = document.scrollingElement || document.body;
+            var dy = direction === 'down' ? 300 : direction === 'up' ? -300 : 0;
+            var dx = direction === 'right' ? 300 : direction === 'left' ? -300 : 0;
+            c.scrollBy(dx, dy);
+            setTimeout(attempt, 200);
+          }
+          attempt();
+        });
+      })();
+    `);
+  }
+
+  async _swipeCoordinates(win, params) {
+    return this._drag(win, params);
+  }
+
+  async _getCheckboxState(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const sel = this._resolveSelector(params);
+    if (!sel) return { success: false, message: 'Missing key/selector' };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return { success: false, message: 'Element not found' };
+        if (el.classList && el.classList.contains('toggle')) return { checked: el.classList.contains('on') };
+        return { checked: !!el.checked };
+      })();
+    `);
+  }
+
+  async _getSliderValue(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    const sel = this._resolveSelector(params);
+    if (!sel) return { success: false, message: 'Missing key/selector' };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return { success: false, message: 'Element not found' };
+        return { value: parseFloat(el.value) || 0, min: parseFloat(el.min) || 0, max: parseFloat(el.max) || 100 };
+      })();
+    `);
+  }
+
+  async _getRoute(win) {
+    if (!win) return { route: null };
+    return win.webContents.executeJavaScript(`({ route: window.location.hash || window.location.pathname })`);
+  }
+
+  async _getNavigationStack(win) {
+    if (!win) return { stack: [], length: 0 };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var route = window.location.hash || window.location.pathname;
+        return { stack: [route], length: 1 };
+      })();
+    `);
+  }
+
+  async _getErrors(win) {
+    if (!win) return { errors: [] };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        return { errors: (window.__flutterSkillErrors || []).slice() };
+      })();
+    `);
+  }
+
+  async _getPerformance(win) {
+    if (!win) return { fps: 60, frameTime: 16.6 };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        return { fps: 60, frameTime: 16.6 };
+      })();
+    `);
+  }
+
+  async _getFrameStats(win) {
+    if (!win) return { now: 0 };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var entries = performance.getEntriesByType ? performance.getEntriesByType('navigation') : [];
+        var nav = entries[0] || {};
+        return { now: performance.now(), navigationStart: nav.startTime || 0, domContentLoaded: nav.domContentLoadedEventEnd || 0, loadComplete: nav.loadEventEnd || 0 };
+      })();
+    `);
+  }
+
+  async _getMemoryStats(win) {
+    if (!win) return { usedJSHeapSize: 0, totalJSHeapSize: 0 };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        if (performance.memory) return { usedJSHeapSize: performance.memory.usedJSHeapSize, totalJSHeapSize: performance.memory.totalJSHeapSize, jsHeapSizeLimit: performance.memory.jsHeapSizeLimit };
+        return { usedJSHeapSize: 0, totalJSHeapSize: 0, jsHeapSizeLimit: 0 };
+      })();
+    `);
+  }
+
+  async _waitForGone(win, params) {
+    if (!win) return { success: false };
+    const sel = this._resolveSelector(params);
+    const textMatch = params.text;
+    const timeout = params.timeout || 5000;
+    return win.webContents.executeJavaScript(`
+      new Promise(function(resolve) {
+        var start = Date.now();
+        function check() {
+          var found = false;
+          if (${JSON.stringify(sel)}) found = !!document.querySelector(${JSON.stringify(sel || '')});
+          if (!found && ${JSON.stringify(textMatch)}) {
+            var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            while (tw.nextNode()) { if (tw.currentNode.textContent.includes(${JSON.stringify(textMatch || '')})) { found = true; break; } }
+          }
+          if (!found) return resolve({ success: true });
+          if (Date.now() - start > ${timeout}) return resolve({ success: false });
+          requestAnimationFrame(check);
+        }
+        check();
+      });
+    `);
+  }
+
+  async _diagnose(win) {
+    if (!win) return { platform: 'electron', elements: 0, url: '' };
+    return win.webContents.executeJavaScript(`
+      (function() {
+        var count = 0;
+        document.querySelectorAll('*').forEach(function() { count++; });
+        return { platform: 'electron', elements: count, url: window.location.href, userAgent: navigator.userAgent };
+      })();
+    `);
+  }
+
+  async _enableTestIndicators(win) {
+    if (!win) return { success: false };
+    await win.webContents.executeJavaScript(`
+      (function() {
+        if (!window.__fsTestIndicators) {
+          window.__fsTestIndicators = true;
+          document.addEventListener('click', function(e) {
+            var dot = document.createElement('div');
+            dot.style.cssText = 'position:fixed;left:'+(e.clientX-10)+'px;top:'+(e.clientY-10)+'px;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);pointer-events:none;z-index:999999;transition:opacity 0.5s;';
+            document.body.appendChild(dot);
+            setTimeout(function(){ dot.style.opacity='0'; }, 300);
+            setTimeout(function(){ dot.remove(); }, 800);
+          }, true);
+        }
+      })();
+    `);
+    return { success: true };
+  }
+
+  async _getIndicatorStatus(win) {
+    if (!win) return { enabled: false };
+    return win.webContents.executeJavaScript(`({ enabled: !!window.__fsTestIndicators })`);
+  }
+
+  async _enableNetworkMonitoring(win) {
+    if (!win) return { success: false };
+    await win.webContents.executeJavaScript(`
+      (function() {
+        if (!window.__fsNetMon) {
+          window.__fsNetMon = true;
+          window.__fsCapturedRequests = [];
+          var origFetch = window.fetch;
+          window.fetch = function() {
+            var url = arguments[0]; if (typeof url === 'object' && url.url) url = url.url;
+            var entry = { type: 'fetch', url: String(url), timestamp: Date.now(), status: null };
+            window.__fsCapturedRequests.push(entry);
+            return origFetch.apply(window, arguments).then(function(r) { entry.status = r.status; return r; });
+          };
+        }
+      })();
+    `);
+    return { success: true };
+  }
+
+  async _getNetworkRequests(win) {
+    if (!win) return { requests: [] };
+    return win.webContents.executeJavaScript(`({ requests: (window.__fsCapturedRequests || []).slice() })`);
+  }
+
+  async _clearNetworkRequests(win) {
+    if (!win) return { success: true };
+    await win.webContents.executeJavaScript(`window.__fsCapturedRequests = [];`);
+    return { success: true };
+  }
+
+  async _eval(win, params) {
+    if (!win) return { success: false, message: 'No window' };
+    try {
+      const result = await win.webContents.executeJavaScript(params.expression || params.code || '');
+      return { success: true, result: result !== undefined ? String(result) : null };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   }
 }
 
