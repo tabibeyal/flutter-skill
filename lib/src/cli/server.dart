@@ -625,6 +625,40 @@ All action tools support optional session_id parameter. If omitted, uses the act
         },
       },
       {
+        "name": "snapshot",
+        "description": """📸 TEXT-BASED PAGE SNAPSHOT (Token-Efficient)
+
+Returns a compact text representation of the current screen — like an accessibility tree.
+This is MUCH more token-efficient than screenshot (typically 500 tokens vs 10,000+).
+
+Use this INSTEAD of screenshot() when you need to understand what's on screen.
+Only use screenshot() when you need actual pixel-level visual verification.
+
+Output format:
+```
+Screen: LoginPage (375x812)
+├── [img] App Logo (187,50 150x150)
+├── [text] "Welcome Back" (100,220)
+├── [input:Email] "" (20,280 335x48) ← ref
+├── [input:Password] "" (20,340 335x48) ← ref
+├── [button:Login] "Login" (20,410 335x48) enabled ← ref
+├── [link:ForgotPassword] "Forgot Password?" (120,470) ← ref
+└── [button:SignUp] "Sign Up" (120,520) enabled ← ref
+```
+
+Elements with [ref] can be targeted: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")
+""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "description": "Optional session ID (defaults to active session)"
+            },
+          },
+        },
+      },
+      {
         "name": "get_widget_tree",
         "description": "Get the full widget tree structure",
         "inputSchema": {
@@ -2604,6 +2638,116 @@ Detailed diagnostic report with:
       case 'inspect_interactive':
         final fc = _asFlutterClient(client!, 'inspect_interactive');
         return await fc.getInteractiveElementsStructured();
+      case 'snapshot':
+        final snapshotDriver = _asFlutterClient(client!, 'snapshot');
+        final structured = await snapshotDriver.getInteractiveElementsStructured();
+        final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
+        
+        // Also get all elements (including non-interactive) for richer snapshot
+        List<dynamic> allElements = [];
+        try {
+          allElements = await client!.getInteractiveElements();
+        } catch (_) {
+          // Fall back to interactive-only if full inspect fails
+        }
+        
+        // Build text-based accessibility tree
+        final buffer = StringBuffer();
+        
+        // Build interactive ref set for quick lookup
+        final refSet = <String>{};
+        for (final el in snapshotElements) {
+          if (el is Map && el['ref'] != null) {
+            refSet.add(el['ref'].toString());
+          }
+        }
+        
+        // Merge: interactive elements have refs, non-interactive are context
+        final allMerged = <Map<String, dynamic>>[];
+        
+        // Add interactive elements with full data
+        for (final el in snapshotElements) {
+          if (el is Map<String, dynamic>) {
+            allMerged.add({...el, '_interactive': true});
+          }
+        }
+        
+        // Add non-interactive elements from inspect (text, images, etc.)
+        for (final el in allElements) {
+          if (el is Map<String, dynamic>) {
+            final isInteractive = el['clickable'] == true || 
+                                  el['type']?.toString().contains('Button') == true ||
+                                  el['type']?.toString().contains('TextField') == true ||
+                                  el['type']?.toString().contains('Input') == true;
+            if (!isInteractive) {
+              allMerged.add({...el, '_interactive': false});
+            }
+          }
+        }
+        
+        // Sort by position (top to bottom, left to right)
+        allMerged.sort((a, b) {
+          final aB = a['bounds'] as Map<String, dynamic>?;
+          final bB = b['bounds'] as Map<String, dynamic>?;
+          final ay = (aB?['y'] ?? 0) as num;
+          final by = (bB?['y'] ?? 0) as num;
+          if (ay != by) return ay.compareTo(by);
+          final ax = (aB?['x'] ?? 0) as num;
+          final bx = (bB?['x'] ?? 0) as num;
+          return ax.compareTo(bx);
+        });
+        
+        // Format as tree
+        for (var i = 0; i < allMerged.length; i++) {
+          final el = allMerged[i];
+          final isLast = i == allMerged.length - 1;
+          final prefix = isLast ? '└── ' : '├── ';
+          final bounds = el['bounds'] as Map<String, dynamic>?;
+          final bStr = bounds != null ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})' : '';
+          
+          if (el['_interactive'] == true) {
+            // Interactive element with ref
+            final ref = el['ref'] ?? '';
+            final text = el['text']?.toString() ?? '';
+            final label = el['label']?.toString() ?? '';
+            final value = el['value']?.toString();
+            final enabled = el['enabled'] != false;
+            final actions = (el['actions'] as List?)?.join(',') ?? '';
+            
+            String displayText = text.isNotEmpty ? text : label;
+            if (displayText.length > 40) displayText = '${displayText.substring(0, 37)}...';
+            
+            final valuePart = value != null && value.isNotEmpty ? ' value="$value"' : '';
+            final enabledPart = enabled ? '' : ' DISABLED';
+            
+            buffer.writeln('$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+          } else {
+            // Non-interactive element (context)
+            final type = el['type']?.toString() ?? 'unknown';
+            final text = el['text']?.toString() ?? '';
+            final shortType = type.replaceAll('RenderObjectToWidgetAdapter<RenderBox>', 'Root')
+                                  .split('.').last;
+            
+            if (text.isNotEmpty) {
+              String displayText = text;
+              if (displayText.length > 50) displayText = '${displayText.substring(0, 47)}...';
+              buffer.writeln('$prefix[$shortType] "$displayText" $bStr');
+            }
+            // Skip non-text non-interactive elements to keep snapshot compact
+          }
+        }
+        
+        final snapshotText = buffer.toString();
+        final summary = structured['summary'] ?? '';
+        
+        return {
+          'snapshot': snapshotText,
+          'summary': summary,
+          'elementCount': allMerged.length,
+          'interactiveCount': snapshotElements.length,
+          'tokenEstimate': snapshotText.length ~/ 4, // rough estimate: ~4 chars per token
+          'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
+        };
       case 'get_widget_tree':
         final fc = _asFlutterClient(client!, 'get_widget_tree');
         final maxDepth = args['max_depth'] ?? 10;
