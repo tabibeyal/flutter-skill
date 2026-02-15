@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import 'package:http/http.dart' as http;
+import '../bridge/bridge_protocol.dart';
 import '../discovery/bridge_discovery.dart';
 import '../drivers/app_driver.dart';
 import '../drivers/bridge_driver.dart';
@@ -2278,8 +2279,24 @@ Detailed diagnostic report with:
           await _clients[sessionId]!.disconnect();
         }
 
-        final driver = BridgeDriver.fromInfo(bridgeApp);
-        await driver.connect();
+        var driver = BridgeDriver.fromInfo(bridgeApp);
+        try {
+          await driver.connect();
+        } catch (_) {
+          // Some frameworks (Tauri) use port+1 for WebSocket
+          final altUri = 'ws://127.0.0.1:${bridgeApp.port + 1}';
+          final altInfo = BridgeServiceInfo(
+            framework: bridgeApp.framework,
+            appName: bridgeApp.appName,
+            platform: bridgeApp.platform,
+            capabilities: bridgeApp.capabilities,
+            sdkVersion: bridgeApp.sdkVersion,
+            port: bridgeApp.port + 1,
+            wsUri: altUri,
+          );
+          driver = BridgeDriver.fromInfo(altInfo);
+          await driver.connect();
+        }
 
         _clients[sessionId] = driver;
         _sessions[sessionId] = SessionInfo(
