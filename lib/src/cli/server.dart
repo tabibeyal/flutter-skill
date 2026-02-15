@@ -2758,15 +2758,16 @@ Detailed diagnostic report with:
       final platform = await _detectSimulatorPlatform();
       String command;
       if (platform == 'ios') {
+        // iOS biometric uses notifyutil via simctl spawn
         switch (action) {
           case 'enroll':
-            command = 'xcrun simctl keychain booted biometric-enroll --type=face';
+            command = 'xcrun simctl spawn booted notifyutil -s com.apple.BiometricKit.enrollmentChanged 1';
             break;
           case 'match':
-            command = 'xcrun simctl keychain booted biometric-match --type=face --match';
+            command = 'xcrun simctl spawn booted notifyutil -p com.apple.BiometricKit.pearl.match';
             break;
           case 'fail':
-            command = 'xcrun simctl keychain booted biometric-match --type=face --no-match';
+            command = 'xcrun simctl spawn booted notifyutil -p com.apple.BiometricKit.pearl.nomatch';
             break;
           default:
             return {"success": false, "error": "Invalid action: $action"};
