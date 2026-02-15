@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 
 import 'package:http/http.dart' as http;
 import '../bridge/bridge_protocol.dart';
+import '../bridge/cdp_driver.dart';
 import '../discovery/bridge_discovery.dart';
 import '../drivers/app_driver.dart';
 import '../drivers/bridge_driver.dart';
@@ -149,6 +150,9 @@ class FlutterMcpServer {
   String? _videoPath;
   String? _videoPlatform;
   String? _videoDevicePath;
+
+  // CDP driver for vanilla web testing
+  CdpDriver? _cdpDriver;
 
   // Native platform drivers (for interacting with native OS views)
   final Map<String, NativeDriver> _nativeDrivers = {};
@@ -530,6 +534,49 @@ Omitting session_id in other tools will use the active session.""",
               "description": "Optional session ID (defaults to active session)"
             },
           },
+        },
+      },
+
+      // CDP Connection
+      {
+        "name": "connect_cdp",
+        "description": """Connect to any web page via Chrome DevTools Protocol (CDP).
+
+No SDK injection needed — works with ANY website, React/Vue/Angular apps, or any web content.
+
+[USE WHEN]
+• Testing a web app that doesn't have flutter_skill SDK
+• Testing any website (React, Vue, Angular, plain HTML)
+• Automating browser interactions on arbitrary web pages
+
+[HOW IT WORKS]
+1. Launches Chrome with remote debugging (or connects to existing)
+2. Navigates to the given URL
+3. Connects via CDP WebSocket
+4. All subsequent tool calls (inspect, tap, enter_text, screenshot, etc.) work via CDP
+
+[AFTER CONNECTING]
+Use the same tools as usual: inspect(), tap(), enter_text(), screenshot(), snapshot(), etc.
+They will automatically route through the CDP connection.""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "URL to navigate to (e.g. https://example.com)"
+            },
+            "port": {
+              "type": "integer",
+              "description":
+                  "Chrome remote debugging port (default: 9222)"
+            },
+            "launch_chrome": {
+              "type": "boolean",
+              "description":
+                  "Launch a new Chrome instance (default: true). Set to false to connect to already-running Chrome."
+            },
+          },
+          "required": ["url"],
         },
       },
 
@@ -2406,7 +2453,14 @@ Detailed diagnostic report with:
       final sessionId = args['session_id'] as String? ?? _activeSessionId;
 
       if (sessionId != null && _clients.containsKey(sessionId)) {
-        await _clients[sessionId]!.disconnect();
+        final client = _clients[sessionId]!;
+
+        // Clean up CDP driver reference
+        if (client is CdpDriver && _cdpDriver == client) {
+          _cdpDriver = null;
+        }
+
+        await client.disconnect();
         _clients.remove(sessionId);
         _sessions.remove(sessionId);
 
@@ -2439,6 +2493,7 @@ Detailed diagnostic report with:
         return {
           "connected": client.isConnected,
           "framework": client.frameworkName,
+          "mode": client is CdpDriver ? "cdp" : (client is BridgeDriver ? "bridge" : "flutter"),
           "session_id": sessionId,
           "uri": client is FlutterSkillClient ? client.vmServiceUri : null,
           "session_info": session?.toJson(),
@@ -2458,6 +2513,60 @@ Detailed diagnostic report with:
             ? "Found ${vmServices.length} running app(s). Use scan_and_connect() to auto-connect."
             : "No running apps found. Use launch_app() to start one.",
       };
+    }
+
+    if (name == 'connect_cdp') {
+      final url = args['url'] as String;
+      final port = args['port'] as int? ?? 9222;
+      final launchChrome = args['launch_chrome'] ?? true;
+
+      // Disconnect existing CDP connection if any
+      if (_cdpDriver != null) {
+        await _cdpDriver!.disconnect();
+        _cdpDriver = null;
+      }
+
+      try {
+        final driver = CdpDriver(url: url, port: port, launchChrome: launchChrome);
+        await driver.connect();
+        _cdpDriver = driver;
+
+        // Also store as a session so tools that use _getClient can find it
+        final sessionId = 'cdp_${DateTime.now().millisecondsSinceEpoch}';
+        _clients[sessionId] = driver;
+        _sessions[sessionId] = SessionInfo(
+          id: sessionId,
+          name: 'CDP: $url',
+          projectPath: url,
+          deviceId: 'chrome',
+          port: port,
+          vmServiceUri: 'cdp://127.0.0.1:$port',
+        );
+        _activeSessionId = sessionId;
+
+        return {
+          "success": true,
+          "mode": "cdp",
+          "url": url,
+          "port": port,
+          "session_id": sessionId,
+          "message": "Connected to $url via CDP",
+        };
+      } catch (e) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E601",
+            "message": "CDP connection failed: $e",
+          },
+          "suggestions": [
+            "Ensure Chrome is installed",
+            "If Chrome is already running, close it or use launch_chrome: false",
+            "Try: connect_cdp(url: '$url', port: $port, launch_chrome: false)",
+            "Start Chrome manually with: google-chrome --remote-debugging-port=$port",
+          ],
+        };
+      }
     }
 
     if (name == 'diagnose_project') {
@@ -3038,6 +3147,12 @@ Detailed diagnostic report with:
     // Require connection for all other tools
     final client = _getClient(args);
     _requireConnection(client);
+
+    // Route to CDP driver if active connection is CDP
+    if (client is CdpDriver) {
+      return await _executeCdpTool(name, args, client);
+    }
+
     switch (name) {
       // Inspection
       case 'inspect':
@@ -3668,6 +3783,177 @@ Detailed diagnostic report with:
 
       default:
         throw Exception("Unknown tool: $name");
+    }
+  }
+
+  /// Execute a tool via CDP driver
+  Future<dynamic> _executeCdpTool(String name, Map<String, dynamic> args, CdpDriver cdp) async {
+    switch (name) {
+      case 'inspect':
+        final elements = await cdp.getInteractiveElements();
+        final currentPageOnly = args['current_page_only'] ?? true;
+        if (currentPageOnly) {
+          return elements.where((e) {
+            if (e is! Map) return true;
+            final bounds = e['bounds'];
+            if (bounds == null) return true;
+            return (bounds['x'] as int? ?? 0) >= -10 && (bounds['y'] as int? ?? 0) >= -10;
+          }).toList();
+        }
+        return elements;
+
+      case 'inspect_interactive':
+        return await cdp.getInteractiveElementsStructured();
+
+      case 'snapshot':
+        final structured = await cdp.getInteractiveElementsStructured();
+        final elements = structured['elements'] as List<dynamic>? ?? [];
+        final buffer = StringBuffer();
+        for (var i = 0; i < elements.length; i++) {
+          final el = elements[i] as Map<String, dynamic>;
+          final isLast = i == elements.length - 1;
+          final prefix = isLast ? '└── ' : '├── ';
+          final ref = el['ref'] ?? '';
+          final text = (el['text'] ?? el['label'] ?? '').toString();
+          final displayText = text.length > 40 ? '${text.substring(0, 37)}...' : text;
+          final bounds = el['bounds'] as Map<String, dynamic>?;
+          final bStr = bounds != null ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})' : '';
+          final valuePart = (el['value'] != null && el['value'].toString().isNotEmpty) ? ' value="${el['value']}"' : '';
+          final enabledPart = el['enabled'] == false ? ' DISABLED' : '';
+          final actions = (el['actions'] as List?)?.join(',') ?? '';
+          buffer.writeln('$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+        }
+        return {
+          'snapshot': buffer.toString(),
+          'summary': structured['summary'] ?? '',
+          'elementCount': elements.length,
+          'interactiveCount': elements.length,
+          'tokenEstimate': buffer.length ~/ 4,
+          'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
+        };
+
+      case 'tap':
+        final x = args['x'] as num?;
+        final y = args['y'] as num?;
+        if (x != null && y != null) {
+          await cdp.tapAt(x.toDouble(), y.toDouble());
+          return {"success": true, "method": "coordinates", "position": {"x": x, "y": y}};
+        }
+        return await cdp.tap(key: args['key'], text: args['text'], ref: args['ref']);
+
+      case 'enter_text':
+        return await cdp.enterText(args['key'], args['text'], ref: args['ref']);
+
+      case 'screenshot':
+        final quality = (args['quality'] as num?)?.toDouble() ?? 0.5;
+        final saveToFile = args['save_to_file'] ?? true;
+        final imageBase64 = await cdp.takeScreenshot(quality: quality);
+        if (imageBase64 == null) {
+          return {"success": false, "error": "Failed to capture screenshot"};
+        }
+        if (saveToFile) {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${Directory.systemTemp.path}/flutter_skill_screenshot_$timestamp.png');
+          final bytes = base64.decode(imageBase64);
+          await file.writeAsBytes(bytes);
+          return {"success": true, "file_path": file.path, "size_bytes": bytes.length, "format": "png"};
+        }
+        return {"image": imageBase64, "quality": quality};
+
+      case 'screenshot_region':
+        final x = (args['x'] as num).toDouble();
+        final y = (args['y'] as num).toDouble();
+        final width = (args['width'] as num).toDouble();
+        final height = (args['height'] as num).toDouble();
+        final saveToFile = args['save_to_file'] ?? true;
+        final image = await cdp.takeRegionScreenshot(x, y, width, height);
+        if (image == null) return {"success": false, "error": "Failed to capture region screenshot"};
+        if (saveToFile) {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${Directory.systemTemp.path}/flutter_skill_region_$timestamp.png');
+          final bytes = base64.decode(image);
+          await file.writeAsBytes(bytes);
+          return {"success": true, "file_path": file.path, "size_bytes": bytes.length, "region": {"x": x, "y": y, "width": width, "height": height}};
+        }
+        return {"success": true, "image": image};
+
+      case 'screenshot_element':
+        final key = args['key'] as String? ?? args['text'] as String?;
+        if (key == null) return {"error": "Element key or text required"};
+        final image = await cdp.takeElementScreenshot(key);
+        if (image == null) return {"error": "Screenshot failed"};
+        return {"image": image};
+
+      case 'scroll_to':
+        return await cdp.scrollTo(key: args['key'], text: args['text']);
+
+      case 'go_back':
+        final success = await cdp.goBack();
+        return success ? "Navigated back" : "Cannot go back";
+
+      case 'get_current_route':
+        return await cdp.getCurrentRoute();
+
+      case 'get_navigation_stack':
+        return await cdp.getNavigationStack();
+
+      case 'swipe':
+        final distance = (args['distance'] ?? 300).toDouble();
+        final success = await cdp.swipe(direction: args['direction'], distance: distance, key: args['key']);
+        return success ? "Swiped ${args['direction']}" : "Swipe failed";
+
+      case 'long_press':
+        final duration = args['duration'] ?? 500;
+        final success = await cdp.longPress(key: args['key'], text: args['text'], duration: duration);
+        return success ? "Long pressed" : "Long press failed";
+
+      case 'double_tap':
+        final success = await cdp.doubleTap(key: args['key'], text: args['text']);
+        return success ? "Double tapped" : "Double tap failed";
+
+      case 'wait_for_element':
+        final timeout = args['timeout'] ?? 5000;
+        final found = await cdp.waitForElement(key: args['key'], text: args['text'], timeout: timeout);
+        return {"found": found};
+
+      case 'wait_for_gone':
+        final timeout = args['timeout'] ?? 5000;
+        final gone = await cdp.waitForGone(key: args['key'], text: args['text'], timeout: timeout);
+        return {"gone": gone};
+
+      case 'assert_visible':
+        final timeout = args['timeout'] ?? 5000;
+        final found = await cdp.waitForElement(key: args['key'], text: args['text'], timeout: timeout);
+        return {"success": found, "assertion": "visible", "element": args['key'] ?? args['text']};
+
+      case 'assert_not_visible':
+        final timeout = args['timeout'] ?? 5000;
+        final gone = await cdp.waitForGone(key: args['key'], text: args['text'], timeout: timeout);
+        return {"success": gone, "assertion": "not_visible", "element": args['key'] ?? args['text']};
+
+      case 'get_text_content':
+        return await cdp.getTextContent();
+
+      case 'get_text_value':
+        return await cdp.getTextValue(args['key']);
+
+      case 'hot_reload':
+        await cdp.hotReload();
+        return "Page reloaded";
+
+      case 'get_logs':
+        return {"logs": [], "summary": {"total_count": 0, "message": "CDP log capture not available"}};
+
+      case 'get_errors':
+        return {"errors": [], "summary": {"total_count": 0, "message": "CDP error capture not available"}};
+
+      case 'clear_logs':
+        return {"success": true, "message": "No-op for CDP"};
+
+      default:
+        throw Exception('Tool "$name" is not supported in CDP mode. '
+            'CDP mode supports: inspect, tap, enter_text, screenshot, snapshot, scroll_to, go_back, '
+            'get_current_route, swipe, long_press, double_tap, wait_for_element, assert_visible.');
     }
   }
 
