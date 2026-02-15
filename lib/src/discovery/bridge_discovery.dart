@@ -37,11 +37,20 @@ class BridgeDiscovery {
 
   /// Probe a single port. Returns [BridgeServiceInfo] or null.
   static Future<BridgeServiceInfo?> _probePort(int port) async {
+    // Try IPv4 first, then localhost (may resolve to IPv6)
+    for (final host in ['127.0.0.1', '::1', 'localhost']) {
+      final result = await _probeHost(host, port);
+      if (result != null) return result;
+    }
+    return null;
+  }
+
+  static Future<BridgeServiceInfo?> _probeHost(String host, int port) async {
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 500);
 
-      final request = await client.get('127.0.0.1', port, bridgeHealthPath);
+      final request = await client.get(host, port, bridgeHealthPath);
       final response = await request.close().timeout(
             const Duration(milliseconds: 800),
           );
