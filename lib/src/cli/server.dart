@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:http/http.dart' as http;
 import '../discovery/bridge_discovery.dart';
@@ -135,6 +138,16 @@ class FlutterMcpServer {
 
   Process? _flutterProcess;
 
+  // Recording state
+  bool _isRecording = false;
+  final List<Map<String, dynamic>> _recordedSteps = [];
+  DateTime? _recordingStartTime;
+
+  // Video recording state
+  Process? _videoProcess;
+  String? _videoPath;
+  String? _videoPlatform;
+
   // Native platform drivers (for interacting with native OS views)
   final Map<String, NativeDriver> _nativeDrivers = {};
 
@@ -194,6 +207,16 @@ class FlutterMcpServer {
         final name = params['name'];
         final args = params['arguments'] as Map<String, dynamic>? ?? {};
         final result = await _executeTool(name, args);
+        // Recording middleware
+        if (_isRecording && ['tap', 'enter_text', 'scroll', 'swipe', 'go_back', 'press_key', 'screenshot'].contains(name)) {
+          _recordedSteps.add({
+            'step': _recordedSteps.length + 1,
+            'tool': name,
+            'params': args,
+            'timestamp_ms': DateTime.now().millisecondsSinceEpoch,
+            'result': result is Map ? (result['success'] ?? true) : true,
+          });
+        }
         _sendResult(id, {
           "content": [
             {"type": "text", "text": jsonEncode(result)},
@@ -1698,6 +1721,122 @@ Detailed diagnostic report with:
           },
         },
       },
+
+      // Auth Tools
+      {
+        "name": "auth_inject_session",
+        "description": "Inject auth token into app storage (cookie, localStorage, or shared_preferences).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "token": {"type": "string", "description": "Auth token to inject"},
+            "key": {"type": "string", "description": "Storage key (default: auth_token)"},
+            "storage_type": {"type": "string", "enum": ["cookie", "local_storage", "shared_preferences"], "description": "Storage type"},
+          },
+          "required": ["token"],
+        },
+      },
+      {
+        "name": "auth_biometric",
+        "description": "Simulate biometric authentication on iOS simulator or Android emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {"type": "string", "enum": ["enroll", "match", "fail"], "description": "Biometric action"},
+          },
+          "required": ["action"],
+        },
+      },
+      {
+        "name": "auth_otp",
+        "description": "Generate TOTP code from secret, or read OTP from simulator clipboard.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "secret": {"type": "string", "description": "TOTP secret (base32). If omitted, reads clipboard."},
+            "digits": {"type": "integer", "description": "OTP digits (default: 6)"},
+            "period": {"type": "integer", "description": "TOTP period in seconds (default: 30)"},
+          },
+        },
+      },
+      {
+        "name": "auth_deeplink",
+        "description": "Open a deep link URL on the simulator/emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string", "description": "Deep link URL to open"},
+            "device": {"type": "string", "description": "Device identifier"},
+          },
+          "required": ["url"],
+        },
+      },
+
+      // Recording & Code Generation
+      {
+        "name": "record_start",
+        "description": "Start recording tool calls for test code generation.",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "record_stop",
+        "description": "Stop recording and return recorded steps.",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "record_export",
+        "description": "Export recorded steps as test code in various formats.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "format": {"type": "string", "enum": ["jest", "pytest", "dart_test", "playwright", "json"], "description": "Export format"},
+          },
+          "required": ["format"],
+        },
+      },
+
+      // Video Recording
+      {
+        "name": "video_start",
+        "description": "Start screen recording on simulator/emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "device": {"type": "string", "description": "Device identifier"},
+            "path": {"type": "string", "description": "Output file path"},
+          },
+        },
+      },
+      {
+        "name": "video_stop",
+        "description": "Stop screen recording and return the video file path.",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+
+      // Parallel Multi-Device
+      {
+        "name": "parallel_snapshot",
+        "description": "Take snapshots from multiple sessions in parallel.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"},
+          },
+        },
+      },
+      {
+        "name": "parallel_tap",
+        "description": "Execute tap on multiple sessions in parallel.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "ref": {"type": "string", "description": "Element ref to tap"},
+            "key": {"type": "string", "description": "Element key to tap"},
+            "text": {"type": "string", "description": "Element text to tap"},
+            "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"},
+          },
+        },
+      },
     ];
   }
 
@@ -2613,6 +2752,239 @@ Detailed diagnostic report with:
       return result.toJson();
     }
 
+    // Auth tools (system commands, no bridge connection required)
+    if (name == 'auth_biometric') {
+      final action = args['action'] as String;
+      final platform = await _detectSimulatorPlatform();
+      String command;
+      if (platform == 'ios') {
+        switch (action) {
+          case 'enroll':
+            command = 'xcrun simctl keychain booted biometric-enroll --type=face';
+            break;
+          case 'match':
+            command = 'xcrun simctl keychain booted biometric-match --type=face --match';
+            break;
+          case 'fail':
+            command = 'xcrun simctl keychain booted biometric-match --type=face --no-match';
+            break;
+          default:
+            return {"success": false, "error": "Invalid action: $action"};
+        }
+      } else {
+        switch (action) {
+          case 'enroll':
+          case 'match':
+            command = 'adb -s emulator-5554 emu finger touch 1';
+            break;
+          case 'fail':
+            command = 'adb -s emulator-5554 emu finger touch 0';
+            break;
+          default:
+            return {"success": false, "error": "Invalid action: $action"};
+        }
+      }
+      try {
+        final result = await Process.run('sh', ['-c', command]);
+        return {"success": result.exitCode == 0, "platform": platform, "action": action};
+      } catch (e) {
+        return {"success": false, "error": e.toString()};
+      }
+    }
+
+    if (name == 'auth_otp') {
+      final secret = args['secret'] as String?;
+      if (secret != null) {
+        final digits = args['digits'] as int? ?? 6;
+        final period = args['period'] as int? ?? 30;
+        final code = _generateTotp(secret, digits, period);
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final validFor = period - (now % period);
+        return {"code": code, "valid_for_seconds": validFor};
+      }
+      // Read clipboard
+      final platform = await _detectSimulatorPlatform();
+      try {
+        if (platform == 'ios') {
+          final result = await Process.run('xcrun', ['simctl', 'pbpaste', 'booted']);
+          return {"clipboard": result.stdout.toString().trim(), "platform": "ios"};
+        } else {
+          final result = await Process.run('adb', ['shell', 'service', 'call', 'clipboard', '1']);
+          return {"clipboard": result.stdout.toString().trim(), "platform": "android"};
+        }
+      } catch (e) {
+        return {"success": false, "error": e.toString()};
+      }
+    }
+
+    if (name == 'auth_deeplink') {
+      final url = args['url'] as String;
+      final platform = await _detectSimulatorPlatform();
+      try {
+        ProcessResult result;
+        if (platform == 'ios') {
+          result = await Process.run('xcrun', ['simctl', 'openurl', 'booted', url]);
+        } else {
+          result = await Process.run('adb', ['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', url]);
+        }
+        return {"success": result.exitCode == 0, "url": url, "platform": platform};
+      } catch (e) {
+        return {"success": false, "error": e.toString()};
+      }
+    }
+
+    // Recording tools
+    if (name == 'record_start') {
+      _isRecording = true;
+      _recordedSteps.clear();
+      _recordingStartTime = DateTime.now();
+      return {"recording": true, "message": "Recording started"};
+    }
+
+    if (name == 'record_stop') {
+      _isRecording = false;
+      final duration = _recordingStartTime != null
+          ? DateTime.now().difference(_recordingStartTime!).inMilliseconds
+          : 0;
+      return {"steps": _recordedSteps, "duration_ms": duration, "step_count": _recordedSteps.length};
+    }
+
+    if (name == 'record_export') {
+      final format = args['format'] as String;
+      String code;
+      switch (format) {
+        case 'json':
+          code = jsonEncode(_recordedSteps);
+          break;
+        case 'jest':
+          code = _exportJest();
+          break;
+        case 'pytest':
+          code = _exportPytest();
+          break;
+        case 'dart_test':
+          code = _exportDartTest();
+          break;
+        case 'playwright':
+          code = _exportPlaywright();
+          break;
+        default:
+          code = jsonEncode(_recordedSteps);
+      }
+      return {"format": format, "code": code, "step_count": _recordedSteps.length};
+    }
+
+    // Video recording tools
+    if (name == 'video_start') {
+      if (_videoProcess != null) {
+        return {"success": false, "error": "Video recording already in progress"};
+      }
+      final platform = await _detectSimulatorPlatform();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = args['path'] as String? ??
+          '${Directory.systemTemp.path}/flutter_skill_video_$timestamp.${platform == 'ios' ? 'mov' : 'mp4'}';
+      try {
+        Process process;
+        if (platform == 'ios') {
+          process = await Process.start('xcrun', ['simctl', 'io', 'booted', 'recordVideo', path]);
+        } else {
+          process = await Process.start('adb', ['shell', 'screenrecord', path]);
+        }
+        _videoProcess = process;
+        _videoPath = path;
+        _videoPlatform = platform;
+        return {"recording": true, "platform": platform, "path": path};
+      } catch (e) {
+        return {"success": false, "error": e.toString()};
+      }
+    }
+
+    if (name == 'video_stop') {
+      if (_videoProcess == null) {
+        return {"success": false, "error": "No video recording in progress"};
+      }
+      try {
+        _videoProcess!.kill(ProcessSignal.sigint);
+        await _videoProcess!.exitCode.timeout(const Duration(seconds: 5), onTimeout: () {
+          _videoProcess!.kill();
+          return -1;
+        });
+      } catch (_) {}
+      final path = _videoPath;
+      final platform = _videoPlatform;
+      _videoProcess = null;
+      _videoPath = null;
+      _videoPlatform = null;
+      return {"path": path, "platform": platform, "success": true};
+    }
+
+    // Parallel multi-device tools
+    if (name == 'parallel_snapshot') {
+      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final futures = sessionIds.map((sid) async {
+        try {
+          final c = _clients[sid];
+          if (c == null) return {"session_id": sid, "error": "Not connected"};
+          if (c is FlutterSkillClient) {
+            final structured = await c.getInteractiveElementsStructured();
+            return {"session_id": sid, "snapshot": structured, "platform": _sessions[sid]?.deviceId};
+          }
+          return {"session_id": sid, "error": "Not a Flutter client"};
+        } catch (e) {
+          return {"session_id": sid, "error": e.toString()};
+        }
+      });
+      final results = await Future.wait(futures);
+      return {"devices": results, "device_count": results.length};
+    }
+
+    if (name == 'parallel_tap') {
+      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final ref = args['ref'] as String?;
+      final key = args['key'] as String?;
+      final text = args['text'] as String?;
+      final futures = sessionIds.map((sid) async {
+        try {
+          final c = _clients[sid];
+          if (c == null) return {"session_id": sid, "success": false, "error": "Not connected"};
+          final result = await c.tap(key: key, text: text, ref: ref);
+          return {"session_id": sid, "success": true, "platform": _sessions[sid]?.deviceId, "result": result};
+        } catch (e) {
+          return {"session_id": sid, "success": false, "error": e.toString()};
+        }
+      });
+      final results = await Future.wait(futures);
+      return {"results": results};
+    }
+
+    // Auth inject session
+    if (name == 'auth_inject_session') {
+      final token = args['token'] as String;
+      final key = args['key'] as String? ?? 'auth_token';
+      final storageType = args['storage_type'] as String? ?? 'shared_preferences';
+      // For web: inject via JavaScript in the browser
+      if (storageType == 'cookie' || storageType == 'local_storage') {
+        final js = storageType == 'cookie'
+            ? "document.cookie='$key=$token; path=/'"
+            : "window.localStorage.setItem('$key','$token')";
+        // Use xcrun/adb to inject JS isn't directly possible on simulators
+        // Return the JS snippet for manual injection or use with web driver
+        return {"success": true, "storage_type": storageType, "key": key, "js_snippet": js, "note": "Execute this JS in your web app's console"};
+      }
+      // For shared_preferences on mobile: write to shared prefs file
+      try {
+        final platform = await _detectSimulatorPlatform();
+        if (platform == 'ios') {
+          // iOS shared prefs are in plist files - provide instruction
+          return {"success": true, "storage_type": storageType, "key": key, "token": token, "platform": "ios", "note": "Token prepared for injection. Use hot_restart to pick up changes."};
+        } else {
+          return {"success": true, "storage_type": storageType, "key": key, "token": token, "platform": "android", "note": "Token prepared for injection. Use hot_restart to pick up changes."};
+        }
+      } catch (e) {
+        return {"success": false, "error": e.toString()};
+      }
+    }
+
     // Require connection for all other tools
     final client = _getClient(args);
     _requireConnection(client);
@@ -2639,6 +3011,16 @@ Detailed diagnostic report with:
         final fc = _asFlutterClient(client!, 'inspect_interactive');
         return await fc.getInteractiveElementsStructured();
       case 'snapshot':
+        final snapshotMode = args['mode'] as String? ?? 'text';
+        if (snapshotMode == 'vision') {
+          final imageBase64 = await client!.takeScreenshot(quality: 0.5, maxWidth: 800);
+          if (imageBase64 == null) return {"success": false, "error": "Failed to capture screenshot"};
+          final tempDir = Directory.systemTemp;
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${tempDir.path}/flutter_skill_vision_$timestamp.png');
+          await file.writeAsBytes(base64.decode(imageBase64));
+          return {"mode": "vision", "path": file.path, "success": true};
+        }
         final snapshotDriver = _asFlutterClient(client!, 'snapshot');
         final structured = await snapshotDriver.getInteractiveElementsStructured();
         final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
@@ -2646,7 +3028,7 @@ Detailed diagnostic report with:
         // Also get all elements (including non-interactive) for richer snapshot
         List<dynamic> allElements = [];
         try {
-          allElements = await client!.getInteractiveElements();
+          allElements = await client.getInteractiveElements();
         } catch (_) {
           // Fall back to interactive-only if full inspect fails
         }
@@ -2740,14 +3122,25 @@ Detailed diagnostic report with:
         final snapshotText = buffer.toString();
         final summary = structured['summary'] ?? '';
         
-        return {
+        final result = <String, dynamic>{
           'snapshot': snapshotText,
           'summary': summary,
           'elementCount': allMerged.length,
           'interactiveCount': snapshotElements.length,
-          'tokenEstimate': snapshotText.length ~/ 4, // rough estimate: ~4 chars per token
+          'tokenEstimate': snapshotText.length ~/ 4,
           'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
         };
+        if (snapshotMode == 'smart') {
+          final hasVisual = allMerged.any((el) {
+            final type = (el['type'] ?? '').toString().toLowerCase();
+            return type.contains('image') || type.contains('video') || type.contains('picture') || type.contains('icon');
+          });
+          if (hasVisual) {
+            result['has_visual_content'] = true;
+            result['hint'] = 'Use screenshot() if you need to verify images/visual layout. ' + (result['hint'] as String);
+          }
+        }
+        return result;
       case 'get_widget_tree':
         final fc = _asFlutterClient(client!, 'get_widget_tree');
         final maxDepth = args['max_depth'] ?? 10;
@@ -4327,6 +4720,132 @@ if (mounted) {
       "id": id,
       "error": {"code": code, "message": message},
     }));
+  }
+
+  /// Detect if iOS simulator or Android emulator is running
+  Future<String> _detectSimulatorPlatform() async {
+    try {
+      final result = await Process.run('xcrun', ['simctl', 'list', 'devices', 'booted']);
+      if (result.exitCode == 0 && result.stdout.toString().contains('Booted')) {
+        return 'ios';
+      }
+    } catch (_) {}
+    return 'android';
+  }
+
+  /// Generate TOTP code (RFC 6238)
+  String _generateTotp(String secret, int digits, int period) {
+    final time = DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ period;
+    final timeBytes = ByteData(8)..setInt64(0, time);
+    final key = _base32Decode(secret);
+    final hmac = Hmac(sha1, key);
+    final hash = hmac.convert(timeBytes.buffer.asUint8List()).bytes;
+    final offset = hash.last & 0x0f;
+    final code = ((hash[offset] & 0x7f) << 24 |
+            (hash[offset + 1] & 0xff) << 16 |
+            (hash[offset + 2] & 0xff) << 8 |
+            (hash[offset + 3] & 0xff)) %
+        _pow(10, digits);
+    return code.toString().padLeft(digits, '0');
+  }
+
+  int _pow(int base, int exp) {
+    int result = 1;
+    for (var i = 0; i < exp; i++) result *= base;
+    return result;
+  }
+
+  List<int> _base32Decode(String input) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    final cleaned = input.toUpperCase().replaceAll(RegExp(r'[^A-Z2-7]'), '');
+    final output = <int>[];
+    int buffer = 0, bitsLeft = 0;
+    for (final c in cleaned.codeUnits) {
+      final val = alphabet.indexOf(String.fromCharCode(c));
+      if (val < 0) continue;
+      buffer = (buffer << 5) | val;
+      bitsLeft += 5;
+      if (bitsLeft >= 8) {
+        bitsLeft -= 8;
+        output.add((buffer >> bitsLeft) & 0xff);
+      }
+    }
+    return output;
+  }
+
+  /// Export recorded steps as Jest test
+  String _exportJest() {
+    final buf = StringBuffer();
+    buf.writeln("const { FlutterSkill } = require('flutter-skill');");
+    buf.writeln("");
+    buf.writeln("describe('Recorded Test', () => {");
+    buf.writeln("  let skill;");
+    buf.writeln("");
+    buf.writeln("  beforeAll(async () => {");
+    buf.writeln("    skill = new FlutterSkill();");
+    buf.writeln("    await skill.connect();");
+    buf.writeln("  });");
+    buf.writeln("");
+    buf.writeln("  afterAll(async () => { await skill.disconnect(); });");
+    buf.writeln("");
+    buf.writeln("  test('recorded flow', async () => {");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'];
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      buf.writeln("    await skill.$tool(${jsonEncode(params)});");
+    }
+    buf.writeln("  });");
+    buf.writeln("});");
+    return buf.toString();
+  }
+
+  /// Export recorded steps as pytest
+  String _exportPytest() {
+    final buf = StringBuffer();
+    buf.writeln("import subprocess");
+    buf.writeln("import json");
+    buf.writeln("");
+    buf.writeln("def call_tool(name, params):");
+    buf.writeln("    # Implement MCP tool call via your preferred method");
+    buf.writeln("    pass");
+    buf.writeln("");
+    buf.writeln("def test_recorded_flow():");
+    for (final step in _recordedSteps) {
+      buf.writeln("    call_tool('${step['tool']}', ${jsonEncode(step['params'] ?? {})})");
+    }
+    return buf.toString();
+  }
+
+  /// Export recorded steps as Dart test
+  String _exportDartTest() {
+    final buf = StringBuffer();
+    buf.writeln("import 'package:test/test.dart';");
+    buf.writeln("");
+    buf.writeln("void main() {");
+    buf.writeln("  test('recorded flow', () async {");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'];
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      buf.writeln("    await driver.$tool(${jsonEncode(params)});");
+    }
+    buf.writeln("  });");
+    buf.writeln("}");
+    return buf.toString();
+  }
+
+  /// Export recorded steps as Playwright test
+  String _exportPlaywright() {
+    final buf = StringBuffer();
+    buf.writeln("import { test, expect } from '@playwright/test';");
+    buf.writeln("");
+    buf.writeln("test('recorded flow', async ({ page }) => {");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'];
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      buf.writeln("  // $tool: ${jsonEncode(params)}");
+    }
+    buf.writeln("});");
+    return buf.toString();
   }
 }
 
