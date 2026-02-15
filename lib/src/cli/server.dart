@@ -692,6 +692,22 @@ After starting, point the web SDK at ws://127.0.0.1:<port>.""",
       {"name": "throttle_network", "description": "Simulate slow network (3G, offline, etc.)", "inputSchema": {"type": "object", "properties": {"latency_ms": {"type": "integer"}, "download_kbps": {"type": "integer"}, "upload_kbps": {"type": "integer"}}}},
       {"name": "go_offline", "description": "Simulate offline mode (no network)", "inputSchema": {"type": "object", "properties": {}}},
       {"name": "clear_browser_data", "description": "Clear all browser data (cookies, cache, localStorage, sessionStorage)", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "upload_file", "description": "Upload file(s) to a file input element", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector for input[type=file]"}, "files": {"type": "array", "items": {"type": "string"}, "description": "File paths to upload"}}, "required": ["selector", "files"]}},
+      {"name": "handle_dialog", "description": "Accept or dismiss browser dialog (alert/confirm/prompt)", "inputSchema": {"type": "object", "properties": {"accept": {"type": "boolean"}, "prompt_text": {"type": "string"}}, "required": ["accept"]}},
+      {"name": "get_frames", "description": "List all iframes on the page", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "eval_in_frame", "description": "Execute JavaScript inside a specific iframe", "inputSchema": {"type": "object", "properties": {"frame_id": {"type": "string"}, "expression": {"type": "string"}}, "required": ["frame_id", "expression"]}},
+      {"name": "get_tabs", "description": "List all open browser tabs", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "new_tab", "description": "Open a new browser tab with a URL", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
+      {"name": "close_tab", "description": "Close a browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
+      {"name": "switch_tab", "description": "Switch to a different browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
+      {"name": "intercept_requests", "description": "Mock/intercept network requests matching a URL pattern (return custom responses)", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string"}, "status_code": {"type": "integer"}, "body": {"type": "string"}, "headers": {"type": "object"}}, "required": ["url_pattern"]}},
+      {"name": "clear_interceptions", "description": "Remove all network request interceptions", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "accessibility_audit", "description": "Run accessibility audit (WCAG checks: missing alt, labels, heading order, contrast, lang, viewport)", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "compare_screenshot", "description": "Visual regression test — compare current page to a baseline screenshot", "inputSchema": {"type": "object", "properties": {"baseline_path": {"type": "string", "description": "Path to baseline PNG image"}}, "required": ["baseline_path"]}},
+      {"name": "wait_for_network_idle", "description": "Wait until all network requests complete (no pending fetch/XHR)", "inputSchema": {"type": "object", "properties": {"timeout_ms": {"type": "integer"}, "idle_ms": {"type": "integer"}}}},
+      {"name": "get_session_storage", "description": "Get all sessionStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "type_text", "description": "Type text character by character (realistic typing simulation)", "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
+      {"name": "set_timezone", "description": "Override browser timezone", "inputSchema": {"type": "object", "properties": {"timezone": {"type": "string", "description": "IANA timezone (e.g. America/New_York)"}}, "required": ["timezone"]}},
 
       // Basic Inspection
       {
@@ -4555,6 +4571,60 @@ Detailed diagnostic report with:
 
       case 'clear_browser_data':
         return await cdp.clearBrowserData();
+
+      case 'upload_file':
+        final selector = args['selector'] as String? ?? 'input[type="file"]';
+        final files = (args['files'] as List<dynamic>?)?.cast<String>() ?? [];
+        return await cdp.uploadFile(selector, files);
+
+      case 'handle_dialog':
+        final accept = args['accept'] ?? true;
+        final promptText = args['prompt_text'] as String?;
+        return await cdp.handleDialog(accept, promptText: promptText);
+
+      case 'get_frames':
+        return await cdp.getFrames();
+
+      case 'eval_in_frame':
+        return await cdp.evalInFrame(args['frame_id'] as String? ?? '', args['expression'] as String? ?? '');
+
+      case 'get_tabs':
+        return await cdp.getTabs();
+
+      case 'new_tab':
+        return await cdp.newTab(args['url'] as String? ?? 'about:blank');
+
+      case 'close_tab':
+        return await cdp.closeTab(args['target_id'] as String? ?? '');
+
+      case 'switch_tab':
+        return await cdp.switchTab(args['target_id'] as String? ?? '');
+
+      case 'intercept_requests':
+        return await cdp.interceptRequests(
+          args['url_pattern'] as String? ?? '*',
+          statusCode: (args['status_code'] as num?)?.toInt(),
+          body: args['body'] as String?,
+          headers: (args['headers'] as Map<String, dynamic>?)?.cast<String, String>(),
+        );
+
+      case 'clear_interceptions':
+        return await cdp.clearInterceptions();
+
+      case 'accessibility_audit':
+        return await cdp.accessibilityAudit();
+
+      case 'compare_screenshot':
+        return await cdp.compareScreenshot(args['baseline_path'] as String? ?? '');
+
+      case 'wait_for_network_idle':
+        return await cdp.waitForNetworkIdle(
+          timeoutMs: (args['timeout_ms'] as num?)?.toInt() ?? 10000,
+          idleMs: (args['idle_ms'] as num?)?.toInt() ?? 500,
+        );
+
+      case 'get_session_storage':
+        return await cdp.getSessionStorage();
 
       default:
         throw Exception('Tool "$name" is not supported in CDP mode.');

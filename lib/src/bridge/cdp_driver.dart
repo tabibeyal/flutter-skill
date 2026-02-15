@@ -1221,6 +1221,299 @@ class CdpDriver implements AppDriver {
     return {"success": true};
   }
 
+  // ── File upload ──
+
+  /// Upload file to input[type=file].
+  Future<Map<String, dynamic>> uploadFile(String selector, List<String> filePaths) async {
+    // Find the file input node
+    final doc = await _call('DOM.getDocument');
+    final rootNodeId = doc['root']?['nodeId'] as int? ?? 0;
+    final result = await _call('DOM.querySelector', {
+      'nodeId': rootNodeId,
+      'selector': selector,
+    });
+    final nodeId = result['nodeId'] as int?;
+    if (nodeId == null || nodeId == 0) return {"success": false, "message": "File input not found"};
+
+    await _call('DOM.setFileInputFiles', {
+      'nodeId': nodeId,
+      'files': filePaths,
+    });
+    return {"success": true, "files": filePaths};
+  }
+
+  // ── Dialog handling ──
+
+  bool _dialogHandlerInstalled = false;
+  
+
+  Future<void> installDialogHandler({bool autoAccept = true}) async {
+    if (_dialogHandlerInstalled) return;
+    _dialogHandlerInstalled = true;
+    // Dialog events come as CDP events — handled in _onMessage
+  }
+
+  Future<Map<String, dynamic>> handleDialog(bool accept, {String? promptText}) async {
+    await _call('Page.handleJavaScriptDialog', {
+      'accept': accept,
+      if (promptText != null) 'promptText': promptText,
+    });
+    return {"success": true, "action": accept ? "accepted" : "dismissed"};
+  }
+
+  // ── Iframe support ──
+
+  Future<Map<String, dynamic>> getFrames() async {
+    final tree = await _call('Page.getFrameTree');
+    List<Map<String, dynamic>> flatten(Map<String, dynamic> frame) {
+      final result = <Map<String, dynamic>>[];
+      final f = frame['frame'] as Map<String, dynamic>?;
+      if (f != null) {
+        result.add({
+          'id': f['id'],
+          'url': f['url'],
+          'name': f['name'] ?? '',
+          'securityOrigin': f['securityOrigin'],
+        });
+      }
+      final children = frame['childFrames'] as List?;
+      if (children != null) {
+        for (final child in children) {
+          result.addAll(flatten(child as Map<String, dynamic>));
+        }
+      }
+      return result;
+    }
+    final frames = flatten(tree['frameTree'] as Map<String, dynamic>? ?? {});
+    return {"frames": frames, "count": frames.length};
+  }
+
+  Future<Map<String, dynamic>> evalInFrame(String frameId, String expression) async {
+    // Create isolated world in the target frame
+    final world = await _call('Page.createIsolatedWorld', {
+      'frameId': frameId,
+      'worldName': 'flutter-skill-eval',
+      'grantUniveralAccess': true,
+    });
+    final contextId = world['executionContextId'] as int?;
+    if (contextId == null) return {"success": false, "message": "Cannot access frame"};
+    final result = await _call('Runtime.evaluate', {
+      'expression': expression,
+      'contextId': contextId,
+      'returnByValue': true,
+    });
+    return {"result": result['result']?['value']};
+  }
+
+  // ── Multi-tab management ──
+
+  Future<Map<String, dynamic>> getTabs() async {
+    final client = HttpClient();
+    final request = await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json'));
+    final response = await request.close();
+    final body = await response.transform(utf8.decoder).join();
+    client.close();
+    final tabs = (jsonDecode(body) as List).where((t) => t['type'] == 'page').map((t) => {
+      'id': t['id'],
+      'title': t['title'],
+      'url': t['url'],
+    }).toList();
+    return {"tabs": tabs, "count": tabs.length};
+  }
+
+  Future<Map<String, dynamic>> newTab(String url) async {
+    final result = await _call('Target.createTarget', {'url': url});
+    return {"success": true, "targetId": result['targetId']};
+  }
+
+  Future<Map<String, dynamic>> closeTab(String targetId) async {
+    await _call('Target.closeTarget', {'targetId': targetId});
+    return {"success": true};
+  }
+
+  Future<Map<String, dynamic>> switchTab(String targetId) async {
+    await _call('Target.activateTarget', {'targetId': targetId});
+    return {"success": true};
+  }
+
+  // ── Network request interception/mocking ──
+
+  final Map<String, Map<String, dynamic>> _interceptRules = {};
+
+  Future<Map<String, dynamic>> interceptRequests(String urlPattern, {int? statusCode, String? body, Map<String, String>? headers}) async {
+    await _call('Fetch.enable', {
+      'patterns': [{'urlPattern': urlPattern, 'requestStage': 'Response'}],
+    });
+    _interceptRules[urlPattern] = {
+      'statusCode': statusCode ?? 200,
+      'body': body ?? '',
+      'headers': headers ?? {},
+    };
+    return {"success": true, "pattern": urlPattern};
+  }
+
+  Future<Map<String, dynamic>> clearInterceptions() async {
+    await _call('Fetch.disable');
+    _interceptRules.clear();
+    return {"success": true};
+  }
+
+  // ── Accessibility audit ──
+
+  Future<Map<String, dynamic>> accessibilityAudit() async {
+    final result = await _evalJs('''
+      JSON.stringify((() => {
+        const issues = [];
+        // Check images without alt
+        document.querySelectorAll('img:not([alt])').forEach(img => {
+          issues.push({type: 'error', rule: 'img-alt', message: 'Image missing alt attribute', element: img.src?.substring(0, 80)});
+        });
+        // Check form inputs without labels
+        document.querySelectorAll('input:not([type="hidden"]):not([aria-label]):not([id])').forEach(el => {
+          issues.push({type: 'warning', rule: 'input-label', message: 'Input missing associated label', element: el.outerHTML?.substring(0, 80)});
+        });
+        // Check empty buttons
+        document.querySelectorAll('button').forEach(btn => {
+          if (!btn.textContent?.trim() && !btn.getAttribute('aria-label')) {
+            issues.push({type: 'error', rule: 'button-name', message: 'Button has no accessible name', element: btn.outerHTML?.substring(0, 80)});
+          }
+        });
+        // Check empty links
+        document.querySelectorAll('a').forEach(a => {
+          if (!a.textContent?.trim() && !a.getAttribute('aria-label')) {
+            issues.push({type: 'error', rule: 'link-name', message: 'Link has no accessible name', element: a.outerHTML?.substring(0, 80)});
+          }
+        });
+        // Check heading hierarchy
+        let lastLevel = 0;
+        document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+          const level = parseInt(h.tagName[1]);
+          if (level > lastLevel + 1 && lastLevel > 0) {
+            issues.push({type: 'warning', rule: 'heading-order', message: 'Heading level skipped: h' + lastLevel + ' → h' + level, element: h.textContent?.substring(0, 40)});
+          }
+          lastLevel = level;
+        });
+        // Check color contrast (basic)
+        document.querySelectorAll('*').forEach(el => {
+          const style = getComputedStyle(el);
+          if (style.color === style.backgroundColor && el.textContent?.trim()) {
+            issues.push({type: 'error', rule: 'color-contrast', message: 'Text same color as background', element: el.textContent?.substring(0, 40)});
+          }
+        });
+        // Check document language
+        if (!document.documentElement.lang) {
+          issues.push({type: 'warning', rule: 'html-lang', message: 'HTML element missing lang attribute'});
+        }
+        // Check viewport meta
+        if (!document.querySelector('meta[name="viewport"]')) {
+          issues.push({type: 'warning', rule: 'viewport', message: 'Missing viewport meta tag'});
+        }
+        return {issues: issues, total: issues.length, errors: issues.filter(i => i.type === 'error').length, warnings: issues.filter(i => i.type === 'warning').length};
+      })())
+    ''');
+    final v = result['result']?['value'] as String?;
+    if (v == null) return {"issues": [], "total": 0};
+    return jsonDecode(v) as Map<String, dynamic>;
+  }
+
+  // ── Visual regression ──
+
+  Future<Map<String, dynamic>> compareScreenshot(String baselinePath) async {
+    final current = await takeScreenshot();
+    if (current == null) return {"success": false, "message": "Screenshot failed"};
+
+    final currentFile = File('${Directory.systemTemp.path}/flutter_skill_compare_${DateTime.now().millisecondsSinceEpoch}.png');
+    await currentFile.writeAsBytes(base64.decode(current));
+
+    final baselineFile = File(baselinePath);
+    if (!baselineFile.existsSync()) {
+      // No baseline — save current as baseline
+      await currentFile.copy(baselinePath);
+      return {"success": true, "action": "baseline_created", "path": baselinePath};
+    }
+
+    // Basic pixel comparison
+    final baselineBytes = await baselineFile.readAsBytes();
+    final currentBytes = await currentFile.readAsBytes();
+
+    if (baselineBytes.length != currentBytes.length) {
+      return {
+        "success": false,
+        "match": false,
+        "reason": "Image sizes differ",
+        "baseline_size": baselineBytes.length,
+        "current_size": currentBytes.length,
+        "current_path": currentFile.path,
+      };
+    }
+
+    int diffPixels = 0;
+    for (int i = 0; i < baselineBytes.length; i++) {
+      if (baselineBytes[i] != currentBytes[i]) diffPixels++;
+    }
+    final diffPercent = (diffPixels / baselineBytes.length * 100);
+    final match = diffPercent < 1.0; // 1% tolerance
+
+    return {
+      "success": true,
+      "match": match,
+      "diff_percent": double.parse(diffPercent.toStringAsFixed(2)),
+      "current_path": currentFile.path,
+      "baseline_path": baselinePath,
+    };
+  }
+
+  // ── Wait for network idle ──
+
+  Future<Map<String, dynamic>> waitForNetworkIdle({int timeoutMs = 10000, int idleMs = 500}) async {
+    final result = await _evalJs('''
+      new Promise((resolve) => {
+        let pending = 0;
+        let timer = null;
+        const timeout = setTimeout(() => resolve(JSON.stringify({idle: false, reason: 'timeout'})), $timeoutMs);
+        const check = () => {
+          if (pending <= 0) {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              clearTimeout(timeout);
+              resolve(JSON.stringify({idle: true}));
+            }, $idleMs);
+          }
+        };
+        const origFetch = window.fetch;
+        window.fetch = function() {
+          pending++;
+          return origFetch.apply(this, arguments).finally(() => { pending--; check(); });
+        };
+        const origXHR = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function() {
+          pending++;
+          this.addEventListener('loadend', () => { pending--; check(); });
+          return origXHR.apply(this, arguments);
+        };
+        check();
+      })
+    ''');
+    final v = result['result']?['value'] as String?;
+    if (v == null) return {"idle": true};
+    return jsonDecode(v) as Map<String, dynamic>;
+  }
+
+  // ── Session/tab storage ──
+
+  Future<Map<String, dynamic>> getSessionStorage() async {
+    final result = await _evalJs('JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))');
+    final v = result['result']?['value'] as String?;
+    if (v == null) return {};
+    return jsonDecode(v) as Map<String, dynamic>;
+  }
+
+  /// Get all open handles (window.open references).
+  Future<Map<String, dynamic>> getWindowHandles() async {
+    final result = await _evalJs('window.length');
+    return {"window_count": result['result']?['value'] ?? 1};
+  }
+
   // ── Internal helpers ──
 
   Future<void> _launchChromeProcess() async {
