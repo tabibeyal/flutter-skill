@@ -242,28 +242,20 @@ async function main() {
 
   // ── For web-sdk: wait for browser SDK to connect to bridge listener ──
   if (PLATFORM === 'web-sdk') {
-    // Bridge listener auto-starts with --bridge-port. Browser must already be open at http://localhost:3000
-    // The SDK auto-connects to ws://127.0.0.1:18118
-    console.log('  Waiting for browser SDK to connect to bridge listener on port 18118...');
-    console.log('  (Ensure browser is open at http://localhost:3000 with SDK loaded)');
-    // Wait for SDK to connect
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 1000));
-      // Check if scan_and_connect would find it
-      const r = await callTool('get_connection_status', {});
-      const text = r.result?.content?.[0]?.text || '';
-      if (text.includes('web') || text.includes('connected')) break;
-      // Try scan
-      if (i === 5 || i === 15) {
-        await callTool('scan_and_connect', {});
-      }
-    }
+    // Bridge listener auto-starts with --bridge-port=18118
+    // Browser must already be open at http://localhost:3000 with SDK loaded
+    // SDK auto-connects to ws://127.0.0.1:18118, server auto-creates session
+    console.log('  Waiting for browser SDK to connect (10s)...');
+    await new Promise(r => setTimeout(r, 10000));
   }
 
   // ── Connect (platform-appropriate) ───────────────────────────────────────
   console.log('--- Connecting ---');
   let connected = false;
-  if (isCDP && URL) {
+  if (PLATFORM === 'web-sdk') {
+    // Auto-connected via bridge listener — session created when browser SDK connected
+    connected = true;
+  } else if (isCDP && URL) {
     const r = await callTool('connect_cdp', { url: URL });
     connected = !r.error;
   } else if (VM_SERVICE) {

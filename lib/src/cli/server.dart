@@ -196,23 +196,30 @@ class FlutterMcpServer {
   Future<void> startBridgeListener(int port) async {
     if (_webBridgeListener != null) return;
     final listener = WebBridgeListener();
+    String? _webSessionId;
     listener.onClientConnected = (_) {
-      final sessionId = _generateSessionId();
-      final driver = WebBridgeDriver(listener);
-      driver.connect().then((_) {
-        _clients[sessionId] = driver;
-        _sessions[sessionId] = SessionInfo(
-          id: sessionId,
-          name: 'Web app (bridge listener)',
-          projectPath: 'web',
-          deviceId: 'web',
-          port: port,
-          vmServiceUri: 'ws://127.0.0.1:$port',
-        );
-        _activeSessionId = sessionId;
-        stderr.writeln('Browser client connected — session $sessionId created');
-      }).catchError((e) {
-        stderr.writeln('Failed to initialize web bridge session: $e');
+      // Small delay to let WS connection stabilize (SDK may disconnect/reconnect)
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        if (!listener.hasClient) return; // Already disconnected
+        try {
+          final driver = WebBridgeDriver(listener);
+          await driver.connect();
+          final sessionId = _webSessionId ?? _generateSessionId();
+          _webSessionId = sessionId;
+          _clients[sessionId] = driver;
+          _sessions[sessionId] = SessionInfo(
+            id: sessionId,
+            name: 'Web app (bridge listener)',
+            projectPath: 'web',
+            deviceId: 'web',
+            port: port,
+            vmServiceUri: 'ws://127.0.0.1:$port',
+          );
+          _activeSessionId = sessionId;
+          stderr.writeln('Browser client connected — session $sessionId created');
+        } catch (e) {
+          stderr.writeln('Failed to initialize web bridge session: $e');
+        }
       });
     };
     listener.onClientDisconnected = () {
