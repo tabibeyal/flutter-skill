@@ -377,6 +377,7 @@
     container.scrollBy(dx, dy);
     return { success: true };
   };
+  handlers.scroll = handlers.scroll_to;
 
   handlers.long_press = function (params) {
     var el = resolveElement(params);
