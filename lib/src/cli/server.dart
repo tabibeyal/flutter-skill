@@ -81,8 +81,12 @@ Future<void> runServer(List<String> args) async {
         autoUrl = arg.substring('--url='.length);
       } else if (arg.startsWith('--cdp-port=')) {
         cdpPort = int.tryParse(arg.substring('--cdp-port='.length));
+      } else if (arg.startsWith('--plugins-dir=')) {
+        server._pluginsDir = arg.substring('--plugins-dir='.length);
       }
     }
+
+    await server._loadPlugins();
 
     if (autoUrl != null) {
       server._autoConnectUrl = autoUrl;
@@ -4272,6 +4276,117 @@ can visually compare them. Also returns text snapshots for structural comparison
           "region": {"x": x, "y": y, "width": width, "height": height},
           "warning":
               "Returning base64 data. Consider using save_to_file=true for large regions."
+        };
+
+      // AI Visual Verification
+      case 'visual_verify':
+        final verifyQuality = (args['quality'] as num?)?.toDouble() ?? 0.5;
+        final verifyDesc = args['description'] as String? ?? '';
+        final checkElements = (args['check_elements'] as List?)?.cast<String>() ?? [];
+
+        // Take screenshot
+        final verifyImageBase64 = await client!.takeScreenshot(quality: verifyQuality, maxWidth: 800);
+        String? verifyScreenshotPath;
+        if (verifyImageBase64 != null) {
+          final tempDir = Directory.systemTemp;
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${tempDir.path}/flutter_skill_verify_$timestamp.png');
+          await file.writeAsBytes(base64.decode(verifyImageBase64));
+          verifyScreenshotPath = file.path;
+        }
+
+        // Take snapshot (text tree)
+        String verifySnapshotText = '';
+        List<String> foundElements = [];
+        List<String> missingElements = [];
+        int verifyElementCount = 0;
+        try {
+          final structured = await client!.getInteractiveElementsStructured();
+          final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
+          verifyElementCount = snapshotElements.length;
+
+          final buf = StringBuffer();
+          for (var i = 0; i < snapshotElements.length; i++) {
+            final el = snapshotElements[i] as Map<String, dynamic>;
+            final ref = el['ref'] ?? '';
+            final text = el['text']?.toString() ?? '';
+            final label = el['label']?.toString() ?? '';
+            final display = text.isNotEmpty ? text : label;
+            buf.writeln('[$ref] "$display"');
+          }
+          verifySnapshotText = buf.toString();
+
+          // Check elements
+          if (checkElements.isNotEmpty) {
+            final snapshotLower = verifySnapshotText.toLowerCase();
+            for (final check in checkElements) {
+              if (snapshotLower.contains(check.toLowerCase())) {
+                foundElements.add(check);
+              } else {
+                missingElements.add(check);
+              }
+            }
+          }
+        } catch (e) {
+          verifySnapshotText = 'Error getting snapshot: $e';
+        }
+
+        return {
+          'success': true,
+          'screenshot': verifyScreenshotPath,
+          'snapshot': verifySnapshotText,
+          'elements_found': foundElements,
+          'elements_missing': missingElements,
+          'element_count': verifyElementCount,
+          'description_to_verify': verifyDesc,
+          'hint': 'Compare the screenshot and snapshot against the description. Report any discrepancies.',
+        };
+
+      case 'visual_diff':
+        final diffQuality = (args['quality'] as num?)?.toDouble() ?? 0.5;
+        final baselinePath = args['baseline_path'] as String;
+        final diffDesc = args['description'] as String? ?? '';
+
+        final baselineFile = File(baselinePath);
+        if (!await baselineFile.exists()) {
+          return {'success': false, 'error': 'Baseline file not found: $baselinePath'};
+        }
+
+        final diffImageBase64 = await client!.takeScreenshot(quality: diffQuality, maxWidth: 800);
+        String? currentScreenshotPath;
+        if (diffImageBase64 != null) {
+          final tempDir = Directory.systemTemp;
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${tempDir.path}/flutter_skill_diff_$timestamp.png');
+          await file.writeAsBytes(base64.decode(diffImageBase64));
+          currentScreenshotPath = file.path;
+        }
+
+        String diffSnapshotText = '';
+        try {
+          final structured = await client!.getInteractiveElementsStructured();
+          final els = structured['elements'] as List<dynamic>? ?? [];
+          final buf = StringBuffer();
+          for (final el in els) {
+            if (el is Map<String, dynamic>) {
+              final ref = el['ref'] ?? '';
+              final text = el['text']?.toString() ?? '';
+              final label = el['label']?.toString() ?? '';
+              buf.writeln('[$ref] "${text.isNotEmpty ? text : label}"');
+            }
+          }
+          diffSnapshotText = buf.toString();
+        } catch (e) {
+          diffSnapshotText = 'Error: $e';
+        }
+
+        return {
+          'success': true,
+          'baseline_path': baselinePath,
+          'current_screenshot': currentScreenshotPath,
+          'current_snapshot': diffSnapshotText,
+          'description': diffDesc,
+          'hint': 'Compare the baseline screenshot with the current screenshot. Look for visual differences. The text snapshot shows the current UI structure.',
         };
 
       case 'screenshot_element':
