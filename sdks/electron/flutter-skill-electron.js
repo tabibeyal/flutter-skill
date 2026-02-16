@@ -15,6 +15,30 @@ class FlutterSkillElectron {
     this.logs = [];
     this.maxLogs = 500;
     this.navigationHistory = ['home'];
+    this._registeredTools = [];
+  }
+
+  // --------------- AppMCP Tool Registration ---------------
+  registerTool(name, description, params, handler) {
+    const tool = { name, description: description || '', params: params || {}, handler, source: 'js-registered' };
+    const idx = this._registeredTools.findIndex(t => t.name === name);
+    if (idx !== -1) this._registeredTools[idx] = tool;
+    else this._registeredTools.push(tool);
+    return tool;
+  }
+
+  async _handleCallTool(p) {
+    const toolName = p.name || '';
+    const toolParams = p.params || p.args || {};
+    const tool = this._registeredTools.find(t => t.name === toolName);
+    if (!tool) return { success: false, error: `Tool not found: ${toolName}` };
+    if (!tool.handler) return { success: false, error: `Tool has no handler: ${toolName}` };
+    try {
+      const result = await tool.handler(toolParams);
+      return { success: true, result, source: 'js-registered' };
+    } catch (e) {
+      return { success: false, error: e.message, source: 'js-registered' };
+    }
   }
 
   start() {
@@ -31,6 +55,7 @@ class FlutterSkillElectron {
             'initialize', 'inspect', 'inspect_interactive', 'tap', 'enter_text', 'get_text',
             'find_element', 'wait_for_element', 'scroll', 'swipe',
             'screenshot', 'screenshot_region', 'screenshot_element', 'go_back', 'get_logs', 'clear_logs', 'press_key',
+            'get_registered_tools', 'call_tool',
           ],
         }));
       } else {
@@ -375,6 +400,11 @@ class FlutterSkillElectron {
         return this._scroll(win, params);
       case 'eval':
         return this._eval(win, params);
+
+      case 'get_registered_tools':
+        return { tools: this._registeredTools.map(t => ({ name: t.name, description: t.description, params: t.params, source: t.source })), count: this._registeredTools.length };
+      case 'call_tool':
+        return this._handleCallTool(params);
 
       default:
         throw new Error(`Unknown method: ${method}`);

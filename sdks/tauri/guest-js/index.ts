@@ -107,5 +107,41 @@ export class FlutterSkillClient {
   pressKey(key: string, modifiers?: string[]) { return this.call('press_key', { key, modifiers }); }
   swipe(direction: string, distance = 300) { return this.call('swipe', { direction, distance }); }
 
+  getRegisteredTools() { return this.call('get_registered_tools'); }
+  callTool(name: string, params?: Record<string, unknown>) { return this.call('call_tool', { name, params: params || {} }); }
+
   close() { this.ws.close(); }
+}
+
+// ── WebMCP Tool Registration (runs in Tauri webview) ──
+
+interface ToolDefinition {
+  name: string;
+  description: string;
+  params: Record<string, unknown>;
+  handler: (params: Record<string, unknown>) => unknown | Promise<unknown>;
+  source: string;
+}
+
+declare global {
+  interface Window {
+    __flutter_skill_tools__?: ToolDefinition[];
+  }
+}
+
+/**
+ * Register a tool that AI agents can discover and invoke.
+ * Tools are stored in window.__flutter_skill_tools__ for bridge discovery.
+ */
+export function registerTool(
+  name: string,
+  description: string,
+  params: Record<string, unknown>,
+  handler: (params: Record<string, unknown>) => unknown | Promise<unknown>
+): void {
+  if (!window.__flutter_skill_tools__) window.__flutter_skill_tools__ = [];
+  const tool: ToolDefinition = { name, description: description || '', params: params || {}, handler, source: 'js-registered' };
+  const idx = window.__flutter_skill_tools__.findIndex(t => t.name === name);
+  if (idx !== -1) window.__flutter_skill_tools__[idx] = tool;
+  else window.__flutter_skill_tools__.push(tool);
 }

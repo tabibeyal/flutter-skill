@@ -48,6 +48,26 @@ class FlutterSkillBridge(
     private var server: ApplicationEngine? = null
     private val json = Json { ignoreUnknownKeys = true }
 
+    // --------------- AppMCP Tool Registration ---------------
+    fun interface ToolHandler {
+        fun handle(args: JsonObject): JsonElement
+    }
+
+    private data class RegisteredTool(
+        val name: String,
+        val description: String,
+        val params: JsonObject,
+        val handler: ToolHandler
+    )
+
+    private val registeredTools = mutableListOf<RegisteredTool>()
+
+    fun registerTool(name: String, description: String = "", params: JsonObject = buildJsonObject {}, handler: ToolHandler) {
+        val idx = registeredTools.indexOfFirst { it.name == name }
+        val tool = RegisteredTool(name, description, params, handler)
+        if (idx != -1) registeredTools[idx] = tool else registeredTools.add(tool)
+    }
+
     fun start() {
         server = embeddedServer(CIO, port = port) {
             install(WebSockets)
@@ -173,6 +193,24 @@ class FlutterSkillBridge(
                 "enable_network_monitoring" -> buildJsonObject { put("success", true) }
                 "get_network_requests" -> buildJsonObject { putJsonArray("requests") {} }
                 "clear_network_requests" -> buildJsonObject { put("success", true) }
+                "get_registered_tools" -> buildJsonObject {
+                    putJsonArray("tools") {
+                        registeredTools.forEach { t ->
+                            add(buildJsonObject {
+                                put("name", t.name); put("description", t.description)
+                                put("params", t.params); put("source", "js-registered")
+                            })
+                        }
+                    }
+                    put("count", registeredTools.size)
+                }
+                "call_tool" -> {
+                    val name = params["name"]?.jsonPrimitive?.content ?: throw Exception("Missing tool name")
+                    val args = params["args"]?.jsonObject ?: buildJsonObject {}
+                    val tool = registeredTools.find { it.name == name } ?: throw Exception("Tool not found: $name")
+                    val result = tool.handler.handle(args)
+                    buildJsonObject { put("success", true); put("tool", name); put("result", result) }
+                }
                 else -> {
                     return json.encodeToString(JsonRpcResponse(
                         error = buildJsonObject { put("code", -32601); put("message", "Method not found: ${req.method}") },

@@ -66,7 +66,29 @@ object FlutterSkillBridge {
         "initialize", "screenshot", "screenshot_region", "screenshot_element", "inspect", "inspect_interactive", "tap", "enter_text",
         "swipe", "scroll", "find_element", "get_text", "wait_for_element",
         "get_logs", "clear_logs", "go_back", "press_key",
+        "get_registered_tools", "call_tool",
     )
+
+    // --------------- AppMCP Tool Registration ---------------
+    fun interface ToolHandler {
+        fun handle(args: JSONObject): Any?
+    }
+
+    private data class RegisteredTool(
+        val name: String,
+        val description: String,
+        val params: JSONObject,
+        val handler: ToolHandler
+    )
+
+    private val registeredTools = CopyOnWriteArrayList<RegisteredTool>()
+
+    @JvmStatic
+    fun registerTool(name: String, description: String, params: JSONObject = JSONObject(), handler: ToolHandler) {
+        val idx = registeredTools.indexOfFirst { it.name == name }
+        val tool = RegisteredTool(name, description, params, handler)
+        if (idx != -1) registeredTools[idx] = tool else registeredTools.add(tool)
+    }
 
     // ---------------------------------------------------------------
     // Public API
@@ -489,6 +511,8 @@ object FlutterSkillBridge {
             "enable_network_monitoring" -> handleEnableNetworkMonitoring()
             "get_network_requests" -> handleGetNetworkRequests()
             "clear_network_requests" -> handleClearNetworkRequests()
+            "get_registered_tools" -> handleGetRegisteredTools()
+            "call_tool"            -> handleCallTool(params)
             else -> throw NoSuchMethodException("Method not found: $method")
         }
     }
@@ -496,6 +520,35 @@ object FlutterSkillBridge {
     // ---------------------------------------------------------------
     // Bridge method implementations
     // ---------------------------------------------------------------
+
+    private fun handleGetRegisteredTools(): JSONObject {
+        val arr = JSONArray()
+        for (t in registeredTools) {
+            arr.put(JSONObject().apply {
+                put("name", t.name)
+                put("description", t.description)
+                put("params", t.params)
+                put("source", "js-registered")
+            })
+        }
+        return JSONObject().apply {
+            put("tools", arr)
+            put("count", registeredTools.size)
+        }
+    }
+
+    private fun handleCallTool(params: JSONObject): JSONObject {
+        val name = params.getString("name")
+        val args = params.optJSONObject("args") ?: JSONObject()
+        val tool = registeredTools.find { it.name == name }
+            ?: throw NoSuchMethodException("Tool not found: $name")
+        val result = tool.handler.handle(args)
+        return JSONObject().apply {
+            put("success", true)
+            put("tool", name)
+            put("result", result?.toString() ?: "null")
+        }
+    }
 
     private fun handleInitialize(): JSONObject {
         return JSONObject().apply {

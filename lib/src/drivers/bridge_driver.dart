@@ -352,4 +352,16 @@ class BridgeDriver implements AppDriver {
       _reconnecting = false;
     }
   }
+
+  // --------------- AppMCP Tool Discovery & Calling ---------------
+
+  /// Discover tools registered by the app via SDK registerTool().
+  Future<Map<String, dynamic>> discoverTools() async {
+    return await callMethod('get_registered_tools');
+  }
+
+  /// Call a tool registered by the app.
+  Future<Map<String, dynamic>> callTool(String name, Map<String, dynamic> args) async {
+    return await callMethod('call_tool', {'name': name, 'args': args});
+  }
 }

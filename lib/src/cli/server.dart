@@ -849,8 +849,8 @@ After starting, point the web SDK at ws://127.0.0.1:<port>.""",
       {"name": "highlight_elements", "description": "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.", "inputSchema": {"type": "object", "properties": {"show": {"type": "boolean", "description": "true to show highlights, false to remove them", "default": true}}}},
 
       // WebMCP: Structured page tools
-      {"name": "discover_page_tools", "description": "Discover all structured tools on the current page. Scans JS-registered tools (window.__flutter_skill_tools__), data-mcp-tool HTML attributes, <link rel=\"mcp-tools\"> manifests, /.well-known/mcp.json, and auto-converts <form> elements into callable tools. CDP-only.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "call_page_tool", "description": "Call a discovered page tool by name with parameters. Routes to JS handler, form fill+submit, or API endpoint depending on tool source. Use discover_page_tools first to see available tools. CDP-only.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "description": "Tool name (from discover_page_tools)"}, "params": {"type": "object", "description": "Parameters to pass to the tool"}}, "required": ["name"]}},
+      {"name": "discover_page_tools", "description": "Discover all structured tools registered by the app. Works on ALL platforms: web (JS-registered tools, data-mcp-tool attributes, well-known manifests, auto-forms), mobile (native registered tools), desktop (registered tools). Use this to find callable tools on the current page/screen.", "inputSchema": {"type": "object", "properties": {}}},
+      {"name": "call_page_tool", "description": "Call a discovered tool by name with parameters. Works on ALL platforms. Routes to the appropriate handler (JS function, form submit, native handler). Use discover_page_tools first to see available tools.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "description": "Tool name (from discover_page_tools)"}, "params": {"type": "object", "description": "Parameters to pass to the tool"}}, "required": ["name"]}},
       {"name": "auto_discover_forms", "description": "Auto-detect ALL <form> elements on the page and convert them into callable tools with field names, labels, types, and validation info. CDP-only.", "inputSchema": {"type": "object", "properties": {}}},
 
       // Basic Inspection
@@ -5357,6 +5357,17 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
         if (plugin != null) {
           return await _executePlugin(plugin, args);
         }
+
+        // AppMCP: discover/call tools on bridge platforms
+        if (name == 'discover_page_tools' && _client is BridgeDriver) {
+          return await (_client as BridgeDriver).discoverTools();
+        }
+        if (name == 'call_page_tool' && _client is BridgeDriver) {
+          final toolName = args['name'] as String? ?? '';
+          final toolParams = (args['params'] as Map<String, dynamic>?) ?? {};
+          return await (_client as BridgeDriver).callTool(toolName, toolParams);
+        }
+
         throw Exception("Unknown tool: $name");
     }
   }

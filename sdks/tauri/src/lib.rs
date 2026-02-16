@@ -729,6 +729,94 @@ async fn handle_method<R: Runtime>(
             eval_js_with_result(window, &js, 5000, result_tx).await
         }
 
+        "get_registered_tools" => {
+            let js = r#"
+                (function() {
+                    var tools = [];
+                    if (window.__flutter_skill_tools__ && Array.isArray(window.__flutter_skill_tools__)) {
+                        window.__flutter_skill_tools__.forEach(function(t) {
+                            tools.push({ name: t.name, description: t.description || '', params: t.params || {}, source: t.source || 'js-registered' });
+                        });
+                    }
+                    return JSON.stringify({ tools: tools, count: tools.length });
+                })()
+            "#;
+            eval_js_with_result(window, js, 5000, result_tx).await
+                .and_then(|v| {
+                    if let Some(s) = v.as_str() {
+                        serde_json::from_str(s).map_err(|e| e.to_string())
+                    } else {
+                        Ok(v)
+                    }
+                })
+        }
+
+        "call_tool" => {
+            let tool_name = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let tool_params = params.get("params").cloned().unwrap_or(json!({}));
+            let params_json = serde_json::to_string(&tool_params).unwrap_or("{}".into());
+            let js = format!(
+                r#"
+                (async function() {{
+                    var toolName = {name_json};
+                    var toolParams = {params_json};
+                    if (window.__flutter_skill_tools__) {{
+                        var tool = window.__flutter_skill_tools__.find(function(t) {{ return t.name === toolName; }});
+                        if (tool && typeof tool.handler === 'function') {{
+                            try {{
+                                var result = await tool.handler(toolParams);
+                                return JSON.stringify({{ success: true, result: result, source: 'js-registered' }});
+                            }} catch(e) {{
+                                return JSON.stringify({{ success: false, error: e.message }});
+                            }}
+                        }}
+                    }}
+                    return JSON.stringify({{ success: false, error: 'Tool not found: ' + toolName }});
+                }})()
+                "#,
+                name_json = serde_json::to_string(tool_name).unwrap_or("\"\"".into()),
+                params_json = params_json,
+            );
+            eval_js_with_result(window, &js, 10000, result_tx).await
+                .and_then(|v| {
+                    if let Some(s) = v.as_str() {
+                        serde_json::from_str(s).map_err(|e| e.to_string())
+                    } else {
+                        Ok(v)
+                    }
+                })
+        }
+
+        "get_registered_tools" => {
+            let js = r#"
+                (function() {
+                    var tools = (window.__flutter_skill_tools__ || []).map(function(t) {
+                        return { name: t.name, description: t.description || '', params: t.params || {}, source: t.source || 'js-registered' };
+                    });
+                    return JSON.stringify({ tools: tools, count: tools.length });
+                })()
+            "#;
+            let res = window.eval(js).map_err(|e| e.to_string())?;
+            Ok(serde_json::from_str(&res.to_string()).unwrap_or(json!({"tools": [], "count": 0})))
+        }
+
+        "call_tool" => {
+            let name = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let args = params.get("args").cloned().unwrap_or(json!({}));
+            let js = format!(r#"
+                (function() {{
+                    var tools = window.__flutter_skill_tools__ || [];
+                    var tool = tools.find(function(t) {{ return t.name === '{}'; }});
+                    if (!tool) return JSON.stringify({{ error: 'Tool not found: {}' }});
+                    if (!tool.handler) return JSON.stringify({{ error: 'Tool has no handler' }});
+                    var result = tool.handler({});
+                    return JSON.stringify({{ success: true, tool: '{}', result: result }});
+                }})()
+            "#, name, name, serde_json::to_string(&args).unwrap_or_default(), name);
+            let res = window.eval(&js).map_err(|e| e.to_string())?;
+            Ok(serde_json::from_str(&res.to_string()).unwrap_or(json!({"error": "parse error"})))
+        }
+
         _ => Err(format!("Unknown method: {method}")),
     }
 }
@@ -799,7 +887,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                                 "framework": "tauri", "app_name": "tauri-app",
                                 "platform": "tauri", "sdk_version": SDK_VERSION,
                                 "capabilities": ["initialize","inspect","inspect_interactive","tap","enter_text","get_text",
-                                    "find_element","wait_for_element","scroll","swipe","go_back","get_logs","clear_logs","press_key"]
+                                    "find_element","wait_for_element","scroll","swipe","go_back","get_logs","clear_logs","press_key",
+                                    "get_registered_tools","call_tool"]
                             });
                             let body = health.to_string();
                             let resp = format!(

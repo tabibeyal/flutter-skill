@@ -16,6 +16,19 @@ public class FlutterSkillBridge
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
 
+    // --------------- AppMCP Tool Registration ---------------
+    public delegate JsonNode? ToolHandlerDelegate(JsonObject args);
+
+    private record RegisteredTool(string Name, string Description, JsonObject Params, ToolHandlerDelegate Handler);
+    private readonly List<RegisteredTool> _registeredTools = new();
+
+    public void RegisterTool(string name, string description = "", JsonObject? parameters = null, ToolHandlerDelegate? handler = null)
+    {
+        var tool = new RegisteredTool(name, description, parameters ?? new JsonObject(), handler!);
+        var idx = _registeredTools.FindIndex(t => t.Name == name);
+        if (idx != -1) _registeredTools[idx] = tool; else _registeredTools.Add(tool);
+    }
+
     public FlutterSkillBridge(int port = 18118)
     {
         _port = port;
@@ -61,7 +74,8 @@ public class FlutterSkillBridge
                         ["capabilities"] = new JsonArray(
                             "initialize", "inspect", "inspect_interactive", "tap", "enter_text", "get_text",
                             "find_element", "wait_for_element", "scroll", "swipe",
-                            "screenshot", "go_back", "get_logs", "clear_logs", "press_key"
+                            "screenshot", "go_back", "get_logs", "clear_logs", "press_key",
+                            "get_registered_tools", "call_tool"
                         )
                     };
                     var bytes = Encoding.UTF8.GetBytes(health.ToJsonString());
@@ -183,6 +197,8 @@ public class FlutterSkillBridge
                     parms["dx"]?.GetValue<int>() ?? 0,
                     parms["dy"]?.GetValue<int>() ?? 0, parms),
                 "eval" => await HandleEval(parms),
+                "get_registered_tools" => HandleGetRegisteredToolsSync(),
+                "call_tool" => HandleCallToolSync(parms),
                 _ => throw new JsonRpcException(-32601, "Method not found")
             };
             return JsonResponse(id, result: result);
@@ -208,6 +224,23 @@ public class FlutterSkillBridge
     }
 
     // --- Override these in your platform-specific subclass ---
+
+    private JsonObject HandleGetRegisteredToolsSync()
+    {
+        var arr = new JsonArray();
+        foreach (var t in _registeredTools)
+            arr.Add(new JsonObject { ["name"] = t.Name, ["description"] = t.Description, ["params"] = JsonNode.Parse(t.Params.ToJsonString()), ["source"] = "js-registered" });
+        return new JsonObject { ["tools"] = arr, ["count"] = _registeredTools.Count };
+    }
+
+    private JsonObject HandleCallToolSync(JsonObject parms)
+    {
+        var name = parms["name"]?.GetValue<string>() ?? throw new JsonRpcException(-32602, "Missing tool name");
+        var args = parms["args"]?.AsObject() ?? new JsonObject();
+        var tool = _registeredTools.Find(t => t.Name == name) ?? throw new JsonRpcException(-32602, $"Tool not found: {name}");
+        var result = tool.Handler(args);
+        return new JsonObject { ["success"] = true, ["tool"] = name, ["result"] = result };
+    }
 
     protected virtual string GetPlatformName() => "dotnet";
 

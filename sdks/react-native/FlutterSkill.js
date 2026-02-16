@@ -78,6 +78,7 @@ let _rootRef = null;
 let _componentRegistry = new Map(); // testID -> { ref, onPress, onChangeText, type, text, getText, ... }
 let _navigationRef = null;
 let _defaultScrollRef = null; // default scrollable for scroll/swipe
+let _registeredTools = []; // WebMCP tool registry
 
 // ---------------------------------------------------------------------------
 // Console capture
@@ -905,8 +906,71 @@ methods.press_key = function (params) {
 };
 
 // ---------------------------------------------------------------------------
+// AppMCP Tool Registration
+// ---------------------------------------------------------------------------
+
+var _registeredTools = [];
+
+function registerTool(name, description, params, handler) {
+  var tool = { name: name, description: description || '', params: params || {}, handler: handler, source: 'js-registered' };
+  var idx = _registeredTools.findIndex(function (t) { return t.name === name; });
+  if (idx !== -1) _registeredTools[idx] = tool;
+  else _registeredTools.push(tool);
+  return tool;
+}
+
+methods.get_registered_tools = function () {
+  return {
+    tools: _registeredTools.map(function (t) { return { name: t.name, description: t.description, params: t.params, source: t.source }; }),
+    count: _registeredTools.length
+  };
+};
+
+methods.call_tool = function (params) {
+  var name = params.name;
+  var args = params.args || {};
+  var tool = _registeredTools.find(function (t) { return t.name === name; });
+  if (!tool) throw new Error('Tool not found: ' + name);
+  if (!tool.handler) throw new Error('Tool has no handler: ' + name);
+  return Promise.resolve(tool.handler(args)).then(function (result) {
+    return { success: true, tool: name, result: result };
+  });
+};
+
+// ---------------------------------------------------------------------------
 // Capabilities
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// WebMCP Tool Registration
+// ---------------------------------------------------------------------------
+
+function registerTool(name, description, params, handler) {
+  const tool = { name, description: description || '', params: params || {}, handler, source: 'js-registered' };
+  const idx = _registeredTools.findIndex(t => t.name === name);
+  if (idx !== -1) _registeredTools[idx] = tool;
+  else _registeredTools.push(tool);
+  return tool;
+}
+
+methods.get_registered_tools = function () {
+  return {
+    tools: _registeredTools.map(t => ({ name: t.name, description: t.description, params: t.params, source: t.source })),
+    count: _registeredTools.length
+  };
+};
+
+methods.call_tool = function (params) {
+  const toolName = params.name || '';
+  const toolParams = params.params || {};
+  const tool = _registeredTools.find(t => t.name === toolName);
+  if (!tool) return { success: false, error: 'Tool not found: ' + toolName };
+  if (typeof tool.handler !== 'function') return { success: false, error: 'Tool has no handler: ' + toolName };
+  return Promise.resolve()
+    .then(() => tool.handler(toolParams))
+    .then(result => ({ success: true, result: result, source: 'js-registered' }))
+    .catch(e => ({ success: false, error: e.message, source: 'js-registered' }));
+};
 
 function _getCapabilities() {
   return Object.keys(methods);
@@ -1267,6 +1331,7 @@ export {
   setNavigationRef,
   setRootRef,
   setDefaultScrollRef,
+  registerTool,
 };
 
 export default {
@@ -1277,4 +1342,5 @@ export default {
   setNavigationRef,
   setRootRef,
   setDefaultScrollRef,
+  registerTool,
 };

@@ -33,6 +33,47 @@ public final class FlutterSkillBridge: @unchecked Sendable {
     private let maxLogEntries = 500
     private var appName: String = ""
 
+    // MARK: AppMCP Tool Registration
+
+    public typealias ToolHandler = ([String: Any]) -> Any?
+
+    private struct RegisteredTool {
+        let name: String
+        let description: String
+        let params: [String: Any]
+        let handler: ToolHandler
+    }
+
+    private var registeredTools: [RegisteredTool] = []
+
+    /// Register a tool that AI agents can discover and call.
+    public func registerTool(name: String, description: String = "", parameters: [String: Any] = [:], handler: @escaping ToolHandler) {
+        if let idx = registeredTools.firstIndex(where: { $0.name == name }) {
+            registeredTools[idx] = RegisteredTool(name: name, description: description, params: parameters, handler: handler)
+        } else {
+            registeredTools.append(RegisteredTool(name: name, description: description, params: parameters, handler: handler))
+        }
+    }
+
+    private func handleGetRegisteredTools(_ params: [String: Any]) -> [String: Any] {
+        let tools = registeredTools.map { t -> [String: Any] in
+            ["name": t.name, "description": t.description, "params": t.params, "source": "js-registered"]
+        }
+        return ["tools": tools, "count": registeredTools.count]
+    }
+
+    private func handleCallTool(_ params: [String: Any]) -> [String: Any] {
+        guard let name = params["name"] as? String else {
+            return ["error": "Missing tool name"]
+        }
+        let args = params["args"] as? [String: Any] ?? [:]
+        guard let tool = registeredTools.first(where: { $0.name == name }) else {
+            return ["error": "Tool not found: \(name)"]
+        }
+        let result = tool.handler(args)
+        return ["success": true, "tool": name, "result": result ?? "null"]
+    }
+
     // MARK: Lifecycle
 
     private init() {}
@@ -627,6 +668,10 @@ public final class FlutterSkillBridge: @unchecked Sendable {
             return .success(handleGetRoute(params))
         case "press_key":
             return .success(handlePressKey(params))
+        case "get_registered_tools":
+            return .success(handleGetRegisteredTools(params))
+        case "call_tool":
+            return .success(handleCallTool(params))
         default:
             return .error(code: -32601, message: "Method not found: \(method)")
         }
