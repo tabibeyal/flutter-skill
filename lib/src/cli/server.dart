@@ -16,6 +16,8 @@ import '../drivers/bridge_driver.dart';
 import '../drivers/flutter_driver.dart';
 import '../drivers/native_driver.dart';
 import '../diagnostics/error_reporter.dart';
+import '../engine/skill_engine.dart';
+import '../engine/tool_registry.dart';
 import 'setup.dart';
 
 const String currentVersion = '0.8.3';
@@ -155,6 +157,14 @@ bool _isNewerVersion(String latest, String current) {
 }
 
 class FlutterMcpServer {
+  /// The protocol-agnostic skill engine.
+  /// Use this to execute tools from any protocol adapter.
+  late final SkillEngine skillEngine;
+
+  FlutterMcpServer() {
+    skillEngine = _ServerSkillEngine(this);
+  }
+
   // Multi-session support
   final Map<String, AppDriver> _clients = {};
   final Map<String, SessionInfo> _sessions = {};
@@ -7430,4 +7440,91 @@ Future<void> _releaseLock(File lockFile) async {
   } catch (e) {
     // Ignore cleanup errors
   }
+}
+
+/// SkillEngine implementation that reads state directly from FlutterMcpServer.
+/// Phase 1: thin wrapper. Phase 2+: logic moves here.
+class _ServerSkillEngine implements SkillEngine {
+  final FlutterMcpServer _server;
+  _ServerSkillEngine(this._server);
+
+  @override
+  AppDriver? get client => _server._client;
+
+  @override
+  CdpDriver? get cdpDriver => _server._cdpDriver;
+
+  @override
+  bool get isConnected => _server._client != null || _server._cdpDriver != null;
+
+  @override
+  String? get connectionType {
+    if (_server._cdpDriver != null) return 'cdp';
+    if (_server._client is BridgeDriver) return 'bridge';
+    if (_server._client is FlutterSkillClient) return 'flutter';
+    return null;
+  }
+
+  @override
+  List<Map<String, dynamic>> getAvailableTools({
+    List<Map<String, dynamic>> pluginTools = const [],
+  }) {
+    return ToolRegistry.getFilteredTools(
+      hasCdp: _server._cdpDriver != null,
+      hasBridge: _server._client is BridgeDriver && _server._cdpDriver == null,
+      hasFlutter: _server._client is FlutterSkillClient && _server._client is! BridgeDriver,
+      hasConnection: isConnected,
+      pluginTools: pluginTools.isNotEmpty ? pluginTools : _server._pluginTools,
+    );
+  }
+
+  @override
+  Map<String, dynamic>? getToolDefinition(String name) {
+    final tools = ToolRegistry.getAllToolDefinitions();
+    try {
+      return tools.firstWhere((t) => t['name'] == name);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<dynamic> executeTool(String name, Map<String, dynamic> args) {
+    return _server._executeTool(name, args);
+  }
+
+  @override
+  Future<void> connectCdp({
+    int port = 9222, String? url, bool launchChrome = true,
+    String? chromePath, bool headless = false, String? proxy,
+    bool ignoreSsl = false, int maxTabs = 20,
+  }) => executeTool('connect_cdp', {
+    'port': port, if (url != null) 'url': url,
+    'launch_chrome': launchChrome,
+    if (chromePath != null) 'chrome_path': chromePath,
+    'headless': headless, if (proxy != null) 'proxy': proxy,
+    'ignore_ssl': ignoreSsl, 'max_tabs': maxTabs,
+  });
+
+  @override
+  Future<void> connectBridge({String? host, int? port}) =>
+      executeTool('scan_and_connect', {if (host != null) 'host': host, if (port != null) 'port': port});
+
+  @override
+  Future<void> connectFlutter({String? vmServiceUri}) =>
+      executeTool('connect_app', {if (vmServiceUri != null) 'uri': vmServiceUri});
+
+  @override
+  Future<void> scanAndConnect() => executeTool('scan_and_connect', {});
+
+  @override
+  Future<void> disconnect() async {
+    if (_server._cdpDriver != null) {
+      await _server._cdpDriver!.disconnect();
+      _server._cdpDriver = null;
+    }
+  }
+
+  @override
+  Future<void> dispose() async => disconnect();
 }
