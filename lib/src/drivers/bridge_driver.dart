@@ -355,13 +355,141 @@ class BridgeDriver implements AppDriver {
 
   // --------------- AppMCP Tool Discovery & Calling ---------------
 
-  /// Discover tools registered by the app via SDK registerTool().
+  /// Discover tools from the app — combines SDK-registered tools + auto-discovered UI elements.
+  /// No app changes needed: buttons → tap tools, inputs → fill tools, toggles → toggle tools.
   Future<Map<String, dynamic>> discoverTools() async {
-    return await callMethod('get_registered_tools');
+    final tools = <Map<String, dynamic>>[];
+
+    // 1. SDK-registered tools (if app opted in)
+    try {
+      final registered = await callMethod('get_registered_tools');
+      final regTools = registered['tools'] as List<dynamic>? ?? [];
+      for (final t in regTools) {
+        if (t is Map) tools.add(Map<String, dynamic>.from(t));
+      }
+    } catch (_) {}
+
+    // 2. Auto-discover from UI elements (zero-config)
+    try {
+      final elements = await callMethod('inspect_interactive');
+      final items = elements['elements'] as List<dynamic>? ?? [];
+      for (final el in items) {
+        if (el is! Map) continue;
+        final role = el['role'] as String? ?? '';
+        final ref = el['ref'] as String? ?? '';
+        final text = el['text'] as String? ?? el['label'] as String? ?? '';
+        final id = el['id'] as String? ?? '';
+        final type = el['type'] as String? ?? '';
+
+        if (ref.isEmpty && id.isEmpty) continue;
+
+        switch (role) {
+          case 'button':
+          case 'link':
+            tools.add({
+              'name': 'tap_${_sanitizeName(text.isNotEmpty ? text : id)}',
+              'description': 'Tap ${role}: ${text.isNotEmpty ? text : id}',
+              'params': {},
+              'source': 'auto-ui',
+              'action': 'tap',
+              'ref': ref,
+              'element_id': id,
+            });
+            break;
+          case 'input':
+            tools.add({
+              'name': 'fill_${_sanitizeName(text.isNotEmpty ? text : id)}',
+              'description': 'Enter text into: ${text.isNotEmpty ? text : id}',
+              'params': {'text': {'type': 'string', 'required': true, 'description': 'Text to enter'}},
+              'source': 'auto-ui',
+              'action': 'enter_text',
+              'ref': ref,
+              'element_id': id,
+              'input_type': type,
+            });
+            break;
+          case 'toggle':
+            tools.add({
+              'name': 'toggle_${_sanitizeName(text.isNotEmpty ? text : id)}',
+              'description': 'Toggle: ${text.isNotEmpty ? text : id}',
+              'params': {},
+              'source': 'auto-ui',
+              'action': 'tap',
+              'ref': ref,
+              'element_id': id,
+            });
+            break;
+          case 'slider':
+            tools.add({
+              'name': 'set_${_sanitizeName(text.isNotEmpty ? text : id)}',
+              'description': 'Set slider: ${text.isNotEmpty ? text : id}',
+              'params': {'value': {'type': 'number', 'required': true, 'description': 'Slider value'}},
+              'source': 'auto-ui',
+              'action': 'set_slider',
+              'ref': ref,
+              'element_id': id,
+            });
+            break;
+          case 'select':
+            tools.add({
+              'name': 'select_${_sanitizeName(text.isNotEmpty ? text : id)}',
+              'description': 'Select option in: ${text.isNotEmpty ? text : id}',
+              'params': {'value': {'type': 'string', 'required': true, 'description': 'Option to select'}},
+              'source': 'auto-ui',
+              'action': 'select',
+              'ref': ref,
+              'element_id': id,
+            });
+            break;
+        }
+      }
+    } catch (_) {}
+
+    return {'tools': tools, 'count': tools.length};
   }
 
-  /// Call a tool registered by the app.
+  /// Call a tool — either SDK-registered or auto-discovered from UI.
   Future<Map<String, dynamic>> callTool(String name, Map<String, dynamic> args) async {
-    return await callMethod('call_tool', {'name': name, 'args': args});
+    // First try SDK-registered tool
+    try {
+      return await callMethod('call_tool', {'name': name, 'args': args});
+    } catch (_) {}
+
+    // Fall back to auto-UI tool: re-discover and execute action
+    final discovered = await discoverTools();
+    final tools = discovered['tools'] as List<dynamic>? ?? [];
+    final tool = tools.cast<Map<String, dynamic>?>().firstWhere(
+      (t) => t!['name'] == name,
+      orElse: () => null,
+    );
+    if (tool == null) throw Exception('Tool not found: $name');
+
+    final action = tool['action'] as String? ?? '';
+    final ref = tool['ref'] as String? ?? '';
+
+    switch (action) {
+      case 'tap':
+        return await callMethod('tap', {'ref': ref});
+      case 'enter_text':
+        return await callMethod('enter_text', {
+          'ref': ref,
+          'text': args['text'] ?? '',
+        });
+      case 'set_slider':
+        // Tap the slider, then try to set value
+        return await callMethod('tap', {'ref': ref});
+      case 'select':
+        return await callMethod('tap', {'ref': ref});
+      default:
+        throw Exception('Unknown action for tool: $name');
+    }
+  }
+
+  static String _sanitizeName(String input) {
+    return input
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9_]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 }

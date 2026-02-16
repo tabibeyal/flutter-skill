@@ -2065,6 +2065,48 @@ function _dqAll(sel, root) {
           });
           if (Object.keys(params).length > 0) tools.push({ name: name, description: 'Form: ' + (fid || form.getAttribute('action') || 'unnamed'), params: params, source: 'auto-form', formAction: form.getAttribute('action') || '', formMethod: (form.getAttribute('method') || 'GET').toUpperCase() });
         });
+        // 6. Auto-discover ALL interactive elements as tools (zero-config)
+        const seen = new Set(tools.map(t => t.name));
+        document.querySelectorAll('button, a[href], input, textarea, select, [role="button"], [role="link"], [role="switch"], [role="slider"], [onclick]').forEach((el, i) => {
+          const tag = el.tagName.toLowerCase();
+          const text = (el.textContent || '').trim().substring(0, 50);
+          const id = el.id || el.getAttribute('name') || '';
+          const label = text || id || el.getAttribute('aria-label') || '';
+          if (!label) return;
+          const safeName = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+          if (!safeName) return;
+          const role = el.getAttribute('role') || '';
+          let toolName, desc, action, params = {};
+          if (tag === 'input' || tag === 'textarea') {
+            toolName = 'fill_' + safeName;
+            desc = 'Enter text: ' + label;
+            action = 'enter_text';
+            params = { text: { type: 'string', required: true } };
+          } else if (tag === 'select') {
+            toolName = 'select_' + safeName;
+            desc = 'Select: ' + label;
+            action = 'select';
+            params = { value: { type: 'string', required: true } };
+          } else if (role === 'switch' || el.type === 'checkbox') {
+            toolName = 'toggle_' + safeName;
+            desc = 'Toggle: ' + label;
+            action = 'tap';
+          } else if (role === 'slider' || el.type === 'range') {
+            toolName = 'set_' + safeName;
+            desc = 'Set slider: ' + label;
+            action = 'set_value';
+            params = { value: { type: 'number', required: true } };
+          } else {
+            toolName = 'tap_' + safeName;
+            desc = 'Tap: ' + label;
+            action = 'tap';
+          }
+          if (!seen.has(toolName)) {
+            seen.add(toolName);
+            const selector = id ? '#' + CSS.escape(id) : null;
+            tools.push({ name: toolName, description: desc, params, source: 'auto-ui', action, selector, elementIndex: i });
+          }
+        });
         return JSON.stringify({ tools: tools, count: tools.length });
       })()
       ''',
@@ -2133,6 +2175,37 @@ function _dqAll(sel, root) {
             if (typeof form.requestSubmit === 'function') form.requestSubmit();
             else form.submit();
             return JSON.stringify({ success: true, source: 'auto-form', action: 'form-submitted' });
+          }
+        }
+        // 4. Auto-UI tools (tap/fill/toggle by selector or text)
+        if (toolName.startsWith('tap_') || toolName.startsWith('toggle_')) {
+          const els = document.querySelectorAll('button, a[href], [role="button"], [role="link"], [role="switch"], [onclick], input[type="checkbox"]');
+          for (const el of els) {
+            const text = (el.textContent || '').trim().substring(0, 50);
+            const id = el.id || el.getAttribute('name') || '';
+            const label = text || id || el.getAttribute('aria-label') || '';
+            const safeName = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_\$/g, '');
+            const prefix = (el.getAttribute('role') === 'switch' || el.type === 'checkbox') ? 'toggle_' : 'tap_';
+            if (prefix + safeName === toolName) {
+              el.click();
+              return JSON.stringify({ success: true, source: 'auto-ui', action: 'clicked', element: label });
+            }
+          }
+        }
+        if (toolName.startsWith('fill_')) {
+          const els = document.querySelectorAll('input, textarea');
+          for (const el of els) {
+            const text = (el.textContent || '').trim().substring(0, 50);
+            const id = el.id || el.getAttribute('name') || '';
+            const label = text || id || el.getAttribute('aria-label') || el.getAttribute('placeholder') || '';
+            const safeName = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_\$/g, '');
+            if ('fill_' + safeName === toolName) {
+              el.focus();
+              el.value = params.text || '';
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              return JSON.stringify({ success: true, source: 'auto-ui', action: 'filled', element: label });
+            }
           }
         }
         return JSON.stringify({ success: false, error: 'Tool not found: ' + toolName });
