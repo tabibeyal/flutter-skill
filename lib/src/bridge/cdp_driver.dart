@@ -1983,6 +1983,33 @@ function _dqAll(sel, root) {
     }
   }
 
+  /// Highlight an element with a colored overlay.
+  Future<Map<String, dynamic>> highlightElement(String selector, {String? color, int duration = 3000}) async {
+    final c = color ?? 'red';
+    final js = '''
+(function() {
+  var el = document.querySelector('$selector') || document.getElementById('$selector') || document.querySelector('[data-testid="$selector"]');
+  if (!el) return JSON.stringify({success: false, error: 'Element not found'});
+  var rect = el.getBoundingClientRect();
+  var overlay = document.createElement('div');
+  overlay.id = '__fs_highlight_' + Date.now();
+  overlay.style.cssText = 'position:fixed;top:'+rect.top+'px;left:'+rect.left+'px;width:'+rect.width+'px;height:'+rect.height+'px;border:3px solid $c;background:${c}33;z-index:2147483647;pointer-events:none;transition:opacity 0.3s;';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ overlay.style.opacity='0'; setTimeout(function(){ overlay.remove(); }, 300); }, $duration);
+  return JSON.stringify({success: true, selector: '$selector', color: '$c', duration: $duration, bounds: {x: rect.x, y: rect.y, w: rect.width, h: rect.height}});
+})()
+''';
+    final result = await _evalJs(js);
+    final v = result['result']?['value'] as String?;
+    if (v != null) return jsonDecode(v) as Map<String, dynamic>;
+    return {'success': false, 'error': 'Eval failed'};
+  }
+
+  /// Mock a network response for requests matching a URL pattern.
+  Future<Map<String, dynamic>> mockResponse(String urlPattern, int statusCode, String body, {Map<String, String>? headers}) async {
+    return await interceptRequests(urlPattern, statusCode: statusCode, body: body, headers: headers);
+  }
+
   void _onDisconnect() {
     _connected = false;
     _failAllPending('Connection lost');

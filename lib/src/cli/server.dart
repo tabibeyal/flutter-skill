@@ -168,6 +168,9 @@ class FlutterMcpServer {
   String _pluginsDir = '${Platform.environment['HOME'] ?? '.'}/.flutter-skill/plugins';
   final List<Map<String, dynamic>> _pluginTools = [];
 
+  // Cancellable operations
+  final Map<String, Completer<void>> _activeCancellables = {};
+
   // Last known connection info for auto-reconnect
   String? _lastConnectionUri;
   int? _lastConnectionPort;
@@ -378,6 +381,7 @@ class FlutterMcpServer {
       'block_urls', 'throttle_network', 'go_offline', 'clear_browser_data',
       'accessibility_audit', 'set_geolocation', 'set_timezone',
       'set_color_scheme', 'upload_file', 'compare_screenshot',
+      'highlight_element', 'mock_response', 'highlight_elements',
     };
 
     // Flutter VM Service-only tools
@@ -838,6 +842,11 @@ After starting, point the web SDK at ws://127.0.0.1:<port>.""",
       {"name": "get_session_storage", "description": "Get all sessionStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
       {"name": "type_text", "description": "Type text character by character (realistic typing simulation)", "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
       {"name": "set_timezone", "description": "Override browser timezone", "inputSchema": {"type": "object", "properties": {"timezone": {"type": "string", "description": "IANA timezone (e.g. America/New_York)"}}, "required": ["timezone"]}},
+      {"name": "highlight_element", "description": "Highlight an element with a colored overlay for visual debugging. Injects a temporary colored border+background on the matched element.", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "CSS selector, element ID, or data-testid"}, "ref": {"type": "string", "description": "Element ref from snapshot"}, "color": {"type": "string", "description": "Highlight color (default: red)", "default": "red"}, "duration_ms": {"type": "integer", "description": "How long to show highlight in ms (default: 3000)", "default": 3000}}, "required": ["key"]}},
+      {"name": "mock_response", "description": "Mock/intercept network responses for a URL pattern. Returns custom status code and body for matching requests.", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string", "description": "URL pattern to match (glob)"}, "status_code": {"type": "integer", "description": "HTTP status code to return"}, "body": {"type": "string", "description": "Response body to return"}, "headers": {"type": "object", "description": "Response headers"}}, "required": ["url_pattern", "status_code", "body"]}},
+      {"name": "download_file", "description": "Download a file from a URL and save it to disk.", "inputSchema": {"type": "object", "properties": {"url": {"type": "string", "description": "URL to download"}, "save_path": {"type": "string", "description": "Local file path to save to"}}, "required": ["url", "save_path"]}},
+      {"name": "cancel_operation", "description": "Cancel a running long operation (wait_for_element, wait_for_gone, wait_for_network_idle) by operation ID.", "inputSchema": {"type": "object", "properties": {"operation_id": {"type": "string", "description": "ID of the operation to cancel"}}, "required": ["operation_id"]}},
+      {"name": "highlight_elements", "description": "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.", "inputSchema": {"type": "object", "properties": {"show": {"type": "boolean", "description": "true to show highlights, false to remove them", "default": true}}}},
 
       // Basic Inspection
       {
@@ -2737,6 +2746,45 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
   }
 
   Future<dynamic> _executeToolInner(String name, Map<String, dynamic> args) async {
+    // Download file tool (platform-independent)
+    if (name == 'download_file') {
+      final url = args['url'] as String?;
+      final savePath = args['save_path'] as String?;
+      if (url == null || savePath == null) {
+        return {'success': false, 'error': 'url and save_path are required'};
+      }
+      try {
+        final client = http.Client();
+        try {
+          final response = await client.get(Uri.parse(url));
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            final file = File(savePath);
+            await file.parent.create(recursive: true);
+            await file.writeAsBytes(response.bodyBytes);
+            return {'success': true, 'path': savePath, 'size_bytes': response.bodyBytes.length, 'status_code': response.statusCode};
+          } else {
+            return {'success': false, 'error': 'HTTP ${response.statusCode}', 'status_code': response.statusCode};
+          }
+        } finally {
+          client.close();
+        }
+      } catch (e) {
+        return {'success': false, 'error': e.toString()};
+      }
+    }
+
+    // Cancel operation tool
+    if (name == 'cancel_operation') {
+      final opId = args['operation_id'] as String?;
+      if (opId == null) return {'success': false, 'error': 'operation_id is required'};
+      final completer = _activeCancellables.remove(opId);
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+        return {'success': true, 'cancelled': opId};
+      }
+      return {'success': false, 'error': 'Operation not found or already completed', 'active_operations': _activeCancellables.keys.toList()};
+    }
+
     // Session management tools
     if (name == 'list_sessions') {
       return {
@@ -5800,6 +5848,43 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
         return await cdp.waitForNavigation(
           timeoutMs: (args['timeout_ms'] as num?)?.toInt() ?? 30000,
         );
+
+      case 'highlight_element':
+        final selector = args['key'] as String? ?? args['ref'] as String? ?? '';
+        final color = args['color'] as String? ?? 'red';
+        final duration = (args['duration_ms'] as num?)?.toInt() ?? 3000;
+        return await cdp.highlightElement(selector, color: color, duration: duration);
+
+      case 'mock_response':
+        final urlPattern = args['url_pattern'] as String? ?? '*';
+        final statusCode = (args['status_code'] as num?)?.toInt() ?? 200;
+        final body = args['body'] as String? ?? '';
+        final headers = (args['headers'] as Map<String, dynamic>?)?.cast<String, String>();
+        return await cdp.mockResponse(urlPattern, statusCode, body, headers: headers);
+
+      case 'highlight_elements':
+        final show = args['show'] ?? true;
+        if (show) {
+          final js = '''
+(function() {
+  if (window.__fsHighlightStyle) return JSON.stringify({success: true, message: 'Already active'});
+  var style = document.createElement('style');
+  style.id = '__fs_highlight_style';
+  style.textContent = 'a,button,input,select,textarea,[role="button"],[role="link"],[role="tab"],[onclick],[tabindex] { outline: 2px solid rgba(255,0,128,0.7) !important; outline-offset: 2px !important; } a:hover,button:hover,input:hover,select:hover,textarea:hover,[role="button"]:hover { outline-color: rgba(0,128,255,0.9) !important; }';
+  document.head.appendChild(style);
+  window.__fsHighlightStyle = style;
+  var count = document.querySelectorAll('a,button,input,select,textarea,[role="button"],[role="link"],[role="tab"],[onclick],[tabindex]').length;
+  return JSON.stringify({success: true, highlighted: count});
+})()
+''';
+          final result = await cdp.eval(js);
+          final v = result['result']?['value'] as String?;
+          if (v != null) return jsonDecode(v);
+          return {'success': true};
+        } else {
+          await cdp.eval("if(window.__fsHighlightStyle){window.__fsHighlightStyle.remove();delete window.__fsHighlightStyle;}");
+          return {'success': true, 'message': 'Highlights removed'};
+        }
 
       default:
         throw Exception('Tool "$name" is not supported in CDP mode.');
