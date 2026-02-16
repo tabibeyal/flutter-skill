@@ -216,7 +216,7 @@ Most testing tools work on 1-2 platforms. flutter-skill works on **8**.
 
 ```yaml
 dependencies:
-  flutter_skill: ^0.8.0
+  flutter_skill: ^0.8.1
 ```
 
 ```dart

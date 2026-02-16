@@ -1,3 +1,12 @@
+## 0.8.1
+
+**139 MCP tools, CDP browser testing, 10-platform support, screenshot fixes**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
 ## 0.8.0
 
 **inspect_interactive, semantic refs, press_key, 75-test E2E suite**
