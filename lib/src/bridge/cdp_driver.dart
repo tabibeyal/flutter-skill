@@ -1494,9 +1494,11 @@ class CdpDriver implements AppDriver {
         check();
       })
     ''');
-    final v = result['result']?['value'] as String?;
-    if (v == null) return {"idle": true};
-    return jsonDecode(v) as Map<String, dynamic>;
+    final raw = result['result']?['value'];
+    if (raw == null) return {"idle": true};
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) return jsonDecode(raw) as Map<String, dynamic>;
+    return {"idle": true};
   }
 
   // ── Session/tab storage ──

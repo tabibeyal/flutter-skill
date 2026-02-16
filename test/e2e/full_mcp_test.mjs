@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Comprehensive MCP test — all 81 tools across 10 platforms via MCP stdio JSON-RPC.
+ * Comprehensive MCP test — all 139 tools across 10 platforms via MCP stdio JSON-RPC.
  *
  * Usage:
  *   node full_mcp_test.mjs --platform=electron [--uri=ws://...] [--url=http://...] [--vm-service=ws://...] [--port=18118]
@@ -39,13 +39,27 @@ const isCDP     = PLATFORM === 'web-cdp';
 // ── Skip rules ─────────────────────────────────────────────────────────────
 const FLUTTER_ONLY = new Set(['get_widget_tree', 'get_widget_properties', 'find_by_type', 'hot_reload', 'hot_restart', 'launch_app']);
 const MOBILE_ONLY  = new Set(['native_tap', 'native_input_text', 'native_swipe', 'native_screenshot', 'auth_biometric', 'auth_deeplink']);
-const CDP_ONLY     = new Set(['connect_cdp']);
+const CDP_ONLY     = new Set([
+  'connect_cdp', 'get_title', 'get_page_source', 'count_elements', 'is_visible',
+  'get_attribute', 'get_css_property', 'get_bounding_box', 'get_cookies', 'set_cookie',
+  'clear_cookies', 'get_local_storage', 'set_local_storage', 'clear_local_storage',
+  'get_session_storage', 'get_console_messages', 'get_network_requests', 'navigate',
+  'reload', 'go_forward', 'set_viewport', 'emulate_device', 'generate_pdf',
+  'wait_for_navigation', 'wait_for_network_idle', 'get_tabs', 'new_tab', 'switch_tab',
+  'close_tab', 'get_frames', 'eval_in_frame', 'get_window_handles',
+  'install_dialog_handler', 'handle_dialog', 'intercept_requests', 'clear_interceptions',
+  'block_urls', 'throttle_network', 'go_offline', 'clear_browser_data',
+  'accessibility_audit', 'set_geolocation', 'set_timezone', 'set_color_scheme',
+  'upload_file', 'compare_screenshot',
+]);
+const BRIDGE_OR_CDP = new Set(['hover', 'fill', 'select_option', 'set_checkbox', 'focus', 'blur', 'eval', 'type_text']);
 const NO_WEB       = new Set(['auth_deeplink', 'auth_biometric']);
 
 function shouldSkip(tool) {
   if (FLUTTER_ONLY.has(tool) && !isFlutter) return 'Flutter-only';
   if (MOBILE_ONLY.has(tool) && !isMobile)   return 'mobile-only';
   if (CDP_ONLY.has(tool) && !isCDP)         return 'CDP-only';
+  if (BRIDGE_OR_CDP.has(tool) && isFlutter) return 'bridge/CDP-only';
   if (NO_WEB.has(tool) && isWeb && !isMobile) return 'N/A on web/desktop';
   return null;
 }
@@ -63,7 +77,7 @@ function record(tool, status, note = '') {
   results.push({ tool, status, note });
 }
 
-// ── All 81 tools with test definitions ─────────────────────────────────────
+// ── All 139 tools with test definitions ────────────────────────────────────
 // Each entry: [toolName, argsOrFn, validatorFn?]
 // argsOrFn: object of args, or function(ctx) returning args
 // validatorFn: optional function(parsedContent) that throws on failure
@@ -131,6 +145,20 @@ const TOOLS = [
   ['native_screenshot', {}],
   ['execute_batch', { actions: [{ tool: 'tap', args: { key: EK.button } }] }],
 
+  // ── Cross-platform extras ──
+  ['screenshot', { quality: 0.5, save_to_file: true }],
+  ['screenshot_region', { x: 0, y: 0, width: 200, height: 200, save_to_file: true }],
+  ['screenshot_element', { key: EK.button }],
+  ['press_key', { key: 'Tab' }],
+  ['type_text', { text: 'typed text' }],
+  ['hover', { key: EK.button }],
+  ['fill', { key: EK.input, value: 'filled text' }],
+  ['select_option', { key: 'select_element', value: 'option1' }],
+  ['set_checkbox', { key: EK.checkbox, checked: true }],
+  ['focus', { key: EK.input }],
+  ['blur', { key: EK.input }],
+  ['eval', { expression: '1+1' }],
+
   // ── Assertions (7) ──
   ['assert_visible', { key: EK.button }],
   ['assert_not_visible', { key: 'nonexistent_xyz_999' }],
@@ -167,7 +195,65 @@ const TOOLS = [
   ['clear_logs', {}],
   ['clear_network_requests', {}],
 
-  // ── CDP-specific (1) ──
+  // ── CDP — Browser State (16) ──
+  ['get_title', {}],
+  ['get_page_source', {}],
+  ['count_elements', { selector: 'button' }],
+  ['is_visible', { key: EK.button }],
+  ['get_attribute', { key: EK.input, attribute: 'type' }],
+  ['get_css_property', { key: EK.button, property: 'color' }],
+  ['get_bounding_box', { key: EK.button }],
+  ['get_cookies', {}],
+  ['set_cookie', { name: 'test_cookie', value: 'hello123', domain: 'localhost' }],
+  ['clear_cookies', {}],
+  ['get_local_storage', {}],
+  ['set_local_storage', { key: 'test_key', value: 'test_value' }],
+  ['clear_local_storage', {}],
+  ['get_session_storage', {}],
+  ['get_console_messages', {}],
+  ['get_network_requests', {}],
+
+  // ── CDP — Page Control (9) ──
+  ['navigate', { url: 'http://localhost:3000/' }],
+  ['reload', {}],
+  ['go_forward', {}],
+  ['set_viewport', { width: 1280, height: 720 }],
+  ['emulate_device', { device: 'iphone-14' }],
+  ['set_viewport', { width: 1280, height: 720 }],  // reset after emulate
+  ['generate_pdf', {}],
+  ['wait_for_navigation', { timeout_ms: 5000 }],
+  ['wait_for_network_idle', { timeout_ms: 5000 }],
+
+  // ── CDP — Tabs & Frames (9) ──
+  ['get_tabs', {}],
+  ['new_tab', { url: 'about:blank' }],
+  ['switch_tab', (ctx) => ({ target_id: ctx._lastNewTabId || '' })],
+  ['close_tab', (ctx) => ({ target_id: ctx._lastNewTabId || '' })],
+  ['get_frames', {}],
+  ['eval_in_frame', { frame_id: '', expression: 'document.title' }],
+  ['get_window_handles', {}],
+  ['install_dialog_handler', { auto_accept: true }],
+  ['handle_dialog', { accept: true }],
+
+  // ── CDP — Network Control (8) ──
+  ['intercept_requests', { url_pattern: '*.fake.invalid/*', status_code: 200, body: '{}' }],
+  ['clear_interceptions', {}],
+  ['block_urls', { patterns: ['*.tracking.example.com*'] }],
+  ['throttle_network', { latency_ms: 100, download_kbps: 1000 }],
+  ['go_offline', {}],
+  ['throttle_network', { latency_ms: 0, download_kbps: -1, upload_kbps: -1 }],  // reset
+  ['clear_browser_data', {}],
+  ['accessibility_audit', {}],
+
+  // ── CDP — Environment (6) ──
+  ['set_geolocation', { latitude: 35.6762, longitude: 139.6503 }],
+  ['set_timezone', { timezone: 'Asia/Tokyo' }],
+  ['set_color_scheme', { scheme: 'dark' }],
+  ['set_color_scheme', { scheme: 'light' }],  // reset
+  ['upload_file', { selector: 'input[type="file"]', files: ['/tmp/test-upload.txt'] }],
+  ['compare_screenshot', { baseline_path: '/tmp/baseline-test.png' }],
+
+  // ── CDP-specific connection (1) ──
   ['connect_cdp', (ctx) => ({ url: ctx.URL || 'http://localhost:9222' })],
 
   // ── Connection lifecycle (tested last to avoid breaking other tests) ──
@@ -242,9 +328,6 @@ async function main() {
 
   // ── For web-sdk: wait for browser SDK to connect to bridge listener ──
   if (PLATFORM === 'web-sdk') {
-    // Bridge listener auto-starts with --bridge-port=18118
-    // Browser must already be open at http://localhost:3000 with SDK loaded
-    // SDK auto-connects to ws://127.0.0.1:18118, server auto-creates session
     console.log('  Waiting for browser SDK to connect (10s)...');
     await new Promise(r => setTimeout(r, 10000));
   }
@@ -253,7 +336,6 @@ async function main() {
   console.log('--- Connecting ---');
   let connected = false;
   if (PLATFORM === 'web-sdk') {
-    // Auto-connected via bridge listener — session created when browser SDK connected
     connected = true;
   } else if (isCDP && URL) {
     const cdpPort = parseInt(args.port) || 18800;
@@ -263,7 +345,6 @@ async function main() {
     const r = await callTool('connect_app', { uri: VM_SERVICE });
     connected = !r.error;
   } else {
-    // For bridge platforms, always use scan_and_connect (connect_app treats ws:// as VM Service)
     const r = await callTool('scan_and_connect', {});
     try {
       const c = JSON.parse(r.result?.content?.[0]?.text || '{}');
@@ -283,8 +364,21 @@ async function main() {
   // ── Run all tools ────────────────────────────────────────────────────────
   let currentSection = '';
   const sections = {
-    0: 'Pre-connect', 3: 'Inspection', 22: 'Interaction', 41: 'Assertions',
-    48: 'Auth', 52: 'Recording', 59: 'Utility', 69: 'CDP', 70: 'Connection Lifecycle',
+    0: 'Pre-connect',
+    3: 'Inspection',
+    22: 'Interaction',
+    41: 'Cross-platform extras',
+    53: 'Assertions',
+    60: 'Auth',
+    64: 'Recording',
+    71: 'Utility',
+    81: 'CDP — Browser State',
+    97: 'CDP — Page Control',
+    106: 'CDP — Tabs & Frames',
+    115: 'CDP — Network Control',
+    123: 'CDP — Environment',
+    129: 'CDP Connection',
+    130: 'Connection Lifecycle',
   };
 
   for (let i = 0; i < TOOLS.length; i++) {
@@ -324,9 +418,21 @@ async function main() {
     try {
       const r = await callTool(toolName, toolArgs);
 
+      // Capture new_tab targetId for switch_tab/close_tab
+      if (toolName === 'new_tab' && !r.error) {
+        try {
+          const c = JSON.parse(r.result?.content?.[0]?.text || '{}');
+          ctx._lastNewTabId = c.targetId || c.target_id || '';
+        } catch {}
+      }
+
       if (r.error) {
         const msg = r.error.message || '';
-        if (msg === 'TIMEOUT') {
+        // Expected errors for tools that need specific preconditions
+        if ((toolName === 'handle_dialog' && msg.includes('No dialog')) ||
+            (toolName === 'eval_in_frame' && msg.includes('No frame'))) {
+          record(displayName, 'pass', 'expected error (no precondition)');
+        } else if (msg === 'TIMEOUT') {
           record(displayName, 'fail', 'TIMEOUT');
         } else if (msg.includes('Unknown tool')) {
           record(displayName, 'skip', msg.substring(0, 80));
@@ -348,7 +454,6 @@ async function main() {
 
         if (content?.success === false && content?.error) {
           const errMsg = typeof content.error === 'string' ? content.error : (content.error.message || JSON.stringify(content.error));
-          // Some failures are expected (e.g. element not found for assert_not_visible is success)
           if (toolName === 'assert_not_visible' || toolName === 'wait_for_gone' || toolName === 'close_session') {
             record(displayName, 'pass', 'expected behavior');
           } else if (errMsg.includes('not found') || errMsg.includes('not supported') || errMsg.includes('not available') || errMsg.includes('Not connected')) {
@@ -367,7 +472,6 @@ async function main() {
     // Small delay for state-dependent tools (video needs time)
     if (toolName === 'video_start') await new Promise(r => setTimeout(r, 2000));
     if (toolName === 'record_start') {
-      // do a couple actions to record
       await callTool('tap', { key: EK.button }).catch(() => {});
     }
   }
