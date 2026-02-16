@@ -3058,7 +3058,10 @@ Detailed diagnostic report with:
 
       final x = (args['x'] as num).toDouble();
       final y = (args['y'] as num).toDouble();
-      final result = await driver.tap(x, y);
+      final result = await driver.tap(x, y).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => NativeResult(success: false, message: 'native_tap timed out (15s) — check macOS Accessibility permissions'),
+      );
       return result.toJson();
     }
 
@@ -3074,7 +3077,10 @@ Detailed diagnostic report with:
         };
       }
       final text = args['text'] as String;
-      final result = await driver.inputText(text);
+      final result = await driver.inputText(text).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => NativeResult(success: false, message: 'native_input_text timed out (15s) — check macOS Accessibility permissions'),
+      );
       return result.toJson();
     }
 
@@ -3095,7 +3101,10 @@ Detailed diagnostic report with:
       final endY = (args['end_y'] as num).toDouble();
       final duration = args['duration'] as int? ?? 300;
       final result =
-          await driver.swipe(startX, startY, endX, endY, durationMs: duration);
+          await driver.swipe(startX, startY, endX, endY, durationMs: duration).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => NativeResult(success: false, message: 'native_swipe timed out (15s) — check macOS Accessibility permissions'),
+      );
       return result.toJson();
     }
 
