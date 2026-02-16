@@ -160,6 +160,10 @@ class FlutterMcpServer {
   String? _autoConnectUrl;
   int? _autoConnectCdpPort;
 
+  // Last known connection info for auto-reconnect
+  String? _lastConnectionUri;
+  int? _lastConnectionPort;
+
   // Legacy single client support (for backward compatibility)
   AppDriver? get _client => _activeSessionId != null
       ? _clients[_activeSessionId]
@@ -6025,17 +6029,241 @@ if (mounted) {
   /// Export recorded steps as Playwright test
   String _exportPlaywright() {
     final buf = StringBuffer();
-    buf.writeln("import { test, expect } from '@playwright/test';");
+    buf.writeln("const { test, expect } = require('@playwright/test');");
     buf.writeln("");
-    buf.writeln("test('recorded flow', async ({ page }) => {");
+    buf.writeln("test('recorded test', async ({ page }) => {");
     for (final step in _recordedSteps) {
-      final tool = step['tool'];
+      final tool = step['tool'] as String;
       final params = step['params'] as Map<String, dynamic>? ?? {};
-      buf.writeln("  // $tool: ${jsonEncode(params)}");
+      final key = params['key'] as String?;
+      final text = params['text'] as String?;
+      final selector = key != null ? '[data-testid="$key"]' : null;
+      switch (tool) {
+        case 'tap':
+          if (selector != null) {
+            buf.writeln("  await page.click('$selector');");
+          } else if (text != null) {
+            buf.writeln("  await page.click('text=$text');");
+          }
+          break;
+        case 'enter_text':
+          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          if (selector != null) {
+            buf.writeln("  await page.fill('$selector', '${_escapeJs(value)}');");
+          }
+          break;
+        case 'swipe':
+          buf.writeln("  // swipe: ${jsonEncode(params)}");
+          break;
+        case 'screenshot':
+          buf.writeln("  await page.screenshot({ path: 'screenshot.png' });");
+          break;
+        case 'scroll':
+          final dx = params['dx'] ?? 0;
+          final dy = params['dy'] ?? 0;
+          buf.writeln("  await page.mouse.wheel($dx, $dy);");
+          break;
+        default:
+          buf.writeln("  // $tool: ${jsonEncode(params)}");
+      }
     }
     buf.writeln("});");
     return buf.toString();
   }
+
+  /// Export recorded steps as Cypress test
+  String _exportCypress() {
+    final buf = StringBuffer();
+    buf.writeln("describe('recorded test', () => {");
+    buf.writeln("  it('should complete flow', () => {");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'] as String;
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      final key = params['key'] as String?;
+      final text = params['text'] as String?;
+      final selector = key != null ? '[data-testid="$key"]' : null;
+      switch (tool) {
+        case 'tap':
+          if (selector != null) {
+            buf.writeln("    cy.get('$selector').click();");
+          } else if (text != null) {
+            buf.writeln("    cy.contains('$text').click();");
+          }
+          break;
+        case 'enter_text':
+          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          if (selector != null) {
+            buf.writeln("    cy.get('$selector').type('${_escapeJs(value)}');");
+          }
+          break;
+        case 'swipe':
+          buf.writeln("    // swipe: ${jsonEncode(params)}");
+          break;
+        case 'screenshot':
+          buf.writeln("    cy.screenshot();");
+          break;
+        case 'scroll':
+          final dy = params['dy'] ?? 0;
+          buf.writeln("    cy.scrollTo(0, $dy);");
+          break;
+        default:
+          buf.writeln("    // $tool: ${jsonEncode(params)}");
+      }
+    }
+    buf.writeln("  });");
+    buf.writeln("});");
+    return buf.toString();
+  }
+
+  /// Export recorded steps as Selenium (Python) test
+  String _exportSelenium() {
+    final buf = StringBuffer();
+    buf.writeln("from selenium import webdriver");
+    buf.writeln("from selenium.webdriver.common.by import By");
+    buf.writeln("from selenium.webdriver.common.keys import Keys");
+    buf.writeln("");
+    buf.writeln("driver = webdriver.Chrome()");
+    buf.writeln("");
+    buf.writeln("try:");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'] as String;
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      final key = params['key'] as String?;
+      final text = params['text'] as String?;
+      final selector = key != null ? '[data-testid="$key"]' : null;
+      switch (tool) {
+        case 'tap':
+          if (selector != null) {
+            buf.writeln("    driver.find_element(By.CSS_SELECTOR, '$selector').click()");
+          } else if (text != null) {
+            buf.writeln("    driver.find_element(By.XPATH, '//*[text()=\"${_escapePy(text)}\"]').click()");
+          }
+          break;
+        case 'enter_text':
+          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          if (selector != null) {
+            buf.writeln("    el = driver.find_element(By.CSS_SELECTOR, '$selector')");
+            buf.writeln("    el.clear()");
+            buf.writeln("    el.send_keys('${_escapePy(value)}')");
+          }
+          break;
+        case 'swipe':
+          buf.writeln("    # swipe: ${jsonEncode(params)}");
+          break;
+        case 'screenshot':
+          buf.writeln("    driver.save_screenshot('screenshot.png')");
+          break;
+        case 'scroll':
+          final dy = params['dy'] ?? 0;
+          buf.writeln("    driver.execute_script('window.scrollBy(0, $dy)')");
+          break;
+        default:
+          buf.writeln("    # $tool: ${jsonEncode(params)}");
+      }
+    }
+    buf.writeln("finally:");
+    buf.writeln("    driver.quit()");
+    return buf.toString();
+  }
+
+  /// Export recorded steps as XCUITest (Swift)
+  String _exportXCUITest() {
+    final buf = StringBuffer();
+    buf.writeln("import XCTest");
+    buf.writeln("");
+    buf.writeln("class RecordedTest: XCTestCase {");
+    buf.writeln("    func testRecordedFlow() {");
+    buf.writeln("        let app = XCUIApplication()");
+    buf.writeln("        app.launch()");
+    buf.writeln("");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'] as String;
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      final key = params['key'] as String?;
+      final text = params['text'] as String?;
+      final identifier = key ?? text ?? 'unknown';
+      switch (tool) {
+        case 'tap':
+          buf.writeln('        app.buttons["$identifier"].tap()');
+          break;
+        case 'enter_text':
+          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          buf.writeln('        let ${_swiftVar(identifier)}Field = app.textFields["$identifier"]');
+          buf.writeln('        ${_swiftVar(identifier)}Field.tap()');
+          buf.writeln('        ${_swiftVar(identifier)}Field.typeText("${_escapeSwift(value)}")');
+          break;
+        case 'swipe':
+          final direction = params['direction'] as String? ?? 'up';
+          buf.writeln('        app.swipe${direction[0].toUpperCase()}${direction.substring(1)}()');
+          break;
+        case 'screenshot':
+          buf.writeln('        let screenshot = XCUIScreen.main.screenshot()');
+          buf.writeln('        let attachment = XCTAttachment(screenshot: screenshot)');
+          buf.writeln('        add(attachment)');
+          break;
+        default:
+          buf.writeln('        // $tool: ${jsonEncode(params)}');
+      }
+    }
+    buf.writeln("    }");
+    buf.writeln("}");
+    return buf.toString();
+  }
+
+  /// Export recorded steps as Espresso (Kotlin)
+  String _exportEspresso() {
+    final buf = StringBuffer();
+    buf.writeln("import androidx.test.ext.junit.runners.AndroidJUnit4");
+    buf.writeln("import androidx.test.espresso.Espresso.onView");
+    buf.writeln("import androidx.test.espresso.action.ViewActions.*");
+    buf.writeln("import androidx.test.espresso.matcher.ViewMatchers.*");
+    buf.writeln("import org.junit.Test");
+    buf.writeln("import org.junit.runner.RunWith");
+    buf.writeln("");
+    buf.writeln("@RunWith(AndroidJUnit4::class)");
+    buf.writeln("class RecordedTest {");
+    buf.writeln("    @Test");
+    buf.writeln("    fun testRecordedFlow() {");
+    for (final step in _recordedSteps) {
+      final tool = step['tool'] as String;
+      final params = step['params'] as Map<String, dynamic>? ?? {};
+      final key = params['key'] as String?;
+      final text = params['text'] as String?;
+      switch (tool) {
+        case 'tap':
+          if (key != null) {
+            buf.writeln('        onView(withContentDescription("$key")).perform(click())');
+          } else if (text != null) {
+            buf.writeln('        onView(withText("$text")).perform(click())');
+          }
+          break;
+        case 'enter_text':
+          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          if (key != null) {
+            buf.writeln('        onView(withContentDescription("$key")).perform(replaceText("${_escapeKotlin(value)}"))');
+          }
+          break;
+        case 'swipe':
+          final direction = params['direction'] as String? ?? 'up';
+          buf.writeln('        onView(withId(android.R.id.content)).perform(swipe${direction[0].toUpperCase()}${direction.substring(1)}())');
+          break;
+        case 'screenshot':
+          buf.writeln('        // Take screenshot via UiAutomator or test rule');
+          break;
+        default:
+          buf.writeln('        // $tool: ${jsonEncode(params)}');
+      }
+    }
+    buf.writeln("    }");
+    buf.writeln("}");
+    return buf.toString();
+  }
+
+  String _escapeJs(String s) => s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  String _escapePy(String s) => s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  String _escapeSwift(String s) => s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  String _escapeKotlin(String s) => s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  String _swiftVar(String s) => s.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
 }
 
 // ==================== Lock Management ====================
