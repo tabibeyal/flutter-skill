@@ -1,6 +1,7 @@
 part of '../server.dart';
 
 extension _ToolDefinitions on FlutterMcpServer {
+  // ignore: unused_element
   List<Map<String, dynamic>> _getToolsList() {
     // Determine current connection mode for smart filtering
     final hasCdp = _cdpDriver != null;

@@ -121,7 +121,7 @@ extension _ParallelHandlers on FlutterMcpServer {
           if (c == null) return MapEntry(sid, <String, dynamic>{'error': 'Not connected'});
           if (c is FlutterSkillClient) {
             final structured = await c.getInteractiveElementsStructured();
-            final elements = (structured is Map && structured['elements'] is List)
+            final elements = (structured['elements'] is List)
                 ? (structured['elements'] as List)
                 : <dynamic>[];
             final elementKeys = <String>{};

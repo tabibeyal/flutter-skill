@@ -1,0 +1,41 @@
+# Created using winget CLI
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
+
+PackageIdentifier: AIDashboard.FlutterSkill
+PackageVersion: 0.8.3
+PackageLocale: en-US
+Publisher: AI Dashboard
+PublisherUrl: https://github.com/ai-dashboad
+PackageName: Flutter Skill
+PackageUrl: https://github.com/ai-dashboad/flutter-skill
+License: MIT
+LicenseUrl: https://github.com/ai-dashboad/flutter-skill/blob/main/LICENSE
+ShortDescription: MCP Server for AI-powered E2E testing of Flutter, Tauri, Electron, and React Native apps
+Description: |-
+  Flutter Skill is an MCP (Model Context Protocol) server that bridges AI agents to running
+  desktop and mobile applications for end-to-end testing. It provides 155 tools for tapping,
+  typing, scrolling, taking screenshots, and running assertions — all controllable via natural
+  language through any MCP-compatible AI agent. Supports Flutter, Tauri, Electron, React Native,
+  native Android, and native iOS across 10 platforms.
+Tags:
+  - testing
+  - e2e
+  - flutter
+  - tauri
+  - electron
+  - mcp
+  - ai
+  - automation
+  - developer-tools
+  - cli
+ReleaseNotesUrl: https://github.com/ai-dashboad/flutter-skill/releases/tag/v0.8.3
+ManifestType: singleton
+ManifestVersion: 1.6.0
+Installers:
+  - Architecture: x64
+    InstallerType: exe
+    InstallerUrl: https://github.com/ai-dashboad/flutter-skill/releases/download/v0.8.3/flutter-skill-windows-x64.exe
+    InstallerSha256: # TODO: Calculate SHA256 of the installer binary
+    InstallerSwitches:
+      Silent: --silent
+      SilentWithProgress: --silent

@@ -123,7 +123,7 @@ extension _BfScreenshot on FlutterMcpServer {
         List<String> missingElements = [];
         int verifyElementCount = 0;
         try {
-          final structured = await client!.getInteractiveElementsStructured();
+          final structured = await client.getInteractiveElementsStructured();
           final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
           verifyElementCount = snapshotElements.length;
 
@@ -186,7 +186,7 @@ extension _BfScreenshot on FlutterMcpServer {
 
         String diffSnapshotText = '';
         try {
-          final structured = await client!.getInteractiveElementsStructured();
+          final structured = await client.getInteractiveElementsStructured();
           final els = structured['elements'] as List<dynamic>? ?? [];
           final buf = StringBuffer();
           for (final el in els) {

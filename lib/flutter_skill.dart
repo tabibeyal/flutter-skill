@@ -733,20 +733,27 @@ class FlutterSkillBinding {
           );
         }
 
-        // Build modifier key list
+        // Build modifier key list (reserved for future modifier support)
+        // ignore: unused_local_variable
         final isShift = modifiers.contains('shift');
+        // ignore: unused_local_variable
         final isCtrl = modifiers.contains('ctrl');
+        // ignore: unused_local_variable
         final isAlt = modifiers.contains('alt');
+        // ignore: unused_local_variable
         final isMeta = modifiers.contains('meta');
 
         // Simulate key press through the focus system
         final focusNode = FocusManager.instance.primaryFocus;
         if (focusNode != null) {
           // Use HardwareKeyboard simulation
+          // ignore: unused_local_variable
           final binding = WidgetsBinding.instance;
+          // ignore: unused_local_variable
           final pointer = _pointerCounter++;
           
           // Create a RawKeyDownEvent and dispatch through the focus system
+          // ignore: unused_local_variable
           final keyDown = KeyDownEvent(
             physicalKey: PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter,
             logicalKey: logicalKey,

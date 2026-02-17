@@ -1109,6 +1109,7 @@ class CdpDriver implements AppDriver {
   /// JavaScript helper that pierces Shadow DOM when querying elements.
   /// Use `deepQuery(selector)` instead of `document.querySelector(selector)`
   /// and `deepQueryAll(selector)` instead of `document.querySelectorAll(selector)`.
+  // ignore: unused_field
   static const String _shadowDomHelper = '''
 function deepQuery(selector, root) {
   root = root || document;
