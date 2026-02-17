@@ -3,7 +3,8 @@ part of '../server.dart';
 extension _DevToolHandlers on FlutterMcpServer {
   /// Developer tools (hot reload, pub search, indicators)
   /// Returns null if the tool is not handled.
-  Future<dynamic> _handleDevTools(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _handleDevTools(
+      String name, Map<String, dynamic> args) async {
     if (name == 'pub_search') {
       final query = args['query'];
       final url = Uri.parse('https://pub.dev/api/search?q=$query');
@@ -37,7 +38,8 @@ extension _DevToolHandlers on FlutterMcpServer {
       if (client is BridgeDriver) {
         final enabled = args['enabled'] ?? true;
         final style = args['style'] ?? 'standard';
-        return await client.callMethod('enable_test_indicators', {'enabled': enabled, 'style': style});
+        return await client.callMethod(
+            'enable_test_indicators', {'enabled': enabled, 'style': style});
       }
       final fc = _asFlutterClient(client!, 'enable_test_indicators');
       final enabled = args['enabled'] ?? true;

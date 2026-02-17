@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfInteraction on FlutterMcpServer {
-  Future<dynamic> _handleInteractionTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleInteractionTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'tap':
         // Support three methods: key, text, or coordinates
@@ -11,8 +12,14 @@ extension _BfInteraction on FlutterMcpServer {
         // Method 3: Tap by coordinates
         if (x != null && y != null) {
           if (client is BridgeDriver) {
-            await client.callMethod('tap_at', {'x': x.toDouble(), 'y': y.toDouble()});
-            return {"success": true, "method": "coordinates", "message": "Tapped at ($x, $y)", "position": {"x": x, "y": y}};
+            await client
+                .callMethod('tap_at', {'x': x.toDouble(), 'y': y.toDouble()});
+            return {
+              "success": true,
+              "method": "coordinates",
+              "message": "Tapped at ($x, $y)",
+              "position": {"x": x, "y": y}
+            };
           }
           final fc = _asFlutterClient(client!, 'tap (coordinates)');
           await fc.tapAt(x.toDouble(), y.toDouble());
@@ -26,7 +33,7 @@ extension _BfInteraction on FlutterMcpServer {
 
         // Method 1 & 2: Tap by key, text, or semantic ref
         final result = await client!.tap(
-          key: args['key'], 
+          key: args['key'],
           text: args['text'],
           ref: args['ref'],
         );
@@ -50,8 +57,8 @@ extension _BfInteraction on FlutterMcpServer {
 
       case 'enter_text':
         final result = await client!.enterText(
-          args['key'], 
-          args['text'], 
+          args['key'],
+          args['text'],
           ref: args['ref'],
         );
         if (result['success'] != true) {
@@ -67,7 +74,9 @@ extension _BfInteraction on FlutterMcpServer {
 
       case 'scroll_to':
         if (client is BridgeDriver) {
-          await client.scroll(direction: args['direction'] ?? 'down', distance: args['distance'] ?? 300);
+          await client.scroll(
+              direction: args['direction'] ?? 'down',
+              distance: args['distance'] ?? 300);
           return {"success": true, "message": "Scrolled"};
         }
         final fc = _asFlutterClient(client!, 'scroll_to');
@@ -83,7 +92,8 @@ extension _BfInteraction on FlutterMcpServer {
       // Advanced Actions
       case 'long_press':
         if (client is BridgeDriver) {
-          final success = await client.longPress(key: args['key'], text: args['text']);
+          final success =
+              await client.longPress(key: args['key'], text: args['text']);
           return success ? "Long pressed" : "Long press failed";
         }
         final fc = _asFlutterClient(client!, 'long_press');
@@ -93,7 +103,8 @@ extension _BfInteraction on FlutterMcpServer {
         return success ? "Long pressed" : "Long press failed";
       case 'double_tap':
         if (client is BridgeDriver) {
-          final success = await client.doubleTap(key: args['key'], text: args['text']);
+          final success =
+              await client.doubleTap(key: args['key'], text: args['text']);
           return success ? "Double tapped" : "Double tap failed";
         }
         final fc = _asFlutterClient(client!, 'double_tap');
@@ -107,7 +118,8 @@ extension _BfInteraction on FlutterMcpServer {
         return success ? "Swiped ${args['direction']}" : "Swipe failed";
       case 'drag':
         if (client is BridgeDriver) {
-          final result = await client.callMethod('drag', {'from_key': args['from_key'], 'to_key': args['to_key']});
+          final result = await client.callMethod(
+              'drag', {'from_key': args['from_key'], 'to_key': args['to_key']});
           return result['success'] == true ? "Dragged" : "Drag failed";
         }
         final fc = _asFlutterClient(client!, 'drag');
@@ -125,20 +137,23 @@ extension _BfInteraction on FlutterMcpServer {
         return await fc.getTextValue(args['key']);
       case 'get_checkbox_state':
         if (client is BridgeDriver) {
-          return await client.callMethod('get_checkbox_state', {'key': args['key']});
+          return await client
+              .callMethod('get_checkbox_state', {'key': args['key']});
         }
         final fc = _asFlutterClient(client!, 'get_checkbox_state');
         return await fc.getCheckboxState(args['key']);
       case 'get_slider_value':
         if (client is BridgeDriver) {
-          return await client.callMethod('get_slider_value', {'key': args['key']});
+          return await client
+              .callMethod('get_slider_value', {'key': args['key']});
         }
         final fc = _asFlutterClient(client!, 'get_slider_value');
         return await fc.getSliderValue(args['key']);
       case 'wait_for_element':
         if (client is BridgeDriver) {
           final timeout = args['timeout'] ?? 5000;
-          final found = await client.waitForElement(key: args['key'], text: args['text'], timeout: timeout);
+          final found = await client.waitForElement(
+              key: args['key'], text: args['text'], timeout: timeout);
           return {"found": found};
         }
         final fc = _asFlutterClient(client!, 'wait_for_element');
@@ -148,7 +163,11 @@ extension _BfInteraction on FlutterMcpServer {
         return {"found": found};
       case 'wait_for_gone':
         if (client is BridgeDriver) {
-          final result = await client.callMethod('wait_for_gone', {'key': args['key'], 'text': args['text'], 'timeout': args['timeout'] ?? 5000});
+          final result = await client.callMethod('wait_for_gone', {
+            'key': args['key'],
+            'text': args['text'],
+            'timeout': args['timeout'] ?? 5000
+          });
           return {"gone": result['gone'] ?? true};
         }
         final fc = _asFlutterClient(client!, 'wait_for_gone');

@@ -3,7 +3,8 @@ part of '../server.dart';
 extension _CdpConnectionHandlers2 on FlutterMcpServer {
   /// CDP connection and project diagnostics
   /// Returns null if the tool is not handled.
-  Future<dynamic> _handleCdpConnectionTools(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _handleCdpConnectionTools(
+      String name, Map<String, dynamic> args) async {
     if (name == 'connect_cdp') {
       final url = args['url'] as String;
       final port = args['port'] as int? ?? 9222;
@@ -229,7 +230,6 @@ extension _CdpConnectionHandlers2 on FlutterMcpServer {
 
       return diagnosticResult;
     }
-
 
     return null; // Not handled by this group
   }

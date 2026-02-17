@@ -97,7 +97,8 @@ void main(List<String> args) async {
         print('');
         print('Example: flutter-skill test https://example.com');
         print('');
-        print('Launches Chrome, navigates to the URL, and starts the MCP server');
+        print(
+            'Launches Chrome, navigates to the URL, and starts the MCP server');
         print('with CDP auto-connected. No setup needed.');
         exit(1);
       }

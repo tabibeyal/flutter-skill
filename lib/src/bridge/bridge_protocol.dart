@@ -94,7 +94,7 @@ class BridgeServiceInfo {
       sdkVersion: json['sdk_version'] as String? ?? '0.0.0',
       port: port,
       wsUri: json['ws_uri'] as String? ??
-             'ws://127.0.0.1:${json['ws_port'] ?? port}/ws',
+          'ws://127.0.0.1:${json['ws_port'] ?? port}/ws',
     );
   }
 

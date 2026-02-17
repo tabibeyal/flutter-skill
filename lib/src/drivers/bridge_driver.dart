@@ -108,7 +108,8 @@ class BridgeDriver implements AppDriver {
   }
 
   @override
-  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref}) async {
+  Future<Map<String, dynamic>> tap(
+      {String? key, String? text, String? ref}) async {
     return callMethod('tap', {
       if (key != null) 'key': key,
       if (text != null) 'text': text,
@@ -117,7 +118,8 @@ class BridgeDriver implements AppDriver {
   }
 
   @override
-  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref}) async {
+  Future<Map<String, dynamic>> enterText(String? key, String text,
+      {String? ref}) async {
     return callMethod('enter_text', {
       if (key != null) 'key': key,
       'text': text,
@@ -251,11 +253,12 @@ class BridgeDriver implements AppDriver {
   // Internal RPC plumbing
   // ------------------------------------------------------------------
 
-    /// Public raw method call for tools that need direct bridge access (e.g. eval)
+  /// Public raw method call for tools that need direct bridge access (e.g. eval)
   /// Subclasses (e.g. WebBridgeDriver) override this to route through
   /// a different transport. All internal methods call [callMethod] so the
   /// override is always respected.
-  Future<Map<String, dynamic>> callMethod(String method, [Map<String, dynamic>? params]) async {
+  Future<Map<String, dynamic>> callMethod(String method,
+      [Map<String, dynamic>? params]) async {
     if (_ws == null || !_connected) {
       // Attempt one reconnect
       if (!_reconnecting && await _reconnect()) {
@@ -400,7 +403,13 @@ class BridgeDriver implements AppDriver {
             tools.add({
               'name': 'fill_${_sanitizeName(text.isNotEmpty ? text : id)}',
               'description': 'Enter text into: ${text.isNotEmpty ? text : id}',
-              'params': {'text': {'type': 'string', 'required': true, 'description': 'Text to enter'}},
+              'params': {
+                'text': {
+                  'type': 'string',
+                  'required': true,
+                  'description': 'Text to enter'
+                }
+              },
               'source': 'auto-ui',
               'action': 'enter_text',
               'ref': ref,
@@ -423,7 +432,13 @@ class BridgeDriver implements AppDriver {
             tools.add({
               'name': 'set_${_sanitizeName(text.isNotEmpty ? text : id)}',
               'description': 'Set slider: ${text.isNotEmpty ? text : id}',
-              'params': {'value': {'type': 'number', 'required': true, 'description': 'Slider value'}},
+              'params': {
+                'value': {
+                  'type': 'number',
+                  'required': true,
+                  'description': 'Slider value'
+                }
+              },
               'source': 'auto-ui',
               'action': 'set_slider',
               'ref': ref,
@@ -434,7 +449,13 @@ class BridgeDriver implements AppDriver {
             tools.add({
               'name': 'select_${_sanitizeName(text.isNotEmpty ? text : id)}',
               'description': 'Select option in: ${text.isNotEmpty ? text : id}',
-              'params': {'value': {'type': 'string', 'required': true, 'description': 'Option to select'}},
+              'params': {
+                'value': {
+                  'type': 'string',
+                  'required': true,
+                  'description': 'Option to select'
+                }
+              },
               'source': 'auto-ui',
               'action': 'select',
               'ref': ref,
@@ -449,7 +470,8 @@ class BridgeDriver implements AppDriver {
   }
 
   /// Call a tool — either SDK-registered or auto-discovered from UI.
-  Future<Map<String, dynamic>> callTool(String name, Map<String, dynamic> args) async {
+  Future<Map<String, dynamic>> callTool(
+      String name, Map<String, dynamic> args) async {
     // First try SDK-registered tool
     try {
       return await callMethod('call_tool', {'name': name, 'args': args});
@@ -459,9 +481,9 @@ class BridgeDriver implements AppDriver {
     final discovered = await discoverTools();
     final tools = discovered['tools'] as List<dynamic>? ?? [];
     final tool = tools.cast<Map<String, dynamic>?>().firstWhere(
-      (t) => t!['name'] == name,
-      orElse: () => null,
-    );
+          (t) => t!['name'] == name,
+          orElse: () => null,
+        );
     if (tool == null) throw Exception('Tool not found: $name');
 
     final action = tool['action'] as String? ?? '';

@@ -3,7 +3,8 @@ part of '../server.dart';
 extension _ConnectionHandlers on FlutterMcpServer {
   /// Connection, session, and HTTP tools
   /// Returns null if the tool is not handled.
-  Future<dynamic> _handleConnectionTools(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _handleConnectionTools(
+      String name, Map<String, dynamic> args) async {
     // Session management tools
     if (name == 'list_sessions') {
       return {
@@ -136,7 +137,8 @@ extension _ConnectionHandlers on FlutterMcpServer {
 
           // Store for auto-reconnect
           _lastConnectionUri = uri;
-          _lastConnectionPort = int.tryParse(uri.split(':').last.split('/').first);
+          _lastConnectionPort =
+              int.tryParse(uri.split(':').last.split('/').first);
 
           return {
             "success": true,
@@ -418,10 +420,14 @@ extension _ConnectionHandlers on FlutterMcpServer {
           "success": true,
           "port": port,
           "url": "ws://127.0.0.1:$port",
-          "message": "Bridge listener started. Browser SDK can connect to ws://127.0.0.1:$port",
+          "message":
+              "Bridge listener started. Browser SDK can connect to ws://127.0.0.1:$port",
         };
       } catch (e) {
-        return {"success": false, "error": "Failed to start bridge listener: $e"};
+        return {
+          "success": false,
+          "error": "Failed to start bridge listener: $e"
+        };
       }
     }
 
@@ -452,8 +458,8 @@ extension _ConnectionHandlers on FlutterMcpServer {
 
       // Check web bridge listener first
       if (_webBridgeListener != null && _webBridgeListener!.hasClient) {
-        final existing = _sessions.values
-            .where((s) => s.deviceId == 'web' && s.port == _webBridgeListener!.port);
+        final existing = _sessions.values.where(
+            (s) => s.deviceId == 'web' && s.port == _webBridgeListener!.port);
         if (existing.isNotEmpty) {
           _activeSessionId = existing.first.id;
           return {
@@ -664,7 +670,9 @@ extension _ConnectionHandlers on FlutterMcpServer {
         return {
           "connected": client.isConnected,
           "framework": client.frameworkName,
-          "mode": client is CdpDriver ? "cdp" : (client is BridgeDriver ? "bridge" : "flutter"),
+          "mode": client is CdpDriver
+              ? "cdp"
+              : (client is BridgeDriver ? "bridge" : "flutter"),
           "session_id": sessionId,
           "uri": client is FlutterSkillClient ? client.vmServiceUri : null,
           "session_info": session?.toJson(),
@@ -685,7 +693,6 @@ extension _ConnectionHandlers on FlutterMcpServer {
             : "No running apps found. Use launch_app() to start one.",
       };
     }
-
 
     return null; // Not handled by this group
   }

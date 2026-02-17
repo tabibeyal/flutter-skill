@@ -23,32 +23,75 @@ class ToolDefinition {
 class ToolRegistry {
   /// CDP-only tools that don't apply to bridge/Flutter platforms.
   static const cdpOnlyTools = <String>{
-    'connect_cdp', 'get_title', 'get_page_source', 'get_visible_text',
-    'count_elements', 'is_visible', 'get_attribute', 'get_css_property',
-    'get_bounding_box', 'get_cookies', 'set_cookie', 'clear_cookies',
-    'get_local_storage', 'set_local_storage', 'clear_local_storage',
-    'get_session_storage', 'get_console_messages', 'get_network_requests',
-    'navigate', 'go_forward', 'reload', 'set_viewport', 'emulate_device',
-    'generate_pdf', 'wait_for_navigation', 'wait_for_network_idle',
-    'get_tabs', 'new_tab', 'close_tab', 'switch_tab', 'get_frames',
-    'eval_in_frame', 'get_window_handles', 'install_dialog_handler',
-    'handle_dialog', 'intercept_requests', 'clear_interceptions',
-    'block_urls', 'throttle_network', 'go_offline', 'clear_browser_data',
-    'accessibility_audit', 'set_geolocation', 'set_timezone',
-    'set_color_scheme', 'upload_file', 'compare_screenshot',
-    'highlight_element', 'mock_response', 'highlight_elements',
+    'connect_cdp',
+    'get_title',
+    'get_page_source',
+    'get_visible_text',
+    'count_elements',
+    'is_visible',
+    'get_attribute',
+    'get_css_property',
+    'get_bounding_box',
+    'get_cookies',
+    'set_cookie',
+    'clear_cookies',
+    'get_local_storage',
+    'set_local_storage',
+    'clear_local_storage',
+    'get_session_storage',
+    'get_console_messages',
+    'get_network_requests',
+    'navigate',
+    'go_forward',
+    'reload',
+    'set_viewport',
+    'emulate_device',
+    'generate_pdf',
+    'wait_for_navigation',
+    'wait_for_network_idle',
+    'get_tabs',
+    'new_tab',
+    'close_tab',
+    'switch_tab',
+    'get_frames',
+    'eval_in_frame',
+    'get_window_handles',
+    'install_dialog_handler',
+    'handle_dialog',
+    'intercept_requests',
+    'clear_interceptions',
+    'block_urls',
+    'throttle_network',
+    'go_offline',
+    'clear_browser_data',
+    'accessibility_audit',
+    'set_geolocation',
+    'set_timezone',
+    'set_color_scheme',
+    'upload_file',
+    'compare_screenshot',
+    'highlight_element',
+    'mock_response',
+    'highlight_elements',
   };
 
   /// Flutter VM Service-only tools.
   static const flutterOnlyTools = <String>{
-    'get_widget_tree', 'get_widget_properties', 'find_by_type',
-    'hot_reload', 'hot_restart',
+    'get_widget_tree',
+    'get_widget_properties',
+    'find_by_type',
+    'hot_reload',
+    'hot_restart',
   };
 
   /// Mobile-only tools.
   static const mobileOnlyTools = <String>{
-    'native_tap', 'native_input_text', 'native_swipe', 'native_screenshot',
-    'auth_biometric', 'auth_deeplink',
+    'native_tap',
+    'native_input_text',
+    'native_swipe',
+    'native_screenshot',
+    'auth_biometric',
+    'auth_deeplink',
   };
 
   /// Get the full list of built-in tool definitions as JSON maps.
@@ -340,7 +383,8 @@ Omitting session_id in other tools will use the active session.""",
       // ======================== CDP Connection ========================
       {
         "name": "connect_cdp",
-        "description": """Connect to any web page via Chrome DevTools Protocol (CDP).
+        "description":
+            """Connect to any web page via Chrome DevTools Protocol (CDP).
 
 No SDK injection needed — works with ANY website, React/Vue/Angular apps, or any web content.
 
@@ -367,8 +411,7 @@ They will automatically route through the CDP connection.""",
             },
             "port": {
               "type": "integer",
-              "description":
-                  "Chrome remote debugging port (default: 9222)"
+              "description": "Chrome remote debugging port (default: 9222)"
             },
             "launch_chrome": {
               "type": "boolean",
@@ -377,7 +420,8 @@ They will automatically route through the CDP connection.""",
             },
             "headless": {
               "type": "boolean",
-              "description": "Run Chrome in headless mode (default: false). Useful for CI/CD."
+              "description":
+                  "Run Chrome in headless mode (default: false). Useful for CI/CD."
             },
             "chrome_path": {
               "type": "string",
@@ -385,7 +429,8 @@ They will automatically route through the CDP connection.""",
             },
             "proxy": {
               "type": "string",
-              "description": "Proxy server URL (e.g. 'http://proxy:8080' or 'socks5://proxy:1080')."
+              "description":
+                  "Proxy server URL (e.g. 'http://proxy:8080' or 'socks5://proxy:1080')."
             },
             "ignore_ssl": {
               "type": "boolean",
@@ -393,7 +438,8 @@ They will automatically route through the CDP connection.""",
             },
             "max_tabs": {
               "type": "integer",
-              "description": "Maximum number of tabs allowed (default: 20). Prevents runaway tab creation."
+              "description":
+                  "Maximum number of tabs allowed (default: 20). Prevents runaway tab creation."
             },
           },
           "required": ["url"],
@@ -411,10 +457,23 @@ Returns status code, headers, and response body.""",
           "type": "object",
           "properties": {
             "url": {"type": "string", "description": "Request URL"},
-            "method": {"type": "string", "description": "HTTP method (GET, POST, PUT, PATCH, DELETE). Default: GET"},
-            "headers": {"type": "object", "description": "Request headers as key-value pairs"},
-            "body": {"type": "string", "description": "Request body (typically JSON string)"},
-            "timeout": {"type": "integer", "description": "Timeout in milliseconds (default: 30000)"},
+            "method": {
+              "type": "string",
+              "description":
+                  "HTTP method (GET, POST, PUT, PATCH, DELETE). Default: GET"
+            },
+            "headers": {
+              "type": "object",
+              "description": "Request headers as key-value pairs"
+            },
+            "body": {
+              "type": "string",
+              "description": "Request body (typically JSON string)"
+            },
+            "timeout": {
+              "type": "integer",
+              "description": "Timeout in milliseconds (default: 30000)"
+            },
           },
           "required": ["url"],
         },
@@ -447,71 +506,737 @@ After starting, point the web SDK at ws://127.0.0.1:<port>.""",
       },
 
       // ======================== CDP-exclusive tools ========================
-      {"name": "eval", "description": "Execute JavaScript in the browser and return the result. Works with CDP and bridge connections.", "inputSchema": {"type": "object", "properties": {"expression": {"type": "string", "description": "JavaScript expression to evaluate"}}, "required": ["expression"]}},
-      {"name": "press_key", "description": "Press a keyboard key (Enter, Tab, Escape, ArrowUp, etc.)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Key name (Enter, Tab, Escape, Backspace, ArrowUp, ArrowDown, Space, or any character)"}, "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modifier keys: Alt, Control, Meta, Shift"}}, "required": ["key"]}},
-      {"name": "hover", "description": "Hover over an element (triggers CSS :hover styles and mouseover events)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "text": {"type": "string"}, "ref": {"type": "string"}}}},
-      {"name": "select_option", "description": "Select an option in a <select> dropdown", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element ID or test ID"}, "value": {"type": "string", "description": "Option value to select"}}, "required": ["key", "value"]}},
-      {"name": "set_checkbox", "description": "Check or uncheck a checkbox", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "checked": {"type": "boolean"}}, "required": ["key"]}},
-      {"name": "fill", "description": "Fill an input field (clear + set value — faster than enter_text for forms)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
-      {"name": "get_cookies", "description": "Get all browser cookies for the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_cookie", "description": "Set a browser cookie", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "value": {"type": "string"}, "domain": {"type": "string"}, "path": {"type": "string"}}, "required": ["name", "value"]}},
-      {"name": "clear_cookies", "description": "Clear all browser cookies", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_local_storage", "description": "Get all localStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_local_storage", "description": "Set a localStorage value", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
-      {"name": "clear_local_storage", "description": "Clear all localStorage data", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_console_messages", "description": "Get browser console log messages", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_network_requests", "description": "Get all network requests made by the page (via Performance API)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_viewport", "description": "Set browser viewport size (responsive testing)", "inputSchema": {"type": "object", "properties": {"width": {"type": "integer"}, "height": {"type": "integer"}, "device_scale_factor": {"type": "number"}}, "required": ["width", "height"]}},
-      {"name": "emulate_device", "description": "Emulate a device viewport + user agent. 143+ presets: iPhone 12-16 (all sizes), SE, Pixel 5-9, Galaxy S21-S24, Z Fold/Flip, OnePlus, Xiaomi, Huawei, iPad Pro/Air/Mini, Galaxy Tab, Surface Pro, MacBook Air/Pro, Dell XPS, desktop resolutions (1080p/1440p/4K) with Chrome/Firefox/Safari/Edge UAs. Supports flexible naming: 'iPhone 14 Pro', 'iphone-14-pro', 'iphone14pro' all work. Pass empty device to list all available presets.", "inputSchema": {"type": "object", "properties": {"device": {"type": "string", "description": "Device name (e.g. 'iphone-16-pro-max', 'pixel-8', 'galaxy-s24-ultra', 'ipad-pro-11', 'macbook-pro-16', 'desktop-1080p'). Empty string lists all devices."}}, "required": ["device"]}},
-      {"name": "generate_pdf", "description": "Generate a PDF of the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "navigate", "description": "Navigate to a URL", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
-      {"name": "go_forward", "description": "Navigate forward in browser history", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "reload", "description": "Reload the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_attribute", "description": "Get an HTML element's attribute value", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "attribute": {"type": "string"}}, "required": ["key", "attribute"]}},
-      {"name": "get_css_property", "description": "Get computed CSS property of an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "property": {"type": "string"}}, "required": ["key", "property"]}},
-      {"name": "get_bounding_box", "description": "Get element position and size", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "focus", "description": "Focus an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "blur", "description": "Remove focus from an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "count_elements", "description": "Count elements matching a CSS selector", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string"}}, "required": ["selector"]}},
-      {"name": "is_visible", "description": "Check if an element is visible on page", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "get_page_source", "description": "Get the HTML source of the current page with optional cleaning", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector to get HTML for a specific element only"}, "remove_scripts": {"type": "boolean", "description": "Strip <script> tags"}, "remove_styles": {"type": "boolean", "description": "Strip <style> tags"}, "remove_comments": {"type": "boolean", "description": "Strip HTML comments"}, "remove_meta": {"type": "boolean", "description": "Strip <meta> tags"}, "minify": {"type": "boolean", "description": "Collapse whitespace"}, "clean_html": {"type": "boolean", "description": "Convenience: removes scripts, styles, comments, and meta tags"}}}},
-      {"name": "get_visible_text", "description": "Get only visible text content from the page (skips display:none, visibility:hidden elements). CDP only.", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector to scope text extraction"}}}},
-      {"name": "get_window_handles", "description": "Get all browser window/tab handles", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "install_dialog_handler", "description": "Install auto-handler for JS dialogs (alert/confirm/prompt)", "inputSchema": {"type": "object", "properties": {"auto_accept": {"type": "boolean", "description": "Auto-accept dialogs (default: true)"}}}},
-      {"name": "wait_for_navigation", "description": "Wait for page navigation to complete", "inputSchema": {"type": "object", "properties": {"timeout_ms": {"type": "integer", "description": "Timeout in ms (default: 30000)"}}}},
-      {"name": "get_title", "description": "Get the page title", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_geolocation", "description": "Override browser geolocation", "inputSchema": {"type": "object", "properties": {"latitude": {"type": "number"}, "longitude": {"type": "number"}}, "required": ["latitude", "longitude"]}},
-      {"name": "set_color_scheme", "description": "Set dark/light mode preference", "inputSchema": {"type": "object", "properties": {"scheme": {"type": "string", "enum": ["dark", "light"]}}, "required": ["scheme"]}},
-      {"name": "block_urls", "description": "Block network requests matching URL patterns (ads, trackers, etc.)", "inputSchema": {"type": "object", "properties": {"patterns": {"type": "array", "items": {"type": "string"}}}, "required": ["patterns"]}},
-      {"name": "throttle_network", "description": "Simulate slow network (3G, offline, etc.)", "inputSchema": {"type": "object", "properties": {"latency_ms": {"type": "integer"}, "download_kbps": {"type": "integer"}, "upload_kbps": {"type": "integer"}}}},
-      {"name": "go_offline", "description": "Simulate offline mode (no network)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "clear_browser_data", "description": "Clear all browser data (cookies, cache, localStorage, sessionStorage)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "upload_file", "description": "Upload file(s) to a file input element", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector for input[type=file]"}, "files": {"type": "array", "items": {"type": "string"}, "description": "File paths to upload"}}, "required": ["selector", "files"]}},
-      {"name": "handle_dialog", "description": "Accept or dismiss browser dialog (alert/confirm/prompt)", "inputSchema": {"type": "object", "properties": {"accept": {"type": "boolean"}, "prompt_text": {"type": "string"}}, "required": ["accept"]}},
-      {"name": "get_frames", "description": "List all iframes on the page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "eval_in_frame", "description": "Execute JavaScript inside a specific iframe", "inputSchema": {"type": "object", "properties": {"frame_id": {"type": "string"}, "expression": {"type": "string"}}, "required": ["frame_id", "expression"]}},
-      {"name": "get_tabs", "description": "List all open browser tabs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "new_tab", "description": "Open a new browser tab with a URL", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
-      {"name": "close_tab", "description": "Close a browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
-      {"name": "switch_tab", "description": "Switch to a different browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
-      {"name": "intercept_requests", "description": "Mock/intercept network requests matching a URL pattern (return custom responses)", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string"}, "status_code": {"type": "integer"}, "body": {"type": "string"}, "headers": {"type": "object"}}, "required": ["url_pattern"]}},
-      {"name": "clear_interceptions", "description": "Remove all network request interceptions", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "accessibility_audit", "description": "Run accessibility audit (WCAG checks: missing alt, labels, heading order, contrast, lang, viewport)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "compare_screenshot", "description": "Visual regression test — compare current page to a baseline screenshot", "inputSchema": {"type": "object", "properties": {"baseline_path": {"type": "string", "description": "Path to baseline PNG image"}}, "required": ["baseline_path"]}},
-      {"name": "wait_for_network_idle", "description": "Wait until all network requests complete (no pending fetch/XHR)", "inputSchema": {"type": "object", "properties": {"timeout_ms": {"type": "integer"}, "idle_ms": {"type": "integer"}}}},
-      {"name": "get_session_storage", "description": "Get all sessionStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "type_text", "description": "Type text character by character (realistic typing simulation)", "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
-      {"name": "set_timezone", "description": "Override browser timezone", "inputSchema": {"type": "object", "properties": {"timezone": {"type": "string", "description": "IANA timezone (e.g. America/New_York)"}}, "required": ["timezone"]}},
-      {"name": "highlight_element", "description": "Highlight an element with a colored overlay for visual debugging. Injects a temporary colored border+background on the matched element.", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "CSS selector, element ID, or data-testid"}, "ref": {"type": "string", "description": "Element ref from snapshot"}, "color": {"type": "string", "description": "Highlight color (default: red)", "default": "red"}, "duration_ms": {"type": "integer", "description": "How long to show highlight in ms (default: 3000)", "default": 3000}}, "required": ["key"]}},
-      {"name": "mock_response", "description": "Mock/intercept network responses for a URL pattern. Returns custom status code and body for matching requests.", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string", "description": "URL pattern to match (glob)"}, "status_code": {"type": "integer", "description": "HTTP status code to return"}, "body": {"type": "string", "description": "Response body to return"}, "headers": {"type": "object", "description": "Response headers"}}, "required": ["url_pattern", "status_code", "body"]}},
-      {"name": "download_file", "description": "Download a file from a URL and save it to disk.", "inputSchema": {"type": "object", "properties": {"url": {"type": "string", "description": "URL to download"}, "save_path": {"type": "string", "description": "Local file path to save to"}}, "required": ["url", "save_path"]}},
-      {"name": "cancel_operation", "description": "Cancel a running long operation (wait_for_element, wait_for_gone, wait_for_network_idle) by operation ID.", "inputSchema": {"type": "object", "properties": {"operation_id": {"type": "string", "description": "ID of the operation to cancel"}}, "required": ["operation_id"]}},
-      {"name": "highlight_elements", "description": "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.", "inputSchema": {"type": "object", "properties": {"show": {"type": "boolean", "description": "true to show highlights, false to remove them", "default": true}}}},
+      {
+        "name": "eval",
+        "description":
+            "Execute JavaScript in the browser and return the result. Works with CDP and bridge connections.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string",
+              "description": "JavaScript expression to evaluate"
+            }
+          },
+          "required": ["expression"]
+        }
+      },
+      {
+        "name": "press_key",
+        "description":
+            "Press a keyboard key (Enter, Tab, Escape, ArrowUp, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description":
+                  "Key name (Enter, Tab, Escape, Backspace, ArrowUp, ArrowDown, Space, or any character)"
+            },
+            "modifiers": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Modifier keys: Alt, Control, Meta, Shift"
+            }
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "hover",
+        "description":
+            "Hover over an element (triggers CSS :hover styles and mouseover events)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "text": {"type": "string"},
+            "ref": {"type": "string"}
+          }
+        }
+      },
+      {
+        "name": "select_option",
+        "description": "Select an option in a <select> dropdown",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element ID or test ID"},
+            "value": {"type": "string", "description": "Option value to select"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "set_checkbox",
+        "description": "Check or uncheck a checkbox",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "checked": {"type": "boolean"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "fill",
+        "description":
+            "Fill an input field (clear + set value — faster than enter_text for forms)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "get_cookies",
+        "description": "Get all browser cookies for the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_cookie",
+        "description": "Set a browser cookie",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "value": {"type": "string"},
+            "domain": {"type": "string"},
+            "path": {"type": "string"}
+          },
+          "required": ["name", "value"]
+        }
+      },
+      {
+        "name": "clear_cookies",
+        "description": "Clear all browser cookies",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_local_storage",
+        "description": "Get all localStorage key-value pairs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_local_storage",
+        "description": "Set a localStorage value",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "clear_local_storage",
+        "description": "Clear all localStorage data",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_console_messages",
+        "description": "Get browser console log messages",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_network_requests",
+        "description":
+            "Get all network requests made by the page (via Performance API)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_viewport",
+        "description": "Set browser viewport size (responsive testing)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "width": {"type": "integer"},
+            "height": {"type": "integer"},
+            "device_scale_factor": {"type": "number"}
+          },
+          "required": ["width", "height"]
+        }
+      },
+      {
+        "name": "emulate_device",
+        "description":
+            "Emulate a device viewport + user agent. 143+ presets: iPhone 12-16 (all sizes), SE, Pixel 5-9, Galaxy S21-S24, Z Fold/Flip, OnePlus, Xiaomi, Huawei, iPad Pro/Air/Mini, Galaxy Tab, Surface Pro, MacBook Air/Pro, Dell XPS, desktop resolutions (1080p/1440p/4K) with Chrome/Firefox/Safari/Edge UAs. Supports flexible naming: 'iPhone 14 Pro', 'iphone-14-pro', 'iphone14pro' all work. Pass empty device to list all available presets.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": "string",
+              "description":
+                  "Device name (e.g. 'iphone-16-pro-max', 'pixel-8', 'galaxy-s24-ultra', 'ipad-pro-11', 'macbook-pro-16', 'desktop-1080p'). Empty string lists all devices."
+            }
+          },
+          "required": ["device"]
+        }
+      },
+      {
+        "name": "generate_pdf",
+        "description": "Generate a PDF of the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "navigate",
+        "description": "Navigate to a URL",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string"}
+          },
+          "required": ["url"]
+        }
+      },
+      {
+        "name": "go_forward",
+        "description": "Navigate forward in browser history",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "reload",
+        "description": "Reload the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_attribute",
+        "description": "Get an HTML element's attribute value",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "attribute": {"type": "string"}
+          },
+          "required": ["key", "attribute"]
+        }
+      },
+      {
+        "name": "get_css_property",
+        "description": "Get computed CSS property of an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "property": {"type": "string"}
+          },
+          "required": ["key", "property"]
+        }
+      },
+      {
+        "name": "get_bounding_box",
+        "description": "Get element position and size",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "focus",
+        "description": "Focus an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "blur",
+        "description": "Remove focus from an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "count_elements",
+        "description": "Count elements matching a CSS selector",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {"type": "string"}
+          },
+          "required": ["selector"]
+        }
+      },
+      {
+        "name": "is_visible",
+        "description": "Check if an element is visible on page",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "get_page_source",
+        "description":
+            "Get the HTML source of the current page with optional cleaning",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description":
+                  "CSS selector to get HTML for a specific element only"
+            },
+            "remove_scripts": {
+              "type": "boolean",
+              "description": "Strip <script> tags"
+            },
+            "remove_styles": {
+              "type": "boolean",
+              "description": "Strip <style> tags"
+            },
+            "remove_comments": {
+              "type": "boolean",
+              "description": "Strip HTML comments"
+            },
+            "remove_meta": {
+              "type": "boolean",
+              "description": "Strip <meta> tags"
+            },
+            "minify": {"type": "boolean", "description": "Collapse whitespace"},
+            "clean_html": {
+              "type": "boolean",
+              "description":
+                  "Convenience: removes scripts, styles, comments, and meta tags"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_visible_text",
+        "description":
+            "Get only visible text content from the page (skips display:none, visibility:hidden elements). CDP only.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "CSS selector to scope text extraction"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_window_handles",
+        "description": "Get all browser window/tab handles",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "install_dialog_handler",
+        "description":
+            "Install auto-handler for JS dialogs (alert/confirm/prompt)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "auto_accept": {
+              "type": "boolean",
+              "description": "Auto-accept dialogs (default: true)"
+            }
+          }
+        }
+      },
+      {
+        "name": "wait_for_navigation",
+        "description": "Wait for page navigation to complete",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": {
+              "type": "integer",
+              "description": "Timeout in ms (default: 30000)"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_title",
+        "description": "Get the page title",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_geolocation",
+        "description": "Override browser geolocation",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "latitude": {"type": "number"},
+            "longitude": {"type": "number"}
+          },
+          "required": ["latitude", "longitude"]
+        }
+      },
+      {
+        "name": "set_color_scheme",
+        "description": "Set dark/light mode preference",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "enum": ["dark", "light"]
+            }
+          },
+          "required": ["scheme"]
+        }
+      },
+      {
+        "name": "block_urls",
+        "description":
+            "Block network requests matching URL patterns (ads, trackers, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "patterns": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "required": ["patterns"]
+        }
+      },
+      {
+        "name": "throttle_network",
+        "description": "Simulate slow network (3G, offline, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "latency_ms": {"type": "integer"},
+            "download_kbps": {"type": "integer"},
+            "upload_kbps": {"type": "integer"}
+          }
+        }
+      },
+      {
+        "name": "go_offline",
+        "description": "Simulate offline mode (no network)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "clear_browser_data",
+        "description":
+            "Clear all browser data (cookies, cache, localStorage, sessionStorage)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "upload_file",
+        "description": "Upload file(s) to a file input element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "CSS selector for input[type=file]"
+            },
+            "files": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "File paths to upload"
+            }
+          },
+          "required": ["selector", "files"]
+        }
+      },
+      {
+        "name": "handle_dialog",
+        "description":
+            "Accept or dismiss browser dialog (alert/confirm/prompt)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "accept": {"type": "boolean"},
+            "prompt_text": {"type": "string"}
+          },
+          "required": ["accept"]
+        }
+      },
+      {
+        "name": "get_frames",
+        "description": "List all iframes on the page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "eval_in_frame",
+        "description": "Execute JavaScript inside a specific iframe",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "frame_id": {"type": "string"},
+            "expression": {"type": "string"}
+          },
+          "required": ["frame_id", "expression"]
+        }
+      },
+      {
+        "name": "get_tabs",
+        "description": "List all open browser tabs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "new_tab",
+        "description": "Open a new browser tab with a URL",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string"}
+          },
+          "required": ["url"]
+        }
+      },
+      {
+        "name": "close_tab",
+        "description": "Close a browser tab",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {"type": "string"}
+          },
+          "required": ["target_id"]
+        }
+      },
+      {
+        "name": "switch_tab",
+        "description": "Switch to a different browser tab",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {"type": "string"}
+          },
+          "required": ["target_id"]
+        }
+      },
+      {
+        "name": "intercept_requests",
+        "description":
+            "Mock/intercept network requests matching a URL pattern (return custom responses)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {"type": "string"},
+            "status_code": {"type": "integer"},
+            "body": {"type": "string"},
+            "headers": {"type": "object"}
+          },
+          "required": ["url_pattern"]
+        }
+      },
+      {
+        "name": "clear_interceptions",
+        "description": "Remove all network request interceptions",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "accessibility_audit",
+        "description":
+            "Run accessibility audit (WCAG checks: missing alt, labels, heading order, contrast, lang, viewport)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "compare_screenshot",
+        "description":
+            "Visual regression test — compare current page to a baseline screenshot",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseline_path": {
+              "type": "string",
+              "description": "Path to baseline PNG image"
+            }
+          },
+          "required": ["baseline_path"]
+        }
+      },
+      {
+        "name": "wait_for_network_idle",
+        "description":
+            "Wait until all network requests complete (no pending fetch/XHR)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": {"type": "integer"},
+            "idle_ms": {"type": "integer"}
+          }
+        }
+      },
+      {
+        "name": "get_session_storage",
+        "description": "Get all sessionStorage key-value pairs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "type_text",
+        "description":
+            "Type text character by character (realistic typing simulation)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {"type": "string"}
+          },
+          "required": ["text"]
+        }
+      },
+      {
+        "name": "set_timezone",
+        "description": "Override browser timezone",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone (e.g. America/New_York)"
+            }
+          },
+          "required": ["timezone"]
+        }
+      },
+      {
+        "name": "highlight_element",
+        "description":
+            "Highlight an element with a colored overlay for visual debugging. Injects a temporary colored border+background on the matched element.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "CSS selector, element ID, or data-testid"
+            },
+            "ref": {
+              "type": "string",
+              "description": "Element ref from snapshot"
+            },
+            "color": {
+              "type": "string",
+              "description": "Highlight color (default: red)",
+              "default": "red"
+            },
+            "duration_ms": {
+              "type": "integer",
+              "description": "How long to show highlight in ms (default: 3000)",
+              "default": 3000
+            }
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "mock_response",
+        "description":
+            "Mock/intercept network responses for a URL pattern. Returns custom status code and body for matching requests.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {
+              "type": "string",
+              "description": "URL pattern to match (glob)"
+            },
+            "status_code": {
+              "type": "integer",
+              "description": "HTTP status code to return"
+            },
+            "body": {
+              "type": "string",
+              "description": "Response body to return"
+            },
+            "headers": {"type": "object", "description": "Response headers"}
+          },
+          "required": ["url_pattern", "status_code", "body"]
+        }
+      },
+      {
+        "name": "download_file",
+        "description": "Download a file from a URL and save it to disk.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string", "description": "URL to download"},
+            "save_path": {
+              "type": "string",
+              "description": "Local file path to save to"
+            }
+          },
+          "required": ["url", "save_path"]
+        }
+      },
+      {
+        "name": "cancel_operation",
+        "description":
+            "Cancel a running long operation (wait_for_element, wait_for_gone, wait_for_network_idle) by operation ID.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "operation_id": {
+              "type": "string",
+              "description": "ID of the operation to cancel"
+            }
+          },
+          "required": ["operation_id"]
+        }
+      },
+      {
+        "name": "highlight_elements",
+        "description":
+            "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "show": {
+              "type": "boolean",
+              "description": "true to show highlights, false to remove them",
+              "default": true
+            }
+          }
+        }
+      },
 
       // ======================== WebMCP ========================
-      {"name": "discover_page_tools", "description": "Discover all structured tools registered by the app. Works on ALL platforms: web (JS-registered tools, data-mcp-tool attributes, well-known manifests, auto-forms), mobile (native registered tools), desktop (registered tools). Use this to find callable tools on the current page/screen.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "call_page_tool", "description": "Call a discovered tool by name with parameters. Works on ALL platforms. Routes to the appropriate handler (JS function, form submit, native handler). Use discover_page_tools first to see available tools.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "description": "Tool name (from discover_page_tools)"}, "params": {"type": "object", "description": "Parameters to pass to the tool"}}, "required": ["name"]}},
-      {"name": "auto_discover_forms", "description": "Auto-detect ALL <form> elements on the page and convert them into callable tools with field names, labels, types, and validation info. CDP-only.", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "discover_page_tools",
+        "description":
+            "Discover all structured tools registered by the app. Works on ALL platforms: web (JS-registered tools, data-mcp-tool attributes, well-known manifests, auto-forms), mobile (native registered tools), desktop (registered tools). Use this to find callable tools on the current page/screen.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "call_page_tool",
+        "description":
+            "Call a discovered tool by name with parameters. Works on ALL platforms. Routes to the appropriate handler (JS function, form submit, native handler). Use discover_page_tools first to see available tools.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Tool name (from discover_page_tools)"
+            },
+            "params": {
+              "type": "object",
+              "description": "Parameters to pass to the tool"
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      {
+        "name": "auto_discover_forms",
+        "description":
+            "Auto-detect ALL <form> elements on the page and convert them into callable tools with field names, labels, types, and validation info. CDP-only.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Basic Inspection ========================
       {
@@ -663,7 +1388,8 @@ Elements with [ref] can be targeted: tap(ref: "button:Login"), enter_text(ref: "
             "mode": {
               "type": "string",
               "enum": ["text", "smart", "vision"],
-              "description": "Snapshot mode: text (default, token-efficient tree), smart (text + hints about visual content), vision (screenshot file for visual AI)"
+              "description":
+                  "Snapshot mode: text (default, token-efficient tree), smart (text + hints about visual content), vision (screenshot file for visual AI)"
             },
           },
         },
@@ -767,7 +1493,11 @@ For elements without text (icons, images), use coordinates from inspect():
         "inputSchema": {
           "type": "object",
           "properties": {
-            "ref": {"type": "string", "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"},
+            "ref": {
+              "type": "string",
+              "description":
+                  "Semantic ref ID from inspect_interactive (RECOMMENDED)"
+            },
             "key": {"type": "string", "description": "Widget key"},
             "text": {"type": "string", "description": "Text to find"},
             "x": {"type": "number", "description": "X coordinate (use with y)"},
@@ -801,7 +1531,8 @@ Option 3: Tap a TextField first, then enter_text(text: "value") without key/ref 
           "properties": {
             "ref": {
               "type": "string",
-              "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"
+              "description":
+                  "Semantic ref ID from inspect_interactive (RECOMMENDED)"
             },
             "key": {
               "type": "string",
@@ -813,20 +1544,144 @@ Option 3: Tap a TextField first, then enter_text(text: "value") without key/ref 
           "required": ["text"],
         },
       },
-      {"name": "scroll_to", "description": "Scroll to make an element visible", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Widget key"}, "text": {"type": "string", "description": "Text to find"}}}},
+      {
+        "name": "scroll_to",
+        "description": "Scroll to make an element visible",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Widget key"},
+            "text": {"type": "string", "description": "Text to find"}
+          }
+        }
+      },
 
       // ======================== Advanced Actions ========================
-      {"name": "long_press", "description": "Long press on an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Widget key"}, "text": {"type": "string", "description": "Text to find"}, "duration": {"type": "integer", "description": "Duration in ms (default: 500)"}}}},
-      {"name": "double_tap", "description": "Double tap on an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Widget key"}, "text": {"type": "string", "description": "Text to find"}}}},
-      {"name": "swipe", "description": "Perform a swipe gesture", "inputSchema": {"type": "object", "properties": {"direction": {"type": "string", "enum": ["up", "down", "left", "right"]}, "distance": {"type": "number", "description": "Swipe distance in pixels (default: 300)"}, "key": {"type": "string", "description": "Start from element (optional)"}}, "required": ["direction"]}},
-      {"name": "drag", "description": "Drag from one element to another", "inputSchema": {"type": "object", "properties": {"from_key": {"type": "string", "description": "Source element key"}, "to_key": {"type": "string", "description": "Target element key"}}, "required": ["from_key", "to_key"]}},
+      {
+        "name": "long_press",
+        "description": "Long press on an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Widget key"},
+            "text": {"type": "string", "description": "Text to find"},
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ms (default: 500)"
+            }
+          }
+        }
+      },
+      {
+        "name": "double_tap",
+        "description": "Double tap on an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Widget key"},
+            "text": {"type": "string", "description": "Text to find"}
+          }
+        }
+      },
+      {
+        "name": "swipe",
+        "description": "Perform a swipe gesture",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": ["up", "down", "left", "right"]
+            },
+            "distance": {
+              "type": "number",
+              "description": "Swipe distance in pixels (default: 300)"
+            },
+            "key": {
+              "type": "string",
+              "description": "Start from element (optional)"
+            }
+          },
+          "required": ["direction"]
+        }
+      },
+      {
+        "name": "drag",
+        "description": "Drag from one element to another",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from_key": {"type": "string", "description": "Source element key"},
+            "to_key": {"type": "string", "description": "Target element key"}
+          },
+          "required": ["from_key", "to_key"]
+        }
+      },
 
       // ======================== State & Validation ========================
-      {"name": "get_text_value", "description": "Get current value of a text field", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "TextField key"}}, "required": ["key"]}},
-      {"name": "get_checkbox_state", "description": "Get state of a checkbox or switch", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Checkbox/Switch key"}}, "required": ["key"]}},
-      {"name": "get_slider_value", "description": "Get current value of a slider", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Slider key"}}, "required": ["key"]}},
-      {"name": "wait_for_element", "description": "Wait for an element to appear", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Widget key"}, "text": {"type": "string", "description": "Text to find"}, "timeout": {"type": "integer", "description": "Timeout in ms (default: 5000)"}}}},
-      {"name": "wait_for_gone", "description": "Wait for an element to disappear", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Widget key"}, "text": {"type": "string", "description": "Text to find"}, "timeout": {"type": "integer", "description": "Timeout in ms (default: 5000)"}}}},
+      {
+        "name": "get_text_value",
+        "description": "Get current value of a text field",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "TextField key"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "get_checkbox_state",
+        "description": "Get state of a checkbox or switch",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Checkbox/Switch key"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "get_slider_value",
+        "description": "Get current value of a slider",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Slider key"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "wait_for_element",
+        "description": "Wait for an element to appear",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Widget key"},
+            "text": {"type": "string", "description": "Text to find"},
+            "timeout": {
+              "type": "integer",
+              "description": "Timeout in ms (default: 5000)"
+            }
+          }
+        }
+      },
+      {
+        "name": "wait_for_gone",
+        "description": "Wait for an element to disappear",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Widget key"},
+            "text": {"type": "string", "description": "Text to find"},
+            "timeout": {
+              "type": "integer",
+              "description": "Timeout in ms (default: 5000)"
+            }
+          }
+        }
+      },
 
       // ======================== Screenshot ========================
       {
@@ -857,25 +1712,113 @@ By default, saves screenshot to a temporary file and returns file path. Optional
         "inputSchema": {
           "type": "object",
           "properties": {
-            "save_to_file": {"type": "boolean", "description": "Save to file and return path (default: true, recommended)", "default": true},
-            "quality": {"type": "number", "description": "Image quality 0.1-1.0 (default: 0.5, lower = smaller file)"},
-            "max_width": {"type": "integer", "description": "Maximum width in pixels (default: 800, null for original size)"},
+            "save_to_file": {
+              "type": "boolean",
+              "description":
+                  "Save to file and return path (default: true, recommended)",
+              "default": true
+            },
+            "quality": {
+              "type": "number",
+              "description":
+                  "Image quality 0.1-1.0 (default: 0.5, lower = smaller file)"
+            },
+            "max_width": {
+              "type": "integer",
+              "description":
+                  "Maximum width in pixels (default: 800, null for original size)"
+            },
           },
         },
       },
-      {"name": "screenshot_region", "description": "Take a screenshot of a specific screen region. Defaults to saving as file to prevent token overflow.", "inputSchema": {"type": "object", "properties": {"x": {"type": "number", "description": "X coordinate of top-left corner"}, "y": {"type": "number", "description": "Y coordinate of top-left corner"}, "width": {"type": "number", "description": "Width of region"}, "height": {"type": "number", "description": "Height of region"}, "save_to_file": {"type": "boolean", "description": "Save to temp file instead of returning base64 (default: true)"}}, "required": ["x", "y", "width", "height"]}},
-      {"name": "screenshot_element", "description": "Take a screenshot of a specific element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element key"}, "text": {"type": "string", "description": "Text to find"}}}},
+      {
+        "name": "screenshot_region",
+        "description":
+            "Take a screenshot of a specific screen region. Defaults to saving as file to prevent token overflow.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "X coordinate of top-left corner"
+            },
+            "y": {
+              "type": "number",
+              "description": "Y coordinate of top-left corner"
+            },
+            "width": {"type": "number", "description": "Width of region"},
+            "height": {"type": "number", "description": "Height of region"},
+            "save_to_file": {
+              "type": "boolean",
+              "description":
+                  "Save to temp file instead of returning base64 (default: true)"
+            }
+          },
+          "required": ["x", "y", "width", "height"]
+        }
+      },
+      {
+        "name": "screenshot_element",
+        "description": "Take a screenshot of a specific element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element key"},
+            "text": {"type": "string", "description": "Text to find"}
+          }
+        }
+      },
 
       // ======================== Navigation ========================
-      {"name": "get_current_route", "description": "Get the current route name", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "go_back", "description": "Navigate back", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_navigation_stack", "description": "Get the navigation stack", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "get_current_route",
+        "description": "Get the current route name",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "go_back",
+        "description": "Navigate back",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_navigation_stack",
+        "description": "Get the navigation stack",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Debug & Logs ========================
-      {"name": "get_logs", "description": "Get application logs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_errors", "description": "Get application errors with pagination support", "inputSchema": {"type": "object", "properties": {"limit": {"type": "integer", "description": "Maximum number of errors to return (default: 50)"}, "offset": {"type": "integer", "description": "Number of errors to skip (default: 0)"}}}},
-      {"name": "clear_logs", "description": "Clear logs and errors", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_performance", "description": "Get performance metrics", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "get_logs",
+        "description": "Get application logs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_errors",
+        "description": "Get application errors with pagination support",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of errors to return (default: 50)"
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of errors to skip (default: 0)"
+            }
+          }
+        }
+      },
+      {
+        "name": "clear_logs",
+        "description": "Clear logs and errors",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_performance",
+        "description": "Get performance metrics",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== HTTP / Network Monitoring ========================
       {
@@ -906,16 +1849,46 @@ Each request includes: method, url, status_code, duration_ms, response_body (tru
         "inputSchema": {
           "type": "object",
           "properties": {
-            "limit": {"type": "integer", "description": "Maximum number of requests to return (default: 20)"},
+            "limit": {
+              "type": "integer",
+              "description":
+                  "Maximum number of requests to return (default: 20)"
+            },
           },
         },
       },
-      {"name": "enable_network_monitoring", "description": "Enable HTTP/network request monitoring. Call once before using get_network_requests.", "inputSchema": {"type": "object", "properties": {"enable": {"type": "boolean", "description": "Enable (true) or disable (false) monitoring. Default: true"}}}},
-      {"name": "clear_network_requests", "description": "Clear captured network request history", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "enable_network_monitoring",
+        "description":
+            "Enable HTTP/network request monitoring. Call once before using get_network_requests.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean",
+              "description":
+                  "Enable (true) or disable (false) monitoring. Default: true"
+            }
+          }
+        }
+      },
+      {
+        "name": "clear_network_requests",
+        "description": "Clear captured network request history",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Utilities ========================
-      {"name": "hot_reload", "description": "Trigger hot reload (fast, keeps app state)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "hot_restart", "description": "Trigger hot restart (slower, resets app state)", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "hot_reload",
+        "description": "Trigger hot reload (fast, keeps app state)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "hot_restart",
+        "description": "Trigger hot restart (slower, resets app state)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Native Platform ========================
       {
@@ -935,11 +1908,20 @@ Each request includes: method, url, status_code, duration_ms, response_body (tru
 [RETURNS]
 Screenshot saved to a temporary file (default) or base64-encoded PNG.
 This captures the ENTIRE device screen, not just the Flutter app content.""",
-        "inputSchema": {"type": "object", "properties": {"save_to_file": {"type": "boolean", "description": "Save to file and return path (default: true)"}}},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "save_to_file": {
+              "type": "boolean",
+              "description": "Save to file and return path (default: true)"
+            }
+          }
+        },
       },
       {
         "name": "native_tap",
-        "description": """Tap at device coordinates using OS-level input (bypasses Flutter).
+        "description":
+            """Tap at device coordinates using OS-level input (bypasses Flutter).
 
 [USE WHEN]
 • Interacting with native dialogs (photo picker, permission "Allow", share sheet)
@@ -955,7 +1937,20 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
 • Take a native_screenshot first to identify tap targets
 • iOS: No external tools needed (uses built-in osascript + Accessibility API)
 • The Simulator window must be visible and not minimized""",
-        "inputSchema": {"type": "object", "properties": {"x": {"type": "number", "description": "X coordinate in device pixels"}, "y": {"type": "number", "description": "Y coordinate in device pixels"}}, "required": ["x", "y"]},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "X coordinate in device pixels"
+            },
+            "y": {
+              "type": "number",
+              "description": "Y coordinate in device pixels"
+            }
+          },
+          "required": ["x", "y"]
+        },
       },
       {
         "name": "native_input_text",
@@ -974,7 +1969,13 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
 • The target text field must already be focused (tap it first with native_tap)
 • iOS method uses paste, so it replaces clipboard content
 • iOS paste confirmation dialog ("Allow Paste") is automatically dismissed""",
-        "inputSchema": {"type": "object", "properties": {"text": {"type": "string", "description": "Text to enter"}}, "required": ["text"]},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {"type": "string", "description": "Text to enter"}
+          },
+          "required": ["text"]
+        },
       },
       {
         "name": "native_swipe",
@@ -993,7 +1994,32 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
 • Coordinates are in device pixels
 • Take a native_screenshot first to plan your swipe path
 • iOS: Scrolls by page using accessibility actions (AXScrollUpByPage/AXScrollDownByPage)""",
-        "inputSchema": {"type": "object", "properties": {"start_x": {"type": "number", "description": "Start X in device pixels"}, "start_y": {"type": "number", "description": "Start Y in device pixels"}, "end_x": {"type": "number", "description": "End X in device pixels"}, "end_y": {"type": "number", "description": "End Y in device pixels"}, "duration": {"type": "integer", "description": "Swipe duration in ms (default: 300)"}}, "required": ["start_x", "start_y", "end_x", "end_y"]},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "start_x": {
+              "type": "number",
+              "description": "Start X in device pixels"
+            },
+            "start_y": {
+              "type": "number",
+              "description": "Start Y in device pixels"
+            },
+            "end_x": {
+              "type": "number",
+              "description": "End X in device pixels"
+            },
+            "end_y": {
+              "type": "number",
+              "description": "End Y in device pixels"
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Swipe duration in ms (default: 300)"
+            }
+          },
+          "required": ["start_x", "start_y", "end_x", "end_y"]
+        },
       },
 
       // ======================== Diagnose ========================
@@ -1029,65 +2055,571 @@ Detailed diagnostic report with:
 • Detected issues
 • Auto-fix results
 • Recommendations""",
-        "inputSchema": {"type": "object", "properties": {"project_path": {"type": "string", "description": "Path to Flutter project (default: current directory)"}, "auto_fix": {"type": "boolean", "description": "Automatically fix detected issues (default: true)"}}},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_path": {
+              "type": "string",
+              "description":
+                  "Path to Flutter project (default: current directory)"
+            },
+            "auto_fix": {
+              "type": "boolean",
+              "description": "Automatically fix detected issues (default: true)"
+            }
+          }
+        },
       },
-      {"name": "pub_search", "description": "Search Flutter packages on pub.dev", "inputSchema": {"type": "object", "properties": {"query": {"type": "string", "description": "Search query"}}, "required": ["query"]}},
+      {
+        "name": "pub_search",
+        "description": "Search Flutter packages on pub.dev",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {"type": "string", "description": "Search query"}
+          },
+          "required": ["query"]
+        }
+      },
 
       // ======================== Test Indicators ========================
-      {"name": "enable_test_indicators", "description": "Enable visual indicators for test actions (tap, swipe, long press, text input)", "inputSchema": {"type": "object", "properties": {"enabled": {"type": "boolean", "description": "Enable or disable indicators", "default": true}, "style": {"type": "string", "description": "Indicator style: minimal (fast, small), standard (default), detailed (slow, large with debug info)", "enum": ["minimal", "standard", "detailed"], "default": "standard"}}}},
-      {"name": "get_indicator_status", "description": "Get current test indicator status", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "enable_test_indicators",
+        "description":
+            "Enable visual indicators for test actions (tap, swipe, long press, text input)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable or disable indicators",
+              "default": true
+            },
+            "style": {
+              "type": "string",
+              "description":
+                  "Indicator style: minimal (fast, small), standard (default), detailed (slow, large with debug info)",
+              "enum": ["minimal", "standard", "detailed"],
+              "default": "standard"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_indicator_status",
+        "description": "Get current test indicator status",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Batch Operations ========================
-      {"name": "execute_batch", "description": "Execute multiple actions in sequence. Reduces round-trip latency for complex test flows.", "inputSchema": {"type": "object", "properties": {"actions": {"type": "array", "description": "List of actions to execute", "items": {"type": "object", "properties": {"action": {"type": "string", "description": "Action name (tap, enter_text, swipe, wait, screenshot, assert_visible, assert_text)"}, "key": {"type": "string"}, "text": {"type": "string"}, "value": {"type": "string"}, "direction": {"type": "string"}, "duration": {"type": "integer"}, "expected": {"type": "string"}}, "required": ["action"]}}, "stop_on_failure": {"type": "boolean", "description": "Stop execution on first failure (default: true)"}}, "required": ["actions"]}},
+      {
+        "name": "execute_batch",
+        "description":
+            "Execute multiple actions in sequence. Reduces round-trip latency for complex test flows.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "description": "List of actions to execute",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "description":
+                        "Action name (tap, enter_text, swipe, wait, screenshot, assert_visible, assert_text)"
+                  },
+                  "key": {"type": "string"},
+                  "text": {"type": "string"},
+                  "value": {"type": "string"},
+                  "direction": {"type": "string"},
+                  "duration": {"type": "integer"},
+                  "expected": {"type": "string"}
+                },
+                "required": ["action"]
+              }
+            },
+            "stop_on_failure": {
+              "type": "boolean",
+              "description": "Stop execution on first failure (default: true)"
+            }
+          },
+          "required": ["actions"]
+        }
+      },
 
       // ======================== Coordinate-based Actions ========================
-      {"name": "tap_at", "description": "Tap at specific screen coordinates", "inputSchema": {"type": "object", "properties": {"x": {"type": "number", "description": "X coordinate"}, "y": {"type": "number", "description": "Y coordinate"}}, "required": ["x", "y"]}},
-      {"name": "long_press_at", "description": "Long press at specific screen coordinates", "inputSchema": {"type": "object", "properties": {"x": {"type": "number", "description": "X coordinate"}, "y": {"type": "number", "description": "Y coordinate"}, "duration": {"type": "integer", "description": "Duration in ms (default: 500)"}}, "required": ["x", "y"]}},
-      {"name": "swipe_coordinates", "description": "Swipe from one coordinate to another", "inputSchema": {"type": "object", "properties": {"start_x": {"type": "number", "description": "Start X coordinate"}, "start_y": {"type": "number", "description": "Start Y coordinate"}, "end_x": {"type": "number", "description": "End X coordinate"}, "end_y": {"type": "number", "description": "End Y coordinate"}, "duration": {"type": "integer", "description": "Duration in ms (default: 300)"}}, "required": ["start_x", "start_y", "end_x", "end_y"]}},
-      {"name": "edge_swipe", "description": "Swipe from screen edge (for drawer menus, back gestures)", "inputSchema": {"type": "object", "properties": {"edge": {"type": "string", "enum": ["left", "right", "top", "bottom"], "description": "Screen edge to start from"}, "direction": {"type": "string", "enum": ["up", "down", "left", "right"], "description": "Swipe direction"}, "distance": {"type": "number", "description": "Swipe distance in pixels (default: 200)"}}, "required": ["edge", "direction"]}},
-      {"name": "gesture", "description": "Perform a gesture with preset or custom coordinates. Presets: drawer_open, drawer_close, pull_refresh, page_back, swipe_left, swipe_right", "inputSchema": {"type": "object", "properties": {"preset": {"type": "string", "enum": ["drawer_open", "drawer_close", "pull_refresh", "page_back", "swipe_left", "swipe_right"], "description": "Use a predefined gesture"}, "from_x": {"type": "number", "description": "Custom start X (0.0-1.0 as ratio, or pixels)"}, "from_y": {"type": "number", "description": "Custom start Y (0.0-1.0 as ratio, or pixels)"}, "to_x": {"type": "number", "description": "Custom end X (0.0-1.0 as ratio, or pixels)"}, "to_y": {"type": "number", "description": "Custom end Y (0.0-1.0 as ratio, or pixels)"}, "duration": {"type": "integer", "description": "Gesture duration in ms (default: 300)"}}}},
-      {"name": "wait_for_idle", "description": "Wait for the app to become idle (no animations, no pending frames)", "inputSchema": {"type": "object", "properties": {"timeout": {"type": "integer", "description": "Maximum wait time in ms (default: 5000)"}, "min_idle_time": {"type": "integer", "description": "Minimum idle duration to confirm stability (default: 500)"}}}},
+      {
+        "name": "tap_at",
+        "description": "Tap at specific screen coordinates",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {"type": "number", "description": "X coordinate"},
+            "y": {"type": "number", "description": "Y coordinate"}
+          },
+          "required": ["x", "y"]
+        }
+      },
+      {
+        "name": "long_press_at",
+        "description": "Long press at specific screen coordinates",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {"type": "number", "description": "X coordinate"},
+            "y": {"type": "number", "description": "Y coordinate"},
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ms (default: 500)"
+            }
+          },
+          "required": ["x", "y"]
+        }
+      },
+      {
+        "name": "swipe_coordinates",
+        "description": "Swipe from one coordinate to another",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "start_x": {"type": "number", "description": "Start X coordinate"},
+            "start_y": {"type": "number", "description": "Start Y coordinate"},
+            "end_x": {"type": "number", "description": "End X coordinate"},
+            "end_y": {"type": "number", "description": "End Y coordinate"},
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ms (default: 300)"
+            }
+          },
+          "required": ["start_x", "start_y", "end_x", "end_y"]
+        }
+      },
+      {
+        "name": "edge_swipe",
+        "description":
+            "Swipe from screen edge (for drawer menus, back gestures)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "edge": {
+              "type": "string",
+              "enum": ["left", "right", "top", "bottom"],
+              "description": "Screen edge to start from"
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["up", "down", "left", "right"],
+              "description": "Swipe direction"
+            },
+            "distance": {
+              "type": "number",
+              "description": "Swipe distance in pixels (default: 200)"
+            }
+          },
+          "required": ["edge", "direction"]
+        }
+      },
+      {
+        "name": "gesture",
+        "description":
+            "Perform a gesture with preset or custom coordinates. Presets: drawer_open, drawer_close, pull_refresh, page_back, swipe_left, swipe_right",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "drawer_open",
+                "drawer_close",
+                "pull_refresh",
+                "page_back",
+                "swipe_left",
+                "swipe_right"
+              ],
+              "description": "Use a predefined gesture"
+            },
+            "from_x": {
+              "type": "number",
+              "description": "Custom start X (0.0-1.0 as ratio, or pixels)"
+            },
+            "from_y": {
+              "type": "number",
+              "description": "Custom start Y (0.0-1.0 as ratio, or pixels)"
+            },
+            "to_x": {
+              "type": "number",
+              "description": "Custom end X (0.0-1.0 as ratio, or pixels)"
+            },
+            "to_y": {
+              "type": "number",
+              "description": "Custom end Y (0.0-1.0 as ratio, or pixels)"
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Gesture duration in ms (default: 300)"
+            }
+          }
+        }
+      },
+      {
+        "name": "wait_for_idle",
+        "description":
+            "Wait for the app to become idle (no animations, no pending frames)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout": {
+              "type": "integer",
+              "description": "Maximum wait time in ms (default: 5000)"
+            },
+            "min_idle_time": {
+              "type": "integer",
+              "description":
+                  "Minimum idle duration to confirm stability (default: 500)"
+            }
+          }
+        }
+      },
 
       // ======================== Smart Scroll ========================
-      {"name": "scroll_until_visible", "description": "Scroll in a direction until target element becomes visible", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Target element key"}, "text": {"type": "string", "description": "Target element text"}, "direction": {"type": "string", "enum": ["up", "down", "left", "right"], "description": "Scroll direction (default: down)"}, "max_scrolls": {"type": "integer", "description": "Maximum scroll attempts (default: 10)"}, "scrollable_key": {"type": "string", "description": "Key of the scrollable container (optional)"}}}},
+      {
+        "name": "scroll_until_visible",
+        "description":
+            "Scroll in a direction until target element becomes visible",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Target element key"},
+            "text": {"type": "string", "description": "Target element text"},
+            "direction": {
+              "type": "string",
+              "enum": ["up", "down", "left", "right"],
+              "description": "Scroll direction (default: down)"
+            },
+            "max_scrolls": {
+              "type": "integer",
+              "description": "Maximum scroll attempts (default: 10)"
+            },
+            "scrollable_key": {
+              "type": "string",
+              "description": "Key of the scrollable container (optional)"
+            }
+          }
+        }
+      },
 
       // ======================== Assertions ========================
-      {"name": "assert_visible", "description": "Assert that an element is visible on screen", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element key"}, "text": {"type": "string", "description": "Element text"}, "timeout": {"type": "integer", "description": "Wait timeout in ms (default: 5000)"}}}},
-      {"name": "assert_not_visible", "description": "Assert that an element is NOT visible on screen", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element key"}, "text": {"type": "string", "description": "Element text"}, "timeout": {"type": "integer", "description": "Wait timeout in ms (default: 5000)"}}}},
-      {"name": "assert_text", "description": "Assert that an element contains specific text", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element key"}, "expected": {"type": "string", "description": "Expected text content"}, "contains": {"type": "boolean", "description": "Use contains instead of equals (default: false)"}}, "required": ["key", "expected"]}},
-      {"name": "assert_element_count", "description": "Assert the count of elements matching criteria", "inputSchema": {"type": "object", "properties": {"type": {"type": "string", "description": "Widget type to count"}, "text": {"type": "string", "description": "Text to match"}, "expected_count": {"type": "integer", "description": "Expected count"}, "min_count": {"type": "integer", "description": "Minimum count (alternative to exact)"}, "max_count": {"type": "integer", "description": "Maximum count (alternative to exact)"}}}},
-      {"name": "assert_batch", "description": "Run multiple assertions in a single call. Returns all results (does not fail-fast).", "inputSchema": {"type": "object", "properties": {"assertions": {"type": "array", "description": "List of assertions to run", "items": {"type": "object", "properties": {"type": {"type": "string", "enum": ["visible", "not_visible", "text", "element_count"], "description": "Assertion type"}, "key": {"type": "string", "description": "Element key"}, "text": {"type": "string", "description": "Text to find (for visible/not_visible) or expected text (for text assertion)"}, "expected": {"type": "string", "description": "Expected value for text assertion"}, "count": {"type": "integer", "description": "Expected count for element_count assertion"}}, "required": ["type"]}}}, "required": ["assertions"]}},
+      {
+        "name": "assert_visible",
+        "description": "Assert that an element is visible on screen",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element key"},
+            "text": {"type": "string", "description": "Element text"},
+            "timeout": {
+              "type": "integer",
+              "description": "Wait timeout in ms (default: 5000)"
+            }
+          }
+        }
+      },
+      {
+        "name": "assert_not_visible",
+        "description": "Assert that an element is NOT visible on screen",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element key"},
+            "text": {"type": "string", "description": "Element text"},
+            "timeout": {
+              "type": "integer",
+              "description": "Wait timeout in ms (default: 5000)"
+            }
+          }
+        }
+      },
+      {
+        "name": "assert_text",
+        "description": "Assert that an element contains specific text",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element key"},
+            "expected": {
+              "type": "string",
+              "description": "Expected text content"
+            },
+            "contains": {
+              "type": "boolean",
+              "description": "Use contains instead of equals (default: false)"
+            }
+          },
+          "required": ["key", "expected"]
+        }
+      },
+      {
+        "name": "assert_element_count",
+        "description": "Assert the count of elements matching criteria",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "description": "Widget type to count"},
+            "text": {"type": "string", "description": "Text to match"},
+            "expected_count": {
+              "type": "integer",
+              "description": "Expected count"
+            },
+            "min_count": {
+              "type": "integer",
+              "description": "Minimum count (alternative to exact)"
+            },
+            "max_count": {
+              "type": "integer",
+              "description": "Maximum count (alternative to exact)"
+            }
+          }
+        }
+      },
+      {
+        "name": "assert_batch",
+        "description":
+            "Run multiple assertions in a single call. Returns all results (does not fail-fast).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "assertions": {
+              "type": "array",
+              "description": "List of assertions to run",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["visible", "not_visible", "text", "element_count"],
+                    "description": "Assertion type"
+                  },
+                  "key": {"type": "string", "description": "Element key"},
+                  "text": {
+                    "type": "string",
+                    "description":
+                        "Text to find (for visible/not_visible) or expected text (for text assertion)"
+                  },
+                  "expected": {
+                    "type": "string",
+                    "description": "Expected value for text assertion"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "Expected count for element_count assertion"
+                  }
+                },
+                "required": ["type"]
+              }
+            }
+          },
+          "required": ["assertions"]
+        }
+      },
 
       // ======================== Page State ========================
-      {"name": "get_page_state", "description": "Get complete page state snapshot (route, scroll position, focused element, keyboard, loading indicators)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_interactable_elements", "description": "Get all interactable elements on current screen with suggested actions", "inputSchema": {"type": "object", "properties": {"include_positions": {"type": "boolean", "description": "Include x/y positions (default: true)"}}}},
+      {
+        "name": "get_page_state",
+        "description":
+            "Get complete page state snapshot (route, scroll position, focused element, keyboard, loading indicators)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_interactable_elements",
+        "description":
+            "Get all interactable elements on current screen with suggested actions",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_positions": {
+              "type": "boolean",
+              "description": "Include x/y positions (default: true)"
+            }
+          }
+        }
+      },
 
       // ======================== Performance & Memory ========================
-      {"name": "get_frame_stats", "description": "Get frame rendering statistics (FPS, jank, build/raster times)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_memory_stats", "description": "Get memory usage statistics (heap, external)", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "get_frame_stats",
+        "description":
+            "Get frame rendering statistics (FPS, jank, build/raster times)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_memory_stats",
+        "description": "Get memory usage statistics (heap, external)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== Smart Diagnosis ========================
-      {"name": "diagnose", "description": "Analyze logs and UI state to detect issues and provide fix suggestions. Returns structured diagnosis with issues, suggestions, and next steps.", "inputSchema": {"type": "object", "properties": {"scope": {"type": "string", "enum": ["all", "logs", "ui", "performance"], "description": "Diagnosis scope (default: all)"}, "log_lines": {"type": "integer", "description": "Number of recent log lines to analyze (default: 100)"}, "include_screenshot": {"type": "boolean", "description": "Include screenshot in diagnosis (default: false)"}}}},
+      {
+        "name": "diagnose",
+        "description":
+            "Analyze logs and UI state to detect issues and provide fix suggestions. Returns structured diagnosis with issues, suggestions, and next steps.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "enum": ["all", "logs", "ui", "performance"],
+              "description": "Diagnosis scope (default: all)"
+            },
+            "log_lines": {
+              "type": "integer",
+              "description":
+                  "Number of recent log lines to analyze (default: 100)"
+            },
+            "include_screenshot": {
+              "type": "boolean",
+              "description": "Include screenshot in diagnosis (default: false)"
+            }
+          }
+        }
+      },
 
       // ======================== Auth Tools ========================
-      {"name": "auth_inject_session", "description": "Inject auth token into app storage (cookie, localStorage, or shared_preferences).", "inputSchema": {"type": "object", "properties": {"token": {"type": "string", "description": "Auth token to inject"}, "key": {"type": "string", "description": "Storage key (default: auth_token)"}, "storage_type": {"type": "string", "enum": ["cookie", "local_storage", "shared_preferences"], "description": "Storage type"}}, "required": ["token"]}},
-      {"name": "auth_biometric", "description": "Simulate biometric authentication on iOS simulator or Android emulator.", "inputSchema": {"type": "object", "properties": {"action": {"type": "string", "enum": ["enroll", "match", "fail"], "description": "Biometric action"}}, "required": ["action"]}},
-      {"name": "auth_otp", "description": "Generate TOTP code from secret, or read OTP from simulator clipboard.", "inputSchema": {"type": "object", "properties": {"secret": {"type": "string", "description": "TOTP secret (base32). If omitted, reads clipboard."}, "digits": {"type": "integer", "description": "OTP digits (default: 6)"}, "period": {"type": "integer", "description": "TOTP period in seconds (default: 30)"}}}},
-      {"name": "auth_deeplink", "description": "Open a deep link URL on the simulator/emulator.", "inputSchema": {"type": "object", "properties": {"url": {"type": "string", "description": "Deep link URL to open"}, "device": {"type": "string", "description": "Device identifier"}}, "required": ["url"]}},
+      {
+        "name": "auth_inject_session",
+        "description":
+            "Inject auth token into app storage (cookie, localStorage, or shared_preferences).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "token": {"type": "string", "description": "Auth token to inject"},
+            "key": {
+              "type": "string",
+              "description": "Storage key (default: auth_token)"
+            },
+            "storage_type": {
+              "type": "string",
+              "enum": ["cookie", "local_storage", "shared_preferences"],
+              "description": "Storage type"
+            }
+          },
+          "required": ["token"]
+        }
+      },
+      {
+        "name": "auth_biometric",
+        "description":
+            "Simulate biometric authentication on iOS simulator or Android emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": ["enroll", "match", "fail"],
+              "description": "Biometric action"
+            }
+          },
+          "required": ["action"]
+        }
+      },
+      {
+        "name": "auth_otp",
+        "description":
+            "Generate TOTP code from secret, or read OTP from simulator clipboard.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "secret": {
+              "type": "string",
+              "description":
+                  "TOTP secret (base32). If omitted, reads clipboard."
+            },
+            "digits": {
+              "type": "integer",
+              "description": "OTP digits (default: 6)"
+            },
+            "period": {
+              "type": "integer",
+              "description": "TOTP period in seconds (default: 30)"
+            }
+          }
+        }
+      },
+      {
+        "name": "auth_deeplink",
+        "description": "Open a deep link URL on the simulator/emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string", "description": "Deep link URL to open"},
+            "device": {"type": "string", "description": "Device identifier"}
+          },
+          "required": ["url"]
+        }
+      },
 
       // ======================== Recording & Code Generation ========================
-      {"name": "record_start", "description": "Start recording tool calls for test code generation.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "record_stop", "description": "Stop recording and return recorded steps.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "record_export", "description": "Export recorded steps as test code in various formats.", "inputSchema": {"type": "object", "properties": {"format": {"type": "string", "enum": ["jest", "pytest", "dart_test", "playwright", "cypress", "selenium", "xcuitest", "espresso", "json"], "description": "Export format: jest (JS), pytest (Python), dart_test (Dart), playwright (JS), cypress (JS), selenium (Python), xcuitest (Swift), espresso (Kotlin), json (raw)"}}, "required": ["format"]}},
+      {
+        "name": "record_start",
+        "description": "Start recording tool calls for test code generation.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "record_stop",
+        "description": "Stop recording and return recorded steps.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "record_export",
+        "description": "Export recorded steps as test code in various formats.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": [
+                "jest",
+                "pytest",
+                "dart_test",
+                "playwright",
+                "cypress",
+                "selenium",
+                "xcuitest",
+                "espresso",
+                "json"
+              ],
+              "description":
+                  "Export format: jest (JS), pytest (Python), dart_test (Dart), playwright (JS), cypress (JS), selenium (Python), xcuitest (Swift), espresso (Kotlin), json (raw)"
+            }
+          },
+          "required": ["format"]
+        }
+      },
 
       // ======================== Video Recording ========================
-      {"name": "video_start", "description": "Start screen recording on simulator/emulator.", "inputSchema": {"type": "object", "properties": {"device": {"type": "string", "description": "Device identifier"}, "path": {"type": "string", "description": "Output file path"}}}},
-      {"name": "video_stop", "description": "Stop screen recording and return the video file path.", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "video_start",
+        "description": "Start screen recording on simulator/emulator.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "device": {"type": "string", "description": "Device identifier"},
+            "path": {"type": "string", "description": "Output file path"}
+          }
+        }
+      },
+      {
+        "name": "video_stop",
+        "description": "Stop screen recording and return the video file path.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // ======================== AI Visual Verification ========================
       {
         "name": "visual_verify",
-        "description": """Take a screenshot AND text snapshot for AI visual verification.
+        "description":
+            """Take a screenshot AND text snapshot for AI visual verification.
 
 Returns both a screenshot file and structured text snapshot so the calling AI can verify
 the UI matches the expected description. Optionally checks for specific elements.
@@ -1100,7 +2632,26 @@ the UI matches the expected description. Optionally checks for specific elements
 [RETURNS]
 Combined result with screenshot path, text snapshot, element matching results, and a hint
 for the AI to compare against the provided description.""",
-        "inputSchema": {"type": "object", "properties": {"description": {"type": "string", "description": "What the UI should look like (e.g., 'login form with email and password fields')"}, "check_elements": {"type": "array", "items": {"type": "string"}, "description": "Specific elements that should be visible (matched against snapshot refs and text)"}, "quality": {"type": "number", "description": "Screenshot quality 0-1 (default 0.5)"}}},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description":
+                  "What the UI should look like (e.g., 'login form with email and password fields')"
+            },
+            "check_elements": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description":
+                  "Specific elements that should be visible (matched against snapshot refs and text)"
+            },
+            "quality": {
+              "type": "number",
+              "description": "Screenshot quality 0-1 (default 0.5)"
+            }
+          }
+        },
       },
       {
         "name": "visual_diff",
@@ -1113,20 +2664,142 @@ can visually compare them. Also returns text snapshots for structural comparison
 • Visual regression testing
 • Comparing before/after states
 • Verifying no unintended UI changes""",
-        "inputSchema": {"type": "object", "properties": {"baseline_path": {"type": "string", "description": "Path to baseline screenshot file"}, "description": {"type": "string", "description": "What to focus on when comparing (optional)"}, "quality": {"type": "number", "description": "Screenshot quality 0-1 (default 0.5)"}}, "required": ["baseline_path"]},
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseline_path": {
+              "type": "string",
+              "description": "Path to baseline screenshot file"
+            },
+            "description": {
+              "type": "string",
+              "description": "What to focus on when comparing (optional)"
+            },
+            "quality": {
+              "type": "number",
+              "description": "Screenshot quality 0-1 (default 0.5)"
+            }
+          },
+          "required": ["baseline_path"]
+        },
       },
 
       // ======================== Parallel Multi-Device ========================
-      {"name": "parallel_snapshot", "description": "Take snapshots from multiple sessions in parallel.", "inputSchema": {"type": "object", "properties": {"session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"}}}},
-      {"name": "parallel_tap", "description": "Execute tap on multiple sessions in parallel.", "inputSchema": {"type": "object", "properties": {"ref": {"type": "string", "description": "Element ref to tap"}, "key": {"type": "string", "description": "Element key to tap"}, "text": {"type": "string", "description": "Element text to tap"}, "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"}}}},
+      {
+        "name": "parallel_snapshot",
+        "description": "Take snapshots from multiple sessions in parallel.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Session IDs (default: all)"
+            }
+          }
+        }
+      },
+      {
+        "name": "parallel_tap",
+        "description": "Execute tap on multiple sessions in parallel.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "ref": {"type": "string", "description": "Element ref to tap"},
+            "key": {"type": "string", "description": "Element key to tap"},
+            "text": {"type": "string", "description": "Element text to tap"},
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Session IDs (default: all)"
+            }
+          }
+        }
+      },
 
       // ======================== Cross-Platform Test ========================
-      {"name": "multi_platform_test", "description": "Run the same test steps across all connected platforms simultaneously. Great for cross-platform verification.", "inputSchema": {"type": "object", "properties": {"actions": {"type": "array", "items": {"type": "object", "properties": {"tool": {"type": "string"}, "args": {"type": "object"}}}, "description": "Sequence of tool calls to execute on each platform"}, "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Specific sessions to test (default: all connected)"}, "stop_on_failure": {"type": "boolean", "description": "Stop all platforms on first failure (default: false)"}}, "required": ["actions"]}},
-      {"name": "compare_platforms", "description": "Take snapshots from all connected platforms and compare element presence. Identifies cross-platform inconsistencies.", "inputSchema": {"type": "object", "properties": {"session_ids": {"type": "array", "items": {"type": "string"}, "description": "Specific sessions to compare (default: all connected)"}}}},
+      {
+        "name": "multi_platform_test",
+        "description":
+            "Run the same test steps across all connected platforms simultaneously. Great for cross-platform verification.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tool": {"type": "string"},
+                  "args": {"type": "object"}
+                }
+              },
+              "description":
+                  "Sequence of tool calls to execute on each platform"
+            },
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description":
+                  "Specific sessions to test (default: all connected)"
+            },
+            "stop_on_failure": {
+              "type": "boolean",
+              "description":
+                  "Stop all platforms on first failure (default: false)"
+            }
+          },
+          "required": ["actions"]
+        }
+      },
+      {
+        "name": "compare_platforms",
+        "description":
+            "Take snapshots from all connected platforms and compare element presence. Identifies cross-platform inconsistencies.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description":
+                  "Specific sessions to compare (default: all connected)"
+            }
+          }
+        }
+      },
 
       // ======================== Plugins & Reports ========================
-      {"name": "list_plugins", "description": "List all loaded custom plugin tools with their descriptions.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "generate_report", "description": "Generate a test report from recorded test steps and assertions. Supports HTML, JSON, and Markdown formats.", "inputSchema": {"type": "object", "properties": {"format": {"type": "string", "enum": ["html", "json", "markdown"], "description": "Report format (default: html)"}, "title": {"type": "string", "description": "Report title"}, "output_path": {"type": "string", "description": "Where to save the report file"}, "include_screenshots": {"type": "boolean", "description": "Embed screenshots in report (default: true)"}}}},
+      {
+        "name": "list_plugins",
+        "description":
+            "List all loaded custom plugin tools with their descriptions.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "generate_report",
+        "description":
+            "Generate a test report from recorded test steps and assertions. Supports HTML, JSON, and Markdown formats.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": ["html", "json", "markdown"],
+              "description": "Report format (default: html)"
+            },
+            "title": {"type": "string", "description": "Report title"},
+            "output_path": {
+              "type": "string",
+              "description": "Where to save the report file"
+            },
+            "include_screenshots": {
+              "type": "boolean",
+              "description": "Embed screenshots in report (default: true)"
+            }
+          }
+        }
+      },
     ];
   }
 

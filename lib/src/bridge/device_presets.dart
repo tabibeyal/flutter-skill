@@ -125,15 +125,20 @@ Map<String, DevicePreset> _buildPresets() {
   add('iphone-8', 375, 667, 2.0, true, true, _iosUA(ios15));
 
   // ── Google Pixel ─────────────────────────────────────────
-  add('pixel-9-pro-xl', 412, 915, 3.5, true, true, _androidUA('Pixel 9 Pro XL', '15'));
-  add('pixel-9-pro', 412, 915, 3.0, true, true, _androidUA('Pixel 9 Pro', '15'));
+  add('pixel-9-pro-xl', 412, 915, 3.5, true, true,
+      _androidUA('Pixel 9 Pro XL', '15'));
+  add('pixel-9-pro', 412, 915, 3.0, true, true,
+      _androidUA('Pixel 9 Pro', '15'));
   add('pixel-9', 412, 915, 2.625, true, true, _androidUA('Pixel 9', '15'));
-  add('pixel-8-pro', 412, 915, 3.5, true, true, _androidUA('Pixel 8 Pro', '14'));
+  add('pixel-8-pro', 412, 915, 3.5, true, true,
+      _androidUA('Pixel 8 Pro', '14'));
   add('pixel-8', 412, 915, 2.625, true, true, _androidUA('Pixel 8', '14'));
-  add('pixel-7-pro', 412, 892, 3.5, true, true, _androidUA('Pixel 7 Pro', '14'));
+  add('pixel-7-pro', 412, 892, 3.5, true, true,
+      _androidUA('Pixel 7 Pro', '14'));
   add('pixel-7', 412, 915, 2.625, true, true, _androidUA('Pixel 7', '14'));
   add('pixel-7a', 412, 915, 2.625, true, true, _androidUA('Pixel 7a', '14'));
-  add('pixel-6-pro', 412, 892, 3.5, true, true, _androidUA('Pixel 6 Pro', '14'));
+  add('pixel-6-pro', 412, 892, 3.5, true, true,
+      _androidUA('Pixel 6 Pro', '14'));
   add('pixel-6', 412, 915, 2.625, true, true, _androidUA('Pixel 6', '14'));
   add('pixel-6a', 412, 892, 2.625, true, true, _androidUA('Pixel 6a', '14'));
   add('pixel-5', 393, 851, 2.75, true, true, _androidUA('Pixel 5', '14'));
@@ -141,26 +146,40 @@ Map<String, DevicePreset> _buildPresets() {
   add('pixel-4-xl', 412, 869, 3.5, true, true, _androidUA('Pixel 4 XL', '13'));
 
   // ── Samsung Galaxy S ─────────────────────────────────────
-  add('galaxy-s24-ultra', 412, 915, 3.75, true, true, _androidUA('SM-S928B', '15'));
-  add('galaxy-s24-plus', 412, 915, 3.0, true, true, _androidUA('SM-S926B', '15'));
+  add('galaxy-s24-ultra', 412, 915, 3.75, true, true,
+      _androidUA('SM-S928B', '15'));
+  add('galaxy-s24-plus', 412, 915, 3.0, true, true,
+      _androidUA('SM-S926B', '15'));
   add('galaxy-s24', 412, 915, 2.625, true, true, _androidUA('SM-S921B', '15'));
-  add('galaxy-s23-ultra', 412, 915, 3.75, true, true, _androidUA('SM-S918B', '14'));
-  add('galaxy-s23-plus', 412, 915, 3.0, true, true, _androidUA('SM-S916B', '14'));
+  add('galaxy-s23-ultra', 412, 915, 3.75, true, true,
+      _androidUA('SM-S918B', '14'));
+  add('galaxy-s23-plus', 412, 915, 3.0, true, true,
+      _androidUA('SM-S916B', '14'));
   add('galaxy-s23', 412, 915, 2.625, true, true, _androidUA('SM-S911B', '14'));
-  add('galaxy-s22-ultra', 412, 915, 3.75, true, true, _androidUA('SM-S908B', '14'));
-  add('galaxy-s22-plus', 412, 915, 3.0, true, true, _androidUA('SM-S906B', '14'));
+  add('galaxy-s22-ultra', 412, 915, 3.75, true, true,
+      _androidUA('SM-S908B', '14'));
+  add('galaxy-s22-plus', 412, 915, 3.0, true, true,
+      _androidUA('SM-S906B', '14'));
   add('galaxy-s22', 412, 915, 2.625, true, true, _androidUA('SM-S901B', '14'));
-  add('galaxy-s21-ultra', 412, 915, 3.75, true, true, _androidUA('SM-G998B', '14'));
-  add('galaxy-s21-plus', 412, 915, 3.0, true, true, _androidUA('SM-G996B', '14'));
+  add('galaxy-s21-ultra', 412, 915, 3.75, true, true,
+      _androidUA('SM-G998B', '14'));
+  add('galaxy-s21-plus', 412, 915, 3.0, true, true,
+      _androidUA('SM-G996B', '14'));
   add('galaxy-s21', 412, 915, 2.625, true, true, _androidUA('SM-G991B', '14'));
 
   // ── Samsung Galaxy Z ─────────────────────────────────────
-  add('galaxy-z-fold-5', 373, 841, 3.0, true, true, _androidUA('SM-F946B', '14'));
-  add('galaxy-z-fold-5-inner', 882, 1104, 2.0, true, true, _androidUA('SM-F946B', '14'));
-  add('galaxy-z-fold-4', 373, 841, 3.0, true, true, _androidUA('SM-F936B', '14'));
-  add('galaxy-z-fold-4-inner', 882, 1104, 2.0, true, true, _androidUA('SM-F936B', '14'));
-  add('galaxy-z-flip-5', 412, 915, 3.0, true, true, _androidUA('SM-F731B', '14'));
-  add('galaxy-z-flip-4', 412, 915, 3.0, true, true, _androidUA('SM-F721B', '14'));
+  add('galaxy-z-fold-5', 373, 841, 3.0, true, true,
+      _androidUA('SM-F946B', '14'));
+  add('galaxy-z-fold-5-inner', 882, 1104, 2.0, true, true,
+      _androidUA('SM-F946B', '14'));
+  add('galaxy-z-fold-4', 373, 841, 3.0, true, true,
+      _androidUA('SM-F936B', '14'));
+  add('galaxy-z-fold-4-inner', 882, 1104, 2.0, true, true,
+      _androidUA('SM-F936B', '14'));
+  add('galaxy-z-flip-5', 412, 915, 3.0, true, true,
+      _androidUA('SM-F731B', '14'));
+  add('galaxy-z-flip-4', 412, 915, 3.0, true, true,
+      _androidUA('SM-F721B', '14'));
 
   // ── Samsung Galaxy A ─────────────────────────────────────
   add('galaxy-a54', 412, 915, 2.625, true, true, _androidUA('SM-A546B', '14'));
@@ -171,24 +190,33 @@ Map<String, DevicePreset> _buildPresets() {
   add('oneplus-12', 412, 915, 3.5, true, true, _androidUA('CPH2573', '14'));
   add('oneplus-11', 412, 915, 3.5, true, true, _androidUA('CPH2449', '14'));
   add('oneplus-10-pro', 412, 915, 3.5, true, true, _androidUA('NE2210', '14'));
-  add('oneplus-nord-3', 412, 915, 2.625, true, true, _androidUA('CPH2493', '14'));
+  add('oneplus-nord-3', 412, 915, 2.625, true, true,
+      _androidUA('CPH2493', '14'));
 
   // ── Xiaomi ───────────────────────────────────────────────
-  add('xiaomi-14-pro', 412, 915, 3.5, true, true, _androidUA('24015RN21C', '14'));
+  add('xiaomi-14-pro', 412, 915, 3.5, true, true,
+      _androidUA('24015RN21C', '14'));
   add('xiaomi-13-pro', 412, 915, 3.5, true, true, _androidUA('2210132C', '14'));
   add('xiaomi-13', 412, 915, 2.625, true, true, _androidUA('2211133C', '14'));
-  add('redmi-note-13-pro', 412, 915, 2.625, true, true, _androidUA('23090RA98C', '14'));
-  add('redmi-note-12', 412, 915, 2.0, true, true, _androidUA('23021RAA2Y', '14'));
+  add('redmi-note-13-pro', 412, 915, 2.625, true, true,
+      _androidUA('23090RA98C', '14'));
+  add('redmi-note-12', 412, 915, 2.0, true, true,
+      _androidUA('23021RAA2Y', '14'));
   add('poco-f5', 412, 915, 2.625, true, true, _androidUA('23049PCD8G', '14'));
 
   // ── Huawei ───────────────────────────────────────────────
-  add('huawei-p60-pro', 412, 915, 3.5, true, true, _androidUA('MNA-AL00', '12'));
-  add('huawei-mate-60-pro', 412, 915, 3.5, true, true, _androidUA('ALN-AL10', '12'));
-  add('huawei-nova-12', 412, 915, 2.625, true, true, _androidUA('FOA-AL00', '12'));
+  add('huawei-p60-pro', 412, 915, 3.5, true, true,
+      _androidUA('MNA-AL00', '12'));
+  add('huawei-mate-60-pro', 412, 915, 3.5, true, true,
+      _androidUA('ALN-AL10', '12'));
+  add('huawei-nova-12', 412, 915, 2.625, true, true,
+      _androidUA('FOA-AL00', '12'));
 
   // ── Sony / Motorola / Others ─────────────────────────────
-  add('sony-xperia-1-v', 412, 960, 3.5, true, true, _androidUA('XQ-DQ72', '14'));
-  add('moto-edge-40-pro', 412, 915, 3.0, true, true, _androidUA('XT2301-4', '14'));
+  add('sony-xperia-1-v', 412, 960, 3.5, true, true,
+      _androidUA('XQ-DQ72', '14'));
+  add('moto-edge-40-pro', 412, 915, 3.0, true, true,
+      _androidUA('XT2301-4', '14'));
   add('nothing-phone-2', 412, 915, 2.625, true, true, _androidUA('A065', '14'));
 
   // ── iPads ────────────────────────────────────────────────
@@ -205,24 +233,34 @@ Map<String, DevicePreset> _buildPresets() {
   add('ipad-pro-11-landscape', 1194, 834, 2.0, true, true, _ipadUA(ios18));
 
   // ── Android Tablets ──────────────────────────────────────
-  add('galaxy-tab-s9-ultra', 1848, 2960, 2.0, true, true, _androidTabletUA('SM-X910', '14'));
-  add('galaxy-tab-s9-plus', 1752, 2800, 2.0, true, true, _androidTabletUA('SM-X810', '14'));
-  add('galaxy-tab-s9', 1600, 2560, 2.0, true, true, _androidTabletUA('SM-X710', '14'));
-  add('galaxy-tab-s8-ultra', 1848, 2960, 2.0, true, true, _androidTabletUA('SM-X900', '14'));
-  add('galaxy-tab-s8', 1600, 2560, 2.0, true, true, _androidTabletUA('SM-X700', '14'));
-  add('galaxy-tab-s7', 1600, 2560, 2.0, true, true, _androidTabletUA('SM-T870', '13'));
-  add('galaxy-tab-a9', 800, 1340, 1.5, true, true, _androidTabletUA('SM-X110', '14'));
+  add('galaxy-tab-s9-ultra', 1848, 2960, 2.0, true, true,
+      _androidTabletUA('SM-X910', '14'));
+  add('galaxy-tab-s9-plus', 1752, 2800, 2.0, true, true,
+      _androidTabletUA('SM-X810', '14'));
+  add('galaxy-tab-s9', 1600, 2560, 2.0, true, true,
+      _androidTabletUA('SM-X710', '14'));
+  add('galaxy-tab-s8-ultra', 1848, 2960, 2.0, true, true,
+      _androidTabletUA('SM-X900', '14'));
+  add('galaxy-tab-s8', 1600, 2560, 2.0, true, true,
+      _androidTabletUA('SM-X700', '14'));
+  add('galaxy-tab-s7', 1600, 2560, 2.0, true, true,
+      _androidTabletUA('SM-T870', '13'));
+  add('galaxy-tab-a9', 800, 1340, 1.5, true, true,
+      _androidTabletUA('SM-X110', '14'));
 
   // ── Surface / Windows Tablets ────────────────────────────
   add('surface-pro-9', 1920, 1280, 2.0, true, true, _edgeDesktop);
   add('surface-pro-8', 1920, 1280, 2.0, true, true, _edgeDesktop);
   add('surface-pro-7', 1920, 1280, 2.0, true, true, _edgeDesktop);
   add('surface-go-3', 1920, 1280, 1.5, true, true, _edgeDesktop);
-  add('surface-duo-2', 1344, 1892, 2.5, true, true, _androidUA('Surface Duo 2', '12'));
+  add('surface-duo-2', 1344, 1892, 2.5, true, true,
+      _androidUA('Surface Duo 2', '12'));
 
   // ── Amazon Kindle / Fire ─────────────────────────────────
-  add('kindle-fire-hdx', 800, 1280, 2.0, true, true, _androidTabletUA('KFAPWI', '11'));
-  add('fire-hd-10', 1200, 1920, 1.5, true, true, _androidTabletUA('KFTRWI', '11'));
+  add('kindle-fire-hdx', 800, 1280, 2.0, true, true,
+      _androidTabletUA('KFAPWI', '11'));
+  add('fire-hd-10', 1200, 1920, 1.5, true, true,
+      _androidTabletUA('KFTRWI', '11'));
 
   // ── Laptops ──────────────────────────────────────────────
   add('macbook-air-13', 1470, 956, 2.0, false, false, _safariMac);
@@ -256,9 +294,12 @@ Map<String, DevicePreset> _buildPresets() {
   add('desktop-4k', 3840, 2160, 1.5, false, false, _chromeDesktop);
 
   // Firefox
-  add('desktop-1920x1080-firefox', 1920, 1080, 1.0, false, false, _firefoxDesktop);
-  add('desktop-2560x1440-firefox', 2560, 1440, 1.0, false, false, _firefoxDesktop);
-  add('desktop-1366x768-firefox', 1366, 768, 1.0, false, false, _firefoxDesktop);
+  add('desktop-1920x1080-firefox', 1920, 1080, 1.0, false, false,
+      _firefoxDesktop);
+  add('desktop-2560x1440-firefox', 2560, 1440, 1.0, false, false,
+      _firefoxDesktop);
+  add('desktop-1366x768-firefox', 1366, 768, 1.0, false, false,
+      _firefoxDesktop);
 
   // Safari (macOS)
   add('desktop-1920x1080-safari', 1920, 1080, 2.0, false, false, _safariMac);
@@ -270,7 +311,8 @@ Map<String, DevicePreset> _buildPresets() {
   add('desktop-2560x1440-edge', 2560, 1440, 1.0, false, false, _edgeDesktop);
 
   // Firefox macOS
-  add('desktop-1920x1080-firefox-mac', 1920, 1080, 2.0, false, false, _firefoxMac);
+  add('desktop-1920x1080-firefox-mac', 1920, 1080, 2.0, false, false,
+      _firefoxMac);
 
   // ── Legacy / Convenience Aliases (mapped later) ──────────
 
@@ -292,10 +334,8 @@ String _normalizeDeviceName(String input) {
   if (devicePresets.containsKey(s)) return s;
 
   // Insert hyphens between letters and numbers: "iphone14" → "iphone-14"
-  s = s.replaceAllMapped(
-      RegExp(r'([a-z])(\d)'), (m) => '${m[1]}-${m[2]}');
-  s = s.replaceAllMapped(
-      RegExp(r'(\d)([a-z])'), (m) => '${m[1]}-${m[2]}');
+  s = s.replaceAllMapped(RegExp(r'([a-z])(\d)'), (m) => '${m[1]}-${m[2]}');
+  s = s.replaceAllMapped(RegExp(r'(\d)([a-z])'), (m) => '${m[1]}-${m[2]}');
   // Remove duplicate hyphens again
   s = s.replaceAll(RegExp(r'-+'), '-');
 

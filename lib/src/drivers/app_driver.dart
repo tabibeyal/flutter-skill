@@ -20,7 +20,8 @@ abstract class AppDriver {
   Future<Map<String, dynamic>> tap({String? key, String? text, String? ref});
 
   /// Enter text into a field identified by key or semantic ref.
-  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref});
+  Future<Map<String, dynamic>> enterText(String? key, String text,
+      {String? ref});
 
   /// Swipe in a direction, optionally anchored to an element.
   Future<bool> swipe(

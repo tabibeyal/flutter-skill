@@ -451,5 +451,4 @@ if (mounted) {
       'platform': 'All',
     };
   }
-
 }

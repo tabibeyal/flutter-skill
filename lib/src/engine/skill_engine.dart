@@ -128,8 +128,7 @@ class DefaultSkillEngine implements SkillEngine {
     return ToolRegistry.getFilteredTools(
       hasCdp: _cdpDriver != null,
       hasBridge: _client is BridgeDriver && _cdpDriver == null,
-      hasFlutter:
-          _client is FlutterSkillClient && _client is! BridgeDriver,
+      hasFlutter: _client is FlutterSkillClient && _client is! BridgeDriver,
       hasConnection: isConnected,
       pluginTools: pluginTools,
     );

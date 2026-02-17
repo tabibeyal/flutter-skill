@@ -2,7 +2,8 @@ part of '../server.dart';
 
 extension _CdpToolHandlers on FlutterMcpServer {
   /// Execute a tool via CDP driver
-  Future<dynamic> _executeCdpTool(String name, Map<String, dynamic> args, CdpDriver cdp) async {
+  Future<dynamic> _executeCdpTool(
+      String name, Map<String, dynamic> args, CdpDriver cdp) async {
     switch (name) {
       case 'inspect':
         final elements = await cdp.getInteractiveElements();
@@ -12,7 +13,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
             if (e is! Map) return true;
             final bounds = e['bounds'];
             if (bounds == null) return true;
-            return (bounds['x'] as int? ?? 0) >= -10 && (bounds['y'] as int? ?? 0) >= -10;
+            return (bounds['x'] as int? ?? 0) >= -10 &&
+                (bounds['y'] as int? ?? 0) >= -10;
           }).toList();
         }
         return elements;
@@ -30,13 +32,20 @@ extension _CdpToolHandlers on FlutterMcpServer {
           final prefix = isLast ? '└── ' : '├── ';
           final ref = el['ref'] ?? '';
           final text = (el['text'] ?? el['label'] ?? '').toString();
-          final displayText = text.length > 40 ? '${text.substring(0, 37)}...' : text;
+          final displayText =
+              text.length > 40 ? '${text.substring(0, 37)}...' : text;
           final bounds = el['bounds'] as Map<String, dynamic>?;
-          final bStr = bounds != null ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})' : '';
-          final valuePart = (el['value'] != null && el['value'].toString().isNotEmpty) ? ' value="${el['value']}"' : '';
+          final bStr = bounds != null
+              ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})'
+              : '';
+          final valuePart =
+              (el['value'] != null && el['value'].toString().isNotEmpty)
+                  ? ' value="${el['value']}"'
+                  : '';
           final enabledPart = el['enabled'] == false ? ' DISABLED' : '';
           final actions = (el['actions'] as List?)?.join(',') ?? '';
-          buffer.writeln('$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+          buffer.writeln(
+              '$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
         }
         return {
           'snapshot': buffer.toString(),
@@ -44,7 +53,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
           'elementCount': elements.length,
           'interactiveCount': elements.length,
           'tokenEstimate': buffer.length ~/ 4,
-          'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
+          'hint':
+              'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
         };
 
       case 'tap':
@@ -52,9 +62,14 @@ extension _CdpToolHandlers on FlutterMcpServer {
         final y = args['y'] as num?;
         if (x != null && y != null) {
           await cdp.tapAt(x.toDouble(), y.toDouble());
-          return {"success": true, "method": "coordinates", "position": {"x": x, "y": y}};
+          return {
+            "success": true,
+            "method": "coordinates",
+            "position": {"x": x, "y": y}
+          };
         }
-        return await cdp.tap(key: args['key'], text: args['text'], ref: args['ref']);
+        return await cdp.tap(
+            key: args['key'], text: args['text'], ref: args['ref']);
 
       case 'enter_text':
         return await cdp.enterText(args['key'], args['text'], ref: args['ref']);
@@ -68,10 +83,16 @@ extension _CdpToolHandlers on FlutterMcpServer {
         }
         if (saveToFile) {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${Directory.systemTemp.path}/flutter_skill_screenshot_$timestamp.jpg');
+          final file = File(
+              '${Directory.systemTemp.path}/flutter_skill_screenshot_$timestamp.jpg');
           final bytes = base64.decode(imageBase64);
           await file.writeAsBytes(bytes);
-          return {"success": true, "file_path": file.path, "size_bytes": bytes.length, "format": "jpeg"};
+          return {
+            "success": true,
+            "file_path": file.path,
+            "size_bytes": bytes.length,
+            "format": "jpeg"
+          };
         }
         return {"image": imageBase64, "quality": quality};
 
@@ -82,13 +103,23 @@ extension _CdpToolHandlers on FlutterMcpServer {
         final height = (args['height'] as num).toDouble();
         final saveToFile = args['save_to_file'] ?? false;
         final image = await cdp.takeRegionScreenshot(x, y, width, height);
-        if (image == null) return {"success": false, "error": "Failed to capture region screenshot"};
+        if (image == null)
+          return {
+            "success": false,
+            "error": "Failed to capture region screenshot"
+          };
         if (saveToFile) {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${Directory.systemTemp.path}/flutter_skill_region_$timestamp.jpg');
+          final file = File(
+              '${Directory.systemTemp.path}/flutter_skill_region_$timestamp.jpg');
           final bytes = base64.decode(image);
           await file.writeAsBytes(bytes);
-          return {"success": true, "file_path": file.path, "size_bytes": bytes.length, "region": {"x": x, "y": y, "width": width, "height": height}};
+          return {
+            "success": true,
+            "file_path": file.path,
+            "size_bytes": bytes.length,
+            "region": {"x": x, "y": y, "width": width, "height": height}
+          };
         }
         return {"success": true, "image": image};
 
@@ -114,37 +145,52 @@ extension _CdpToolHandlers on FlutterMcpServer {
 
       case 'swipe':
         final distance = (args['distance'] ?? 300).toDouble();
-        final success = await cdp.swipe(direction: args['direction'], distance: distance, key: args['key']);
+        final success = await cdp.swipe(
+            direction: args['direction'], distance: distance, key: args['key']);
         return success ? "Swiped ${args['direction']}" : "Swipe failed";
 
       case 'long_press':
         final duration = args['duration'] ?? 500;
-        final success = await cdp.longPress(key: args['key'], text: args['text'], duration: duration);
+        final success = await cdp.longPress(
+            key: args['key'], text: args['text'], duration: duration);
         return success ? "Long pressed" : "Long press failed";
 
       case 'double_tap':
-        final success = await cdp.doubleTap(key: args['key'], text: args['text']);
+        final success =
+            await cdp.doubleTap(key: args['key'], text: args['text']);
         return success ? "Double tapped" : "Double tap failed";
 
       case 'wait_for_element':
         final timeout = args['timeout'] ?? 5000;
-        final found = await cdp.waitForElement(key: args['key'], text: args['text'], timeout: timeout);
+        final found = await cdp.waitForElement(
+            key: args['key'], text: args['text'], timeout: timeout);
         return {"found": found};
 
       case 'wait_for_gone':
         final timeout = args['timeout'] ?? 5000;
-        final gone = await cdp.waitForGone(key: args['key'], text: args['text'], timeout: timeout);
+        final gone = await cdp.waitForGone(
+            key: args['key'], text: args['text'], timeout: timeout);
         return {"gone": gone};
 
       case 'assert_visible':
         final timeout = args['timeout'] ?? 5000;
-        final found = await cdp.waitForElement(key: args['key'], text: args['text'], timeout: timeout);
-        return {"success": found, "assertion": "visible", "element": args['key'] ?? args['text']};
+        final found = await cdp.waitForElement(
+            key: args['key'], text: args['text'], timeout: timeout);
+        return {
+          "success": found,
+          "assertion": "visible",
+          "element": args['key'] ?? args['text']
+        };
 
       case 'assert_not_visible':
         final timeout = args['timeout'] ?? 5000;
-        final gone = await cdp.waitForGone(key: args['key'], text: args['text'], timeout: timeout);
-        return {"success": gone, "assertion": "not_visible", "element": args['key'] ?? args['text']};
+        final gone = await cdp.waitForGone(
+            key: args['key'], text: args['text'], timeout: timeout);
+        return {
+          "success": gone,
+          "assertion": "not_visible",
+          "element": args['key'] ?? args['text']
+        };
 
       case 'get_text_content':
         return await cdp.getTextContent();
@@ -157,10 +203,22 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return "Page reloaded";
 
       case 'get_logs':
-        return {"logs": [], "summary": {"total_count": 0, "message": "CDP log capture not available"}};
+        return {
+          "logs": [],
+          "summary": {
+            "total_count": 0,
+            "message": "CDP log capture not available"
+          }
+        };
 
       case 'get_errors':
-        return {"errors": [], "summary": {"total_count": 0, "message": "CDP error capture not available"}};
+        return {
+          "errors": [],
+          "summary": {
+            "total_count": 0,
+            "message": "CDP error capture not available"
+          }
+        };
 
       case 'clear_logs':
         return {"success": true, "message": "No-op for CDP"};
@@ -176,17 +234,25 @@ extension _CdpToolHandlers on FlutterMcpServer {
         final x = (args['x'] as num).toDouble();
         final y = (args['y'] as num).toDouble();
         await cdp.tapAt(x, y);
-        return {"success": true, "position": {"x": x, "y": y}};
+        return {
+          "success": true,
+          "position": {"x": x, "y": y}
+        };
 
       case 'long_press_at':
         final x = (args['x'] as num).toDouble();
         final y = (args['y'] as num).toDouble();
         await cdp.longPressAt(x, y);
-        return {"success": true, "position": {"x": x, "y": y}};
+        return {
+          "success": true,
+          "position": {"x": x, "y": y}
+        };
 
       case 'swipe_coordinates':
-        final startX = (args['startX'] ?? args['start_x'] as num?)?.toDouble() ?? 0;
-        final startY = (args['startY'] ?? args['start_y'] as num?)?.toDouble() ?? 0;
+        final startX =
+            (args['startX'] ?? args['start_x'] as num?)?.toDouble() ?? 0;
+        final startY =
+            (args['startY'] ?? args['start_y'] as num?)?.toDouble() ?? 0;
         final endX = (args['endX'] ?? args['end_x'] as num?)?.toDouble() ?? 0;
         final endY = (args['endY'] ?? args['end_y'] as num?)?.toDouble() ?? 0;
         return await cdp.swipeCoordinates(startX, startY, endX, endY);
@@ -198,14 +264,17 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.edgeSwipe(direction, edge: edge, distance: distance);
 
       case 'gesture':
-        final points = ((args['points'] ?? args['actions']) as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+        final points = ((args['points'] ?? args['actions']) as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         return await cdp.gesture(points);
 
       case 'scroll_until_visible':
         final key = args['key'] as String? ?? '';
         final maxScrolls = (args['max_scrolls'] as num?)?.toInt() ?? 10;
         final direction = args['direction'] as String? ?? 'down';
-        return await cdp.scrollUntilVisible(key, maxScrolls: maxScrolls, direction: direction);
+        return await cdp.scrollUntilVisible(key,
+            maxScrolls: maxScrolls, direction: direction);
 
       case 'get_checkbox_state':
         final key = args['key'] as String? ?? '';
@@ -236,7 +305,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.assertText(text, key: key);
 
       case 'assert_element_count':
-        final selector = args['selector'] as String? ?? args['key'] as String? ?? '*';
+        final selector =
+            args['selector'] as String? ?? args['key'] as String? ?? '*';
         final count = (args['expected_count'] as num?)?.toInt() ?? 0;
         return await cdp.assertElementCount(selector, count);
 
@@ -253,12 +323,18 @@ extension _CdpToolHandlers on FlutterMcpServer {
         for (final action in actions) {
           final a = action as Map<String, dynamic>;
           final actionName = (a['action'] ?? a['tool'] ?? a['name']) as String;
-          final actionArgs = (a['args'] ?? a['arguments'] ?? a['params']) as Map<String, dynamic>? ?? {};
+          final actionArgs = (a['args'] ?? a['arguments'] ?? a['params'])
+                  as Map<String, dynamic>? ??
+              {};
           try {
             final r = await _executeCdpTool(actionName, actionArgs, cdp);
             results.add({"action": actionName, "success": true, "result": r});
           } catch (e) {
-            results.add({"action": actionName, "success": false, "error": e.toString()});
+            results.add({
+              "action": actionName,
+              "success": false,
+              "error": e.toString()
+            });
           }
         }
         return {"success": true, "results": results};
@@ -268,7 +344,10 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return {"success": true, "message": "No-op for CDP", "enabled": false};
 
       case 'enable_network_monitoring':
-        return {"success": true, "message": "Network monitoring (no-op for CDP)"};
+        return {
+          "success": true,
+          "message": "Network monitoring (no-op for CDP)"
+        };
 
       case 'clear_network_requests':
         return {"success": true, "message": "No-op for CDP"};
@@ -290,7 +369,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return {"success": true, "text": text};
 
       case 'hover':
-        return await cdp.hover(key: args['key'], text: args['text'], ref: args['ref']);
+        return await cdp.hover(
+            key: args['key'], text: args['text'], ref: args['ref']);
 
       case 'select_option':
         final key = args['key'] as String? ?? '';
@@ -325,7 +405,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.getLocalStorage();
 
       case 'set_local_storage':
-        return await cdp.setLocalStorage(args['key'] as String? ?? '', args['value'] as String? ?? '');
+        return await cdp.setLocalStorage(
+            args['key'] as String? ?? '', args['value'] as String? ?? '');
 
       case 'clear_local_storage':
         return await cdp.clearLocalStorage();
@@ -340,7 +421,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.setViewport(
           (args['width'] as num?)?.toInt() ?? 1280,
           (args['height'] as num?)?.toInt() ?? 720,
-          deviceScaleFactor: (args['device_scale_factor'] as num?)?.toDouble() ?? 1.0,
+          deviceScaleFactor:
+              (args['device_scale_factor'] as num?)?.toDouble() ?? 1.0,
         );
 
       case 'emulate_device':
@@ -360,10 +442,12 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.reload();
 
       case 'get_attribute':
-        return await cdp.getAttribute(args['key'] as String? ?? '', args['attribute'] as String? ?? '');
+        return await cdp.getAttribute(
+            args['key'] as String? ?? '', args['attribute'] as String? ?? '');
 
       case 'get_css_property':
-        return await cdp.getCssProperty(args['key'] as String? ?? '', args['property'] as String? ?? '');
+        return await cdp.getCssProperty(
+            args['key'] as String? ?? '', args['property'] as String? ?? '');
 
       case 'get_bounding_box':
         return await cdp.getBoundingBox(args['key'] as String? ?? '');
@@ -390,7 +474,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.setColorScheme(args['scheme'] as String? ?? 'dark');
 
       case 'block_urls':
-        return await cdp.blockUrls((args['patterns'] as List<dynamic>?)?.cast<String>() ?? []);
+        return await cdp.blockUrls(
+            (args['patterns'] as List<dynamic>?)?.cast<String>() ?? []);
 
       case 'throttle_network':
         return await cdp.throttleNetwork(
@@ -419,7 +504,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.getFrames();
 
       case 'eval_in_frame':
-        return await cdp.evalInFrame(args['frame_id'] as String? ?? '', args['expression'] as String? ?? '');
+        return await cdp.evalInFrame(args['frame_id'] as String? ?? '',
+            args['expression'] as String? ?? '');
 
       case 'get_tabs':
         return await cdp.getTabs();
@@ -438,7 +524,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
           args['url_pattern'] as String? ?? '*',
           statusCode: (args['status_code'] as num?)?.toInt(),
           body: args['body'] as String?,
-          headers: (args['headers'] as Map<String, dynamic>?)?.cast<String, String>(),
+          headers: (args['headers'] as Map<String, dynamic>?)
+              ?.cast<String, String>(),
         );
 
       case 'clear_interceptions':
@@ -448,7 +535,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.accessibilityAudit();
 
       case 'compare_screenshot':
-        return await cdp.compareScreenshot(args['baseline_path'] as String? ?? '');
+        return await cdp
+            .compareScreenshot(args['baseline_path'] as String? ?? '');
 
       case 'wait_for_network_idle':
         return await cdp.waitForNetworkIdle(
@@ -461,25 +549,33 @@ extension _CdpToolHandlers on FlutterMcpServer {
 
       case 'count_elements':
         final selector = args['selector'] as String? ?? '*';
-        return {"count": await cdp.countElements(selector), "selector": selector};
+        return {
+          "count": await cdp.countElements(selector),
+          "selector": selector
+        };
 
       case 'is_visible':
         final key = args['key'] as String? ?? '';
         return {"visible": await cdp.isVisible(key), "key": key};
 
       case 'get_page_source':
-        return {"source": await cdp.getPageSource(
-          selector: args['selector'] as String?,
-          removeScripts: args['remove_scripts'] == true,
-          removeStyles: args['remove_styles'] == true,
-          removeComments: args['remove_comments'] == true,
-          removeMeta: args['remove_meta'] == true,
-          minify: args['minify'] == true,
-          cleanHtml: args['clean_html'] == true,
-        )};
+        return {
+          "source": await cdp.getPageSource(
+            selector: args['selector'] as String?,
+            removeScripts: args['remove_scripts'] == true,
+            removeStyles: args['remove_styles'] == true,
+            removeComments: args['remove_comments'] == true,
+            removeMeta: args['remove_meta'] == true,
+            minify: args['minify'] == true,
+            cleanHtml: args['clean_html'] == true,
+          )
+        };
 
       case 'get_visible_text':
-        return {"text": await cdp.getVisibleText(selector: args['selector'] as String?)};
+        return {
+          "text":
+              await cdp.getVisibleText(selector: args['selector'] as String?)
+        };
 
       case 'get_window_handles':
         return await cdp.getWindowHandles();
@@ -498,14 +594,17 @@ extension _CdpToolHandlers on FlutterMcpServer {
         final selector = args['key'] as String? ?? args['ref'] as String? ?? '';
         final color = args['color'] as String? ?? 'red';
         final duration = (args['duration_ms'] as num?)?.toInt() ?? 3000;
-        return await cdp.highlightElement(selector, color: color, duration: duration);
+        return await cdp.highlightElement(selector,
+            color: color, duration: duration);
 
       case 'mock_response':
         final urlPattern = args['url_pattern'] as String? ?? '*';
         final statusCode = (args['status_code'] as num?)?.toInt() ?? 200;
         final body = args['body'] as String? ?? '';
-        final headers = (args['headers'] as Map<String, dynamic>?)?.cast<String, String>();
-        return await cdp.mockResponse(urlPattern, statusCode, body, headers: headers);
+        final headers =
+            (args['headers'] as Map<String, dynamic>?)?.cast<String, String>();
+        return await cdp.mockResponse(urlPattern, statusCode, body,
+            headers: headers);
 
       case 'highlight_elements':
         final show = args['show'] ?? true;
@@ -527,7 +626,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
           if (v != null) return jsonDecode(v);
           return {'success': true};
         } else {
-          await cdp.eval("if(window.__fsHighlightStyle){window.__fsHighlightStyle.remove();delete window.__fsHighlightStyle;}");
+          await cdp.eval(
+              "if(window.__fsHighlightStyle){window.__fsHighlightStyle.remove();delete window.__fsHighlightStyle;}");
           return {'success': true, 'message': 'Highlights removed'};
         }
 
@@ -546,5 +646,4 @@ extension _CdpToolHandlers on FlutterMcpServer {
         throw Exception('Tool "$name" is not supported in CDP mode.');
     }
   }
-
 }

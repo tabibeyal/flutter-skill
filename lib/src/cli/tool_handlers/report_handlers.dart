@@ -20,12 +20,22 @@ extension _ReportHandlers on FlutterMcpServer {
         'title': title,
         'generated_at': now.toIso8601String(),
         'version': currentVersion,
-        'summary': {'total': steps.length, 'passed': passed, 'failed': failed, 'pass_rate': passRate},
+        'summary': {
+          'total': steps.length,
+          'passed': passed,
+          'failed': failed,
+          'pass_rate': passRate
+        },
         'steps': steps,
       };
       if (outputPath != null) {
-        await File(outputPath).writeAsString(const JsonEncoder.withIndent('  ').convert(report));
-        return {'format': 'json', 'output_path': outputPath, 'step_count': steps.length};
+        await File(outputPath)
+            .writeAsString(const JsonEncoder.withIndent('  ').convert(report));
+        return {
+          'format': 'json',
+          'output_path': outputPath,
+          'step_count': steps.length
+        };
       }
       return report;
     }
@@ -36,7 +46,8 @@ extension _ReportHandlers on FlutterMcpServer {
       buf.writeln('');
       buf.writeln('**Generated:** ${now.toIso8601String()}  ');
       buf.writeln('**Version:** flutter-skill v$currentVersion  ');
-      buf.writeln('**Summary:** $passed passed, $failed failed (${passRate.toStringAsFixed(1)}%)');
+      buf.writeln(
+          '**Summary:** $passed passed, $failed failed (${passRate.toStringAsFixed(1)}%)');
       buf.writeln('');
       buf.writeln('| # | Tool | Args | Result | Duration |');
       buf.writeln('|---|------|------|--------|----------|');
@@ -51,7 +62,11 @@ extension _ReportHandlers on FlutterMcpServer {
       final md = buf.toString();
       if (outputPath != null) {
         await File(outputPath).writeAsString(md);
-        return {'format': 'markdown', 'output_path': outputPath, 'step_count': steps.length};
+        return {
+          'format': 'markdown',
+          'output_path': outputPath,
+          'step_count': steps.length
+        };
       }
       return {'format': 'markdown', 'content': md, 'step_count': steps.length};
     }
@@ -66,7 +81,8 @@ extension _ReportHandlers on FlutterMcpServer {
       final argsStr = _htmlEscape(jsonEncode(step['params'] ?? {}));
       stepsHtml.writeln('<tr class="$rowClass">');
       stepsHtml.writeln('  <td>${step['step'] ?? i + 1}</td>');
-      stepsHtml.writeln('  <td><code>${_htmlEscape(step['tool'] ?? '')}</code></td>');
+      stepsHtml.writeln(
+          '  <td><code>${_htmlEscape(step['tool'] ?? '')}</code></td>');
       stepsHtml.writeln('  <td><code>$argsStr</code></td>');
       stepsHtml.writeln('  <td class="$resultClass">$resultText</td>');
       stepsHtml.writeln('  <td>${step['duration_ms'] ?? '-'}ms</td>');
@@ -133,13 +149,21 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
 
     if (outputPath != null) {
       await File(outputPath).writeAsString(html);
-      return {'format': 'html', 'output_path': outputPath, 'step_count': steps.length};
+      return {
+        'format': 'html',
+        'output_path': outputPath,
+        'step_count': steps.length
+      };
     }
     return {'format': 'html', 'content': html, 'step_count': steps.length};
   }
 
   String _htmlEscape(String text) {
-    return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+    return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
   }
 
   String _exportJest() {
@@ -179,7 +203,8 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
     buf.writeln("");
     buf.writeln("def test_recorded_flow():");
     for (final step in _recordedSteps) {
-      buf.writeln("    call_tool('${step['tool']}', ${jsonEncode(step['params'] ?? {})})");
+      buf.writeln(
+          "    call_tool('${step['tool']}', ${jsonEncode(step['params'] ?? {})})");
     }
     return buf.toString();
   }
@@ -222,9 +247,11 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
           }
           break;
         case 'enter_text':
-          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          final value =
+              params['value'] as String? ?? params['text'] as String? ?? '';
           if (selector != null) {
-            buf.writeln("  await page.fill('$selector', '${_escapeJs(value)}');");
+            buf.writeln(
+                "  await page.fill('$selector', '${_escapeJs(value)}');");
           }
           break;
         case 'swipe':
@@ -266,7 +293,8 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
           }
           break;
         case 'enter_text':
-          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          final value =
+              params['value'] as String? ?? params['text'] as String? ?? '';
           if (selector != null) {
             buf.writeln("    cy.get('$selector').type('${_escapeJs(value)}');");
           }
@@ -309,15 +337,19 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
       switch (tool) {
         case 'tap':
           if (selector != null) {
-            buf.writeln("    driver.find_element(By.CSS_SELECTOR, '$selector').click()");
+            buf.writeln(
+                "    driver.find_element(By.CSS_SELECTOR, '$selector').click()");
           } else if (text != null) {
-            buf.writeln("    driver.find_element(By.XPATH, '//*[text()=\"${_escapePy(text)}\"]').click()");
+            buf.writeln(
+                "    driver.find_element(By.XPATH, '//*[text()=\"${_escapePy(text)}\"]').click()");
           }
           break;
         case 'enter_text':
-          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          final value =
+              params['value'] as String? ?? params['text'] as String? ?? '';
           if (selector != null) {
-            buf.writeln("    el = driver.find_element(By.CSS_SELECTOR, '$selector')");
+            buf.writeln(
+                "    el = driver.find_element(By.CSS_SELECTOR, '$selector')");
             buf.writeln("    el.clear()");
             buf.writeln("    el.send_keys('${_escapePy(value)}')");
           }
@@ -362,18 +394,23 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
           buf.writeln('        app.buttons["$identifier"].tap()');
           break;
         case 'enter_text':
-          final value = params['value'] as String? ?? params['text'] as String? ?? '';
-          buf.writeln('        let ${_swiftVar(identifier)}Field = app.textFields["$identifier"]');
+          final value =
+              params['value'] as String? ?? params['text'] as String? ?? '';
+          buf.writeln(
+              '        let ${_swiftVar(identifier)}Field = app.textFields["$identifier"]');
           buf.writeln('        ${_swiftVar(identifier)}Field.tap()');
-          buf.writeln('        ${_swiftVar(identifier)}Field.typeText("${_escapeSwift(value)}")');
+          buf.writeln(
+              '        ${_swiftVar(identifier)}Field.typeText("${_escapeSwift(value)}")');
           break;
         case 'swipe':
           final direction = params['direction'] as String? ?? 'up';
-          buf.writeln('        app.swipe${direction[0].toUpperCase()}${direction.substring(1)}()');
+          buf.writeln(
+              '        app.swipe${direction[0].toUpperCase()}${direction.substring(1)}()');
           break;
         case 'screenshot':
           buf.writeln('        let screenshot = XCUIScreen.main.screenshot()');
-          buf.writeln('        let attachment = XCTAttachment(screenshot: screenshot)');
+          buf.writeln(
+              '        let attachment = XCTAttachment(screenshot: screenshot)');
           buf.writeln('        add(attachment)');
           break;
         default:
@@ -407,23 +444,28 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
       switch (tool) {
         case 'tap':
           if (key != null) {
-            buf.writeln('        onView(withContentDescription("$key")).perform(click())');
+            buf.writeln(
+                '        onView(withContentDescription("$key")).perform(click())');
           } else if (text != null) {
             buf.writeln('        onView(withText("$text")).perform(click())');
           }
           break;
         case 'enter_text':
-          final value = params['value'] as String? ?? params['text'] as String? ?? '';
+          final value =
+              params['value'] as String? ?? params['text'] as String? ?? '';
           if (key != null) {
-            buf.writeln('        onView(withContentDescription("$key")).perform(replaceText("${_escapeKotlin(value)}"))');
+            buf.writeln(
+                '        onView(withContentDescription("$key")).perform(replaceText("${_escapeKotlin(value)}"))');
           }
           break;
         case 'swipe':
           final direction = params['direction'] as String? ?? 'up';
-          buf.writeln('        onView(withId(android.R.id.content)).perform(swipe${direction[0].toUpperCase()}${direction.substring(1)}())');
+          buf.writeln(
+              '        onView(withId(android.R.id.content)).perform(swipe${direction[0].toUpperCase()}${direction.substring(1)}())');
           break;
         case 'screenshot':
-          buf.writeln('        // Take screenshot via UiAutomator or test rule');
+          buf.writeln(
+              '        // Take screenshot via UiAutomator or test rule');
           break;
         default:
           buf.writeln('        // $tool: ${jsonEncode(params)}');
@@ -434,10 +476,14 @@ function toggleImg(el) { el.classList.toggle('expanded'); }
     return buf.toString();
   }
 
-  String _escapeJs(String s) => s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-  String _escapePy(String s) => s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-  String _escapeSwift(String s) => s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-  String _escapeKotlin(String s) => s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-  String _swiftVar(String s) => s.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
-
+  String _escapeJs(String s) =>
+      s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  String _escapePy(String s) =>
+      s.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  String _escapeSwift(String s) =>
+      s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  String _escapeKotlin(String s) =>
+      s.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  String _swiftVar(String s) =>
+      s.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
 }

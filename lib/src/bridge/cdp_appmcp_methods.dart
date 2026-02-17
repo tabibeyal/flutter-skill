@@ -4,7 +4,8 @@ part of 'cdp_driver.dart';
 /// element highlighting, response mocking.
 extension CdpAppmcpMethods on CdpDriver {
   /// Highlight an element with a colored overlay.
-  Future<Map<String, dynamic>> highlightElement(String selector, {String? color, int duration = 3000}) async {
+  Future<Map<String, dynamic>> highlightElement(String selector,
+      {String? color, int duration = 3000}) async {
     final c = color ?? 'red';
     final js = '''
 (function() {
@@ -26,8 +27,11 @@ extension CdpAppmcpMethods on CdpDriver {
   }
 
   /// Mock a network response for requests matching a URL pattern.
-  Future<Map<String, dynamic>> mockResponse(String urlPattern, int statusCode, String body, {Map<String, String>? headers}) async {
-    return await interceptRequests(urlPattern, statusCode: statusCode, body: body, headers: headers);
+  Future<Map<String, dynamic>> mockResponse(
+      String urlPattern, int statusCode, String body,
+      {Map<String, String>? headers}) async {
+    return await interceptRequests(urlPattern,
+        statusCode: statusCode, body: body, headers: headers);
   }
 
   // ── WebMCP: Discover and call structured page tools ──
@@ -140,7 +144,8 @@ extension CdpAppmcpMethods on CdpDriver {
 
   /// Call a discovered tool by name with parameters.
   /// Routes to the appropriate handler based on tool source.
-  Future<Map<String, dynamic>> callTool(String toolName, Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> callTool(
+      String toolName, Map<String, dynamic> params) async {
     final paramsJson = jsonEncode(params);
     final escapedName = jsonEncode(toolName);
     final result = await _call('Runtime.evaluate', {

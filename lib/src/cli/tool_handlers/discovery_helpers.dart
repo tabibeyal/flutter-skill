@@ -43,9 +43,9 @@ extension _DiscoveryHelpers on FlutterMcpServer {
   }
 
   String _findAdb() {
-    final androidHome = Platform.environment['ANDROID_HOME'] ?? 
-                        Platform.environment['ANDROID_SDK_ROOT'] ??
-                        '${Platform.environment['HOME']}/Library/Android/sdk';
+    final androidHome = Platform.environment['ANDROID_HOME'] ??
+        Platform.environment['ANDROID_SDK_ROOT'] ??
+        '${Platform.environment['HOME']}/Library/Android/sdk';
     final adbPath = '$androidHome/platform-tools/adb';
     if (File(adbPath).existsSync()) return adbPath;
     return 'adb'; // fallback to PATH
@@ -57,12 +57,14 @@ extension _DiscoveryHelpers on FlutterMcpServer {
     if (client is BridgeDriver) {
       final fw = client.frameworkName.toLowerCase();
       if (['electron', 'tauri', 'web', 'kmp'].contains(fw)) return 'web';
-      if (fw.contains('android') || fw == 'react-native' || fw == 'dotnet-maui') return 'android';
+      if (fw.contains('android') || fw == 'react-native' || fw == 'dotnet-maui')
+        return 'android';
       if (fw.contains('ios')) return 'ios';
       return fw;
     }
     try {
-      final result = await Process.run('xcrun', ['simctl', 'list', 'devices', 'booted']);
+      final result =
+          await Process.run('xcrun', ['simctl', 'list', 'devices', 'booted']);
       if (result.exitCode == 0 && result.stdout.toString().contains('Booted')) {
         return 'ios';
       }
@@ -108,5 +110,4 @@ extension _DiscoveryHelpers on FlutterMcpServer {
     }
     return output;
   }
-
 }

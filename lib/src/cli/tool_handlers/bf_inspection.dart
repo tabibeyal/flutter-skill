@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfInspection on FlutterMcpServer {
-  Future<dynamic> _handleInspectionTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleInspectionTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'inspect':
         final elements = await client!.getInteractiveElements();
@@ -29,17 +30,20 @@ extension _BfInspection on FlutterMcpServer {
       case 'snapshot':
         final snapshotMode = args['mode'] as String? ?? 'text';
         if (snapshotMode == 'vision') {
-          final imageBase64 = await client!.takeScreenshot(quality: 0.5, maxWidth: 800);
-          if (imageBase64 == null) return {"success": false, "error": "Failed to capture screenshot"};
+          final imageBase64 =
+              await client!.takeScreenshot(quality: 0.5, maxWidth: 800);
+          if (imageBase64 == null)
+            return {"success": false, "error": "Failed to capture screenshot"};
           final tempDir = Directory.systemTemp;
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${tempDir.path}/flutter_skill_vision_$timestamp.png');
+          final file =
+              File('${tempDir.path}/flutter_skill_vision_$timestamp.png');
           await file.writeAsBytes(base64.decode(imageBase64));
           return {"mode": "vision", "path": file.path, "success": true};
         }
         final structured = await client!.getInteractiveElementsStructured();
         final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
-        
+
         // Also get all elements (including non-interactive) for richer snapshot
         List<dynamic> allElements = [];
         try {
@@ -47,10 +51,10 @@ extension _BfInspection on FlutterMcpServer {
         } catch (_) {
           // Fall back to interactive-only if full inspect fails
         }
-        
+
         // Build text-based accessibility tree
         final buffer = StringBuffer();
-        
+
         // Build interactive ref set for quick lookup
         final refSet = <String>{};
         for (final el in snapshotElements) {
@@ -58,30 +62,30 @@ extension _BfInspection on FlutterMcpServer {
             refSet.add(el['ref'].toString());
           }
         }
-        
+
         // Merge: interactive elements have refs, non-interactive are context
         final allMerged = <Map<String, dynamic>>[];
-        
+
         // Add interactive elements with full data
         for (final el in snapshotElements) {
           if (el is Map<String, dynamic>) {
             allMerged.add({...el, '_interactive': true});
           }
         }
-        
+
         // Add non-interactive elements from inspect (text, images, etc.)
         for (final el in allElements) {
           if (el is Map<String, dynamic>) {
-            final isInteractive = el['clickable'] == true || 
-                                  el['type']?.toString().contains('Button') == true ||
-                                  el['type']?.toString().contains('TextField') == true ||
-                                  el['type']?.toString().contains('Input') == true;
+            final isInteractive = el['clickable'] == true ||
+                el['type']?.toString().contains('Button') == true ||
+                el['type']?.toString().contains('TextField') == true ||
+                el['type']?.toString().contains('Input') == true;
             if (!isInteractive) {
               allMerged.add({...el, '_interactive': false});
             }
           }
         }
-        
+
         // Sort by position (top to bottom, left to right)
         allMerged.sort((a, b) {
           final aB = a['bounds'] as Map<String, dynamic>?;
@@ -93,15 +97,17 @@ extension _BfInspection on FlutterMcpServer {
           final bx = (bB?['x'] ?? 0) as num;
           return ax.compareTo(bx);
         });
-        
+
         // Format as tree
         for (var i = 0; i < allMerged.length; i++) {
           final el = allMerged[i];
           final isLast = i == allMerged.length - 1;
           final prefix = isLast ? '└── ' : '├── ';
           final bounds = el['bounds'] as Map<String, dynamic>?;
-          final bStr = bounds != null ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})' : '';
-          
+          final bStr = bounds != null
+              ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})'
+              : '';
+
           if (el['_interactive'] == true) {
             // Interactive element with ref
             final ref = el['ref'] ?? '';
@@ -110,49 +116,61 @@ extension _BfInspection on FlutterMcpServer {
             final value = el['value']?.toString();
             final enabled = el['enabled'] != false;
             final actions = (el['actions'] as List?)?.join(',') ?? '';
-            
+
             String displayText = text.isNotEmpty ? text : label;
-            if (displayText.length > 40) displayText = '${displayText.substring(0, 37)}...';
-            
-            final valuePart = value != null && value.isNotEmpty ? ' value="$value"' : '';
+            if (displayText.length > 40)
+              displayText = '${displayText.substring(0, 37)}...';
+
+            final valuePart =
+                value != null && value.isNotEmpty ? ' value="$value"' : '';
             final enabledPart = enabled ? '' : ' DISABLED';
-            
-            buffer.writeln('$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+
+            buffer.writeln(
+                '$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
           } else {
             // Non-interactive element (context)
             final type = el['type']?.toString() ?? 'unknown';
             final text = el['text']?.toString() ?? '';
-            final shortType = type.replaceAll('RenderObjectToWidgetAdapter<RenderBox>', 'Root')
-                                  .split('.').last;
-            
+            final shortType = type
+                .replaceAll('RenderObjectToWidgetAdapter<RenderBox>', 'Root')
+                .split('.')
+                .last;
+
             if (text.isNotEmpty) {
               String displayText = text;
-              if (displayText.length > 50) displayText = '${displayText.substring(0, 47)}...';
+              if (displayText.length > 50)
+                displayText = '${displayText.substring(0, 47)}...';
               buffer.writeln('$prefix[$shortType] "$displayText" $bStr');
             }
             // Skip non-text non-interactive elements to keep snapshot compact
           }
         }
-        
+
         final snapshotText = buffer.toString();
         final summary = structured['summary'] ?? '';
-        
+
         final result = <String, dynamic>{
           'snapshot': snapshotText,
           'summary': summary,
           'elementCount': allMerged.length,
           'interactiveCount': snapshotElements.length,
           'tokenEstimate': snapshotText.length ~/ 4,
-          'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
+          'hint':
+              'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
         };
         if (snapshotMode == 'smart') {
           final hasVisual = allMerged.any((el) {
             final type = (el['type'] ?? '').toString().toLowerCase();
-            return type.contains('image') || type.contains('video') || type.contains('picture') || type.contains('icon');
+            return type.contains('image') ||
+                type.contains('video') ||
+                type.contains('picture') ||
+                type.contains('icon');
           });
           if (hasVisual) {
             result['has_visual_content'] = true;
-            result['hint'] = 'Use screenshot() if you need to verify images/visual layout. ' + (result['hint'] as String);
+            result['hint'] =
+                'Use screenshot() if you need to verify images/visual layout. ' +
+                    (result['hint'] as String);
           }
         }
         return result;

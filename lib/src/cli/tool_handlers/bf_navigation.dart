@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfNavigation on FlutterMcpServer {
-  Future<dynamic> _handleNavigationTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleNavigationTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'get_current_route':
         if (client is BridgeDriver) {

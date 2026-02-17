@@ -17,7 +17,8 @@ String _jsDartCall(JSString method, JSString paramsJson) {
   return _handler!(method.toDart, paramsJson.toDart);
 }
 
-void registerWebBridge(String Function(String method, String paramsJson) handler) {
+void registerWebBridge(
+    String Function(String method, String paramsJson) handler) {
   _handler = handler;
   _dartCallSetter = _jsDartCall.toJS;
   _dartBridgeReady = true.toJS;

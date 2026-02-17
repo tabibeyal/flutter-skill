@@ -37,8 +37,7 @@ class WebBridgeDriver extends BridgeDriver {
   @override
   Future<void> connect() async {
     if (!_listener.hasClient) {
-      throw Exception(
-          'No browser client connected to the bridge listener');
+      throw Exception('No browser client connected to the bridge listener');
     }
     // Send initialize handshake via the listener
     await _listener.callMethod('initialize', {

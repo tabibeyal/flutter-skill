@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfState on FlutterMcpServer {
-  Future<dynamic> _handleStateTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleStateTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'get_page_state':
         if (client is BridgeDriver) {
@@ -42,12 +43,14 @@ extension _BfState on FlutterMcpServer {
 
       case 'list_plugins':
         return {
-          'plugins': _pluginTools.map((p) => {
-            'name': p['name'],
-            'description': p['description'],
-            'steps': (p['steps'] as List).length,
-            'source': p['source'],
-          }).toList(),
+          'plugins': _pluginTools
+              .map((p) => {
+                    'name': p['name'],
+                    'description': p['description'],
+                    'steps': (p['steps'] as List).length,
+                    'source': p['source'],
+                  })
+              .toList(),
           'count': _pluginTools.length,
         };
 
@@ -57,9 +60,9 @@ extension _BfState on FlutterMcpServer {
       default:
         // Check plugin tools
         final plugin = _pluginTools.cast<Map<String, dynamic>?>().firstWhere(
-          (p) => p!['name'] == name,
-          orElse: () => null,
-        );
+              (p) => p!['name'] == name,
+              orElse: () => null,
+            );
         if (plugin != null) {
           return await _executePlugin(plugin, args);
         }

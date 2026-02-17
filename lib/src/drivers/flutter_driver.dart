@@ -158,7 +158,8 @@ URI: $wsUri''');
 
   /// Tap an element. Returns result with success status.
   /// Supports semantic ref IDs from inspect_interactive for reliable targeting.
-  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref}) async {
+  Future<Map<String, dynamic>> tap(
+      {String? key, String? text, String? ref}) async {
     if (key == null && text == null && ref == null) {
       throw ArgumentError('Must provide key, text, or ref for tap');
     }
@@ -172,7 +173,8 @@ URI: $wsUri''');
 
   /// Enter text into a field. Returns result with success status.
   /// Supports semantic ref IDs from inspect_interactive for reliable targeting.
-  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref}) async {
+  Future<Map<String, dynamic>> enterText(String? key, String text,
+      {String? ref}) async {
     final result = await _call('ext.flutter.flutter_skill.enterText', {
       if (key != null) 'key': key,
       'text': text,
@@ -443,7 +445,8 @@ URI: $wsUri''');
       };
     } catch (e) {
       // getAllocationProfile not available on web VM
-      if (e.toString().contains('Unknown method') || e.toString().contains('-32601')) {
+      if (e.toString().contains('Unknown method') ||
+          e.toString().contains('-32601')) {
         return {
           "heapUsed": 0,
           "heapCapacity": 0,
@@ -483,12 +486,13 @@ URI: $wsUri''');
 
   /// Get interactive elements with enhanced structure including actions and selectors
   Future<Map<String, dynamic>> getInteractiveElementsStructured() async {
-    final result = await _call('ext.flutter.flutter_skill.interactiveStructured');
-    
+    final result =
+        await _call('ext.flutter.flutter_skill.interactiveStructured');
+
     if (result.containsKey('data')) {
       return result['data'] as Map<String, dynamic>;
     }
-    
+
     // Return empty structured result if no data
     return {
       'elements': <Map<String, dynamic>>[],

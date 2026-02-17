@@ -99,7 +99,8 @@ Future<void> runServer(List<String> args) async {
     // Parse flags
     for (final arg in args) {
       if (arg.startsWith('--bridge-port=')) {
-        final port = int.tryParse(arg.substring('--bridge-port='.length)) ?? bridgeDefaultPort;
+        final port = int.tryParse(arg.substring('--bridge-port='.length)) ??
+            bridgeDefaultPort;
         await server.startBridgeListener(port);
       } else if (arg == '--bridge-port') {
         await server.startBridgeListener(bridgeDefaultPort);
@@ -199,7 +200,8 @@ class FlutterMcpServer {
   int? _autoConnectCdpPort;
 
   // Plugin system
-  String _pluginsDir = '${Platform.environment['HOME'] ?? '.'}/.flutter-skill/plugins';
+  String _pluginsDir =
+      '${Platform.environment['HOME'] ?? '.'}/.flutter-skill/plugins';
   final List<Map<String, dynamic>> _pluginTools = [];
 
   // Cancellable operations
@@ -281,7 +283,8 @@ class FlutterMcpServer {
             vmServiceUri: 'ws://127.0.0.1:$port',
           );
           _activeSessionId = sessionId;
-          stderr.writeln('Browser client connected — session $sessionId created');
+          stderr
+              .writeln('Browser client connected — session $sessionId created');
         } catch (e) {
           stderr.writeln('Failed to initialize web bridge session: $e');
         }
@@ -352,7 +355,16 @@ class FlutterMcpServer {
         final args = params['arguments'] as Map<String, dynamic>? ?? {};
         final result = await _executeTool(name, args);
         // Recording middleware
-        if (_isRecording && ['tap', 'enter_text', 'scroll', 'swipe', 'go_back', 'press_key', 'screenshot'].contains(name)) {
+        if (_isRecording &&
+            [
+              'tap',
+              'enter_text',
+              'scroll',
+              'swipe',
+              'go_back',
+              'press_key',
+              'screenshot'
+            ].contains(name)) {
           _recordedSteps.add({
             'step': _recordedSteps.length + 1,
             'tool': name,
@@ -393,8 +405,6 @@ class FlutterMcpServer {
     }
   }
 
-
-
   /// Get the client for a specific session or the active session
   AppDriver? _getClient(Map<String, dynamic> args) {
     final sessionId = args['session_id'] as String?;
@@ -414,7 +424,6 @@ class FlutterMcpServer {
 
   /// Load plugin tools from the plugins directory
 
-
   /// Check if an error is retryable (transient connection/timeout issues)
   bool _isRetryableError(dynamic error) {
     final msg = error.toString().toLowerCase();
@@ -430,14 +439,16 @@ class FlutterMcpServer {
     if (msg.contains('not connected')) return true;
     if (msg.contains('connection lost')) return true;
     if (msg.contains('timed out') || msg.contains('timeout')) return true;
-    if (msg.contains('socket') && (msg.contains('closed') || msg.contains('error'))) return true;
+    if (msg.contains('socket') &&
+        (msg.contains('closed') || msg.contains('error'))) return true;
     return false;
   }
 
   /// Attempt auto-reconnect using last known connection info
   Future<bool> _attemptAutoReconnect() async {
     if (_lastConnectionUri != null) {
-      stderr.writeln('Attempting auto-reconnect to $_lastConnectionUri (port: $_lastConnectionPort)...');
+      stderr.writeln(
+          'Attempting auto-reconnect to $_lastConnectionUri (port: $_lastConnectionPort)...');
       try {
         final client = _clients[_activeSessionId];
         if (client is BridgeDriver) {
@@ -473,7 +484,9 @@ class FlutterMcpServer {
           stderr.writeln('Retryable error on attempt ${attempt + 1}: $e');
           // Try auto-reconnect on connection errors
           final msg = e.toString().toLowerCase();
-          if (msg.contains('not connected') || msg.contains('connection lost') || msg.contains('connection closed')) {
+          if (msg.contains('not connected') ||
+              msg.contains('connection lost') ||
+              msg.contains('connection closed')) {
             await _attemptAutoReconnect();
           }
           await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
@@ -486,7 +499,8 @@ class FlutterMcpServer {
     throw StateError('Retry loop exited unexpectedly');
   }
 
-  Future<dynamic> _executeToolInner(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _executeToolInner(
+      String name, Map<String, dynamic> args) async {
     // Download file tool (platform-independent)
     if (name == 'download_file') {
       final url = args['url'] as String?;
@@ -502,9 +516,18 @@ class FlutterMcpServer {
             final file = File(savePath);
             await file.parent.create(recursive: true);
             await file.writeAsBytes(response.bodyBytes);
-            return {'success': true, 'path': savePath, 'size_bytes': response.bodyBytes.length, 'status_code': response.statusCode};
+            return {
+              'success': true,
+              'path': savePath,
+              'size_bytes': response.bodyBytes.length,
+              'status_code': response.statusCode
+            };
           } else {
-            return {'success': false, 'error': 'HTTP ${response.statusCode}', 'status_code': response.statusCode};
+            return {
+              'success': false,
+              'error': 'HTTP ${response.statusCode}',
+              'status_code': response.statusCode
+            };
           }
         } finally {
           client.close();
@@ -517,15 +540,19 @@ class FlutterMcpServer {
     // Cancel operation tool
     if (name == 'cancel_operation') {
       final opId = args['operation_id'] as String?;
-      if (opId == null) return {'success': false, 'error': 'operation_id is required'};
+      if (opId == null)
+        return {'success': false, 'error': 'operation_id is required'};
       final completer = _activeCancellables.remove(opId);
       if (completer != null && !completer.isCompleted) {
         completer.complete();
         return {'success': true, 'cancelled': opId};
       }
-      return {'success': false, 'error': 'Operation not found or already completed', 'active_operations': _activeCancellables.keys.toList()};
+      return {
+        'success': false,
+        'error': 'Operation not found or already completed',
+        'active_operations': _activeCancellables.keys.toList()
+      };
     }
-
 
     // Delegate to handler groups
     final handlers = [
@@ -545,7 +572,12 @@ class FlutterMcpServer {
     if (name == 'list_plugins') {
       return _pluginTools.isEmpty
           ? {"plugins": [], "message": "No plugins loaded"}
-          : {"plugins": _pluginTools.map((p) => {"name": p['name'], "description": p['description']}).toList()};
+          : {
+              "plugins": _pluginTools
+                  .map((p) =>
+                      {"name": p['name'], "description": p['description']})
+                  .toList()
+            };
     }
 
     if (name == 'generate_report') {
@@ -576,7 +608,6 @@ class FlutterMcpServer {
     return await _handleBridgeFlutterTool(name, args, client);
   }
 
-
   /// Execute a batch of actions in sequence
   Future<Map<String, dynamic>> _executeBatch(
       Map<String, dynamic> args, FlutterSkillClient client) async {
@@ -588,7 +619,8 @@ class FlutterMcpServer {
 
     for (var i = 0; i < actions.length; i++) {
       final action = actions[i] as Map<String, dynamic>;
-      final actionName = (action['action'] ?? action['tool'] ?? action['name']) as String;
+      final actionName =
+          (action['action'] ?? action['tool'] ?? action['name']) as String;
       // Merge nested args into action for backward compatibility
       final actionArgs = action['args'] as Map<String, dynamic>?;
       if (actionArgs != null) {
@@ -905,7 +937,6 @@ class FlutterMcpServer {
 
   /// Scan for VM Services on local ports
 
-
   // ==================== End Build Error Helpers ====================
 
   void _sendResult(dynamic id, dynamic result) {
@@ -923,12 +954,11 @@ class FlutterMcpServer {
   }
 
   /// Detect if iOS simulator or Android emulator is running
-    /// Find adb binary, checking ANDROID_HOME and common paths
+  /// Find adb binary, checking ANDROID_HOME and common paths
 
   /// Generate TOTP code (RFC 6238)
 
   /// Export recorded steps as Jest test
-
 }
 
 // ==================== Lock Management ====================
@@ -998,7 +1028,8 @@ class _ServerSkillEngine implements SkillEngine {
     return ToolRegistry.getFilteredTools(
       hasCdp: _server._cdpDriver != null,
       hasBridge: _server._client is BridgeDriver && _server._cdpDriver == null,
-      hasFlutter: _server._client is FlutterSkillClient && _server._client is! BridgeDriver,
+      hasFlutter: _server._client is FlutterSkillClient &&
+          _server._client is! BridgeDriver,
       hasConnection: isConnected,
       pluginTools: pluginTools.isNotEmpty ? pluginTools : _server._pluginTools,
     );
@@ -1021,24 +1052,34 @@ class _ServerSkillEngine implements SkillEngine {
 
   @override
   Future<void> connectCdp({
-    int port = 9222, String? url, bool launchChrome = true,
-    String? chromePath, bool headless = false, String? proxy,
-    bool ignoreSsl = false, int maxTabs = 20,
-  }) => executeTool('connect_cdp', {
-    'port': port, if (url != null) 'url': url,
-    'launch_chrome': launchChrome,
-    if (chromePath != null) 'chrome_path': chromePath,
-    'headless': headless, if (proxy != null) 'proxy': proxy,
-    'ignore_ssl': ignoreSsl, 'max_tabs': maxTabs,
-  });
+    int port = 9222,
+    String? url,
+    bool launchChrome = true,
+    String? chromePath,
+    bool headless = false,
+    String? proxy,
+    bool ignoreSsl = false,
+    int maxTabs = 20,
+  }) =>
+      executeTool('connect_cdp', {
+        'port': port,
+        if (url != null) 'url': url,
+        'launch_chrome': launchChrome,
+        if (chromePath != null) 'chrome_path': chromePath,
+        'headless': headless,
+        if (proxy != null) 'proxy': proxy,
+        'ignore_ssl': ignoreSsl,
+        'max_tabs': maxTabs,
+      });
 
   @override
-  Future<void> connectBridge({String? host, int? port}) =>
-      executeTool('scan_and_connect', {if (host != null) 'host': host, if (port != null) 'port': port});
+  Future<void> connectBridge({String? host, int? port}) => executeTool(
+      'scan_and_connect',
+      {if (host != null) 'host': host, if (port != null) 'port': port});
 
   @override
-  Future<void> connectFlutter({String? vmServiceUri}) =>
-      executeTool('connect_app', {if (vmServiceUri != null) 'uri': vmServiceUri});
+  Future<void> connectFlutter({String? vmServiceUri}) => executeTool(
+      'connect_app', {if (vmServiceUri != null) 'uri': vmServiceUri});
 
   @override
   Future<void> scanAndConnect() => executeTool('scan_and_connect', {});

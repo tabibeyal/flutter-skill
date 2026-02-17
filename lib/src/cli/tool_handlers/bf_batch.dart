@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfBatch on FlutterMcpServer {
-  Future<dynamic> _handleBatchCoordTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleBatchCoordTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'execute_batch':
         if (client is BridgeDriver) {
@@ -10,13 +11,19 @@ extension _BfBatch on FlutterMcpServer {
           for (final action in actions) {
             if (action is Map<String, dynamic>) {
               final toolName = action['tool'] as String?;
-              final toolArgs = Map<String, dynamic>.from(action['args'] as Map? ?? {});
+              final toolArgs =
+                  Map<String, dynamic>.from(action['args'] as Map? ?? {});
               if (toolName != null) {
                 try {
                   final result = await client.callMethod(toolName, toolArgs);
-                  results.add({'tool': toolName, 'success': true, 'result': result});
+                  results.add(
+                      {'tool': toolName, 'success': true, 'result': result});
                 } catch (e) {
-                  results.add({'tool': toolName, 'success': false, 'error': e.toString()});
+                  results.add({
+                    'tool': toolName,
+                    'success': false,
+                    'error': e.toString()
+                  });
                 }
               }
             }
@@ -29,8 +36,16 @@ extension _BfBatch on FlutterMcpServer {
       // === NEW: Coordinate-based Actions ===
       case 'tap_at':
         if (client is BridgeDriver) {
-          await client.callMethod('tap_at', {'x': (args['x'] as num).toDouble(), 'y': (args['y'] as num).toDouble()});
-          return {"success": true, "action": "tap_at", "x": args['x'], "y": args['y']};
+          await client.callMethod('tap_at', {
+            'x': (args['x'] as num).toDouble(),
+            'y': (args['y'] as num).toDouble()
+          });
+          return {
+            "success": true,
+            "action": "tap_at",
+            "x": args['x'],
+            "y": args['y']
+          };
         }
         final fc = _asFlutterClient(client!, 'tap_at');
         final x = (args['x'] as num).toDouble();
@@ -40,8 +55,17 @@ extension _BfBatch on FlutterMcpServer {
 
       case 'long_press_at':
         if (client is BridgeDriver) {
-          await client.callMethod('long_press_at', {'x': (args['x'] as num).toDouble(), 'y': (args['y'] as num).toDouble(), 'duration': args['duration'] ?? 500});
-          return {"success": true, "action": "long_press_at", "x": args['x'], "y": args['y']};
+          await client.callMethod('long_press_at', {
+            'x': (args['x'] as num).toDouble(),
+            'y': (args['y'] as num).toDouble(),
+            'duration': args['duration'] ?? 500
+          });
+          return {
+            "success": true,
+            "action": "long_press_at",
+            "x": args['x'],
+            "y": args['y']
+          };
         }
         final fc = _asFlutterClient(client!, 'long_press_at');
         final x = (args['x'] as num).toDouble();
@@ -73,7 +97,11 @@ extension _BfBatch on FlutterMcpServer {
 
       case 'edge_swipe':
         if (client is BridgeDriver) {
-          return await client.callMethod('edge_swipe', {'edge': args['edge'], 'direction': args['direction'], 'distance': (args['distance'] as num?)?.toDouble() ?? 200});
+          return await client.callMethod('edge_swipe', {
+            'edge': args['edge'],
+            'direction': args['direction'],
+            'distance': (args['distance'] as num?)?.toDouble() ?? 200
+          });
         }
         final fc = _asFlutterClient(client!, 'edge_swipe');
         final edge = args['edge'] as String;
@@ -100,7 +128,12 @@ extension _BfBatch on FlutterMcpServer {
       // === NEW: Smart Scroll ===
       case 'scroll_until_visible':
         if (client is BridgeDriver) {
-          return await client.callMethod('scroll_until_visible', {'key': args['key'], 'text': args['text'], 'direction': args['direction'] ?? 'down', 'max_scrolls': args['max_scrolls'] ?? 10});
+          return await client.callMethod('scroll_until_visible', {
+            'key': args['key'],
+            'text': args['text'],
+            'direction': args['direction'] ?? 'down',
+            'max_scrolls': args['max_scrolls'] ?? 10
+          });
         }
         final fc = _asFlutterClient(client!, 'scroll_until_visible');
         return await _scrollUntilVisible(args, fc);

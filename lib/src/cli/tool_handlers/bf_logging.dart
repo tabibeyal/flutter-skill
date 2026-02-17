@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfLogging on FlutterMcpServer {
-  Future<dynamic> _handleLoggingTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleLoggingTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'get_logs':
         final logs = await client!.getLogs();
@@ -14,7 +15,8 @@ extension _BfLogging on FlutterMcpServer {
         };
       case 'get_errors':
         if (client is BridgeDriver) {
-          return await client.callMethod('get_errors', {'limit': args['limit'] ?? 50, 'offset': args['offset'] ?? 0});
+          return await client.callMethod('get_errors',
+              {'limit': args['limit'] ?? 50, 'offset': args['offset'] ?? 0});
         }
         final fc = _asFlutterClient(client!, 'get_errors');
         final allErrors = await fc.getErrors();
@@ -48,7 +50,8 @@ extension _BfLogging on FlutterMcpServer {
       // === HTTP / Network Monitoring ===
       case 'enable_network_monitoring':
         if (client is BridgeDriver) {
-          return await client.callMethod('enable_network_monitoring', {'enable': args['enable'] ?? true});
+          return await client.callMethod(
+              'enable_network_monitoring', {'enable': args['enable'] ?? true});
         }
         final fc = _asFlutterClient(client!, 'enable_network_monitoring');
         final enable = args['enable'] ?? true;
@@ -66,7 +69,8 @@ extension _BfLogging on FlutterMcpServer {
 
       case 'get_network_requests':
         if (client is BridgeDriver) {
-          return await client.callMethod('get_network_requests', {'limit': args['limit'] ?? 20});
+          return await client.callMethod(
+              'get_network_requests', {'limit': args['limit'] ?? 20});
         }
         final fc = _asFlutterClient(client!, 'get_network_requests');
         final limit = int.tryParse('${args['limit'] ?? ''}') ?? 20;

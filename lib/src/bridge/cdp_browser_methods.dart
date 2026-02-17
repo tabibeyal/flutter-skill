@@ -9,7 +9,8 @@ extension CdpBrowserMethods on CdpDriver {
     return result;
   }
 
-  Future<Map<String, dynamic>> setCookie(String name, String value, {String? domain, String? path}) async {
+  Future<Map<String, dynamic>> setCookie(String name, String value,
+      {String? domain, String? path}) async {
     await _call('Network.setCookie', {
       'name': name,
       'value': value,
@@ -26,14 +27,16 @@ extension CdpBrowserMethods on CdpDriver {
 
   /// LocalStorage operations.
   Future<Map<String, dynamic>> getLocalStorage() async {
-    final result = await _evalJs('JSON.stringify(Object.fromEntries(Object.entries(localStorage)))');
+    final result = await _evalJs(
+        'JSON.stringify(Object.fromEntries(Object.entries(localStorage)))');
     final v = result['result']?['value'] as String?;
     if (v == null) return {};
     return jsonDecode(v) as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> setLocalStorage(String key, String value) async {
-    await _evalJs("localStorage.setItem('${key.replaceAll("'", "\\'")}', '${value.replaceAll("'", "\\'")}')");
+    await _evalJs(
+        "localStorage.setItem('${key.replaceAll("'", "\\'")}', '${value.replaceAll("'", "\\'")}')");
     return {"success": true};
   }
 
@@ -45,7 +48,9 @@ extension CdpBrowserMethods on CdpDriver {
   /// Get console messages (via Runtime.consoleAPICalled events).
   Future<Map<String, dynamic>> getConsoleMessages() async {
     // Enable console tracking if not already
-    try { await _call('Runtime.enable'); } catch (_) {}
+    try {
+      await _call('Runtime.enable');
+    } catch (_) {}
     final result = await _evalJs('''
       JSON.stringify(window.__cdpConsoleLog || [])
     ''');
@@ -69,7 +74,8 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Set viewport size.
-  Future<Map<String, dynamic>> setViewport(int width, int height, {double deviceScaleFactor = 1.0}) async {
+  Future<Map<String, dynamic>> setViewport(int width, int height,
+      {double deviceScaleFactor = 1.0}) async {
     await _call('Emulation.setDeviceMetricsOverride', {
       'width': width,
       'height': height,
@@ -95,7 +101,8 @@ extension CdpBrowserMethods on CdpDriver {
     final preset = lookupDevice(device);
     if (preset == null) {
       // Find close matches for helpful error
-      final normalized = device.trim().toLowerCase().replaceAll(RegExp(r'[\s_]+'), '-');
+      final normalized =
+          device.trim().toLowerCase().replaceAll(RegExp(r'[\s_]+'), '-');
       final suggestions = devicePresets.keys
           .where((k) => k.contains(normalized) || normalized.contains(k))
           .take(10)
@@ -119,7 +126,8 @@ extension CdpBrowserMethods on CdpDriver {
       await _call('Emulation.setTouchEmulationEnabled', {'enabled': true});
     }
     if (preset.userAgent != null) {
-      await _call('Emulation.setUserAgentOverride', {'userAgent': preset.userAgent});
+      await _call(
+          'Emulation.setUserAgentOverride', {'userAgent': preset.userAgent});
     }
     return {
       "success": true,
@@ -141,20 +149,26 @@ extension CdpBrowserMethods on CdpDriver {
       final data = result['data'] as String?;
       if (data != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final file = File('${Directory.systemTemp.path}/flutter_skill_page_$timestamp.pdf');
+        final file = File(
+            '${Directory.systemTemp.path}/flutter_skill_page_$timestamp.pdf');
         await file.writeAsBytes(base64.decode(data));
         return {"success": true, "file_path": file.path};
       }
       return {"success": false, "message": "No PDF data"};
     } catch (e) {
-      return {"success": false, "message": "PDF generation requires headless Chrome: $e"};
+      return {
+        "success": false,
+        "message": "PDF generation requires headless Chrome: $e"
+      };
     }
   }
 
   /// Wait for navigation (page load).
-  Future<Map<String, dynamic>> waitForNavigation({int timeoutMs = 10000}) async {
+  Future<Map<String, dynamic>> waitForNavigation(
+      {int timeoutMs = 10000}) async {
     // Simple approach: wait for load event
-    await Future.delayed(Duration(milliseconds: timeoutMs > 3000 ? 3000 : timeoutMs));
+    await Future.delayed(
+        Duration(milliseconds: timeoutMs > 3000 ? 3000 : timeoutMs));
     final url = await getCurrentRoute();
     return {"success": true, "url": url};
   }
@@ -181,7 +195,8 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Get element attribute.
-  Future<Map<String, dynamic>> getAttribute(String key, String attribute) async {
+  Future<Map<String, dynamic>> getAttribute(
+      String key, String attribute) async {
     final result = await _evalJs('''
       (() => {
         const el = document.getElementById('$key') || document.querySelector('[data-testid="$key"]');
@@ -193,7 +208,8 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Get element CSS property.
-  Future<Map<String, dynamic>> getCssProperty(String key, String property) async {
+  Future<Map<String, dynamic>> getCssProperty(
+      String key, String property) async {
     final result = await _evalJs('''
       (() => {
         const el = document.getElementById('$key') || document.querySelector('[data-testid="$key"]');
@@ -207,13 +223,15 @@ extension CdpBrowserMethods on CdpDriver {
   /// Get element bounding box (public).
   Future<Map<String, dynamic>> getBoundingBox(String key) async {
     final bounds = await _getElementBounds(key);
-    if (bounds == null) return {"success": false, "message": "Element not found"};
+    if (bounds == null)
+      return {"success": false, "message": "Element not found"};
     return {"success": true, "bounds": bounds};
   }
 
   /// Count elements matching selector.
   Future<int> countElements(String selector) async {
-    final result = await _evalJs('document.querySelectorAll("$selector").length');
+    final result =
+        await _evalJs('document.querySelectorAll("$selector").length');
     return result['result']?['value'] as int? ?? 0;
   }
 
@@ -282,17 +300,25 @@ extension CdpBrowserMethods on CdpDriver {
         : 'document.documentElement.outerHTML';
     final result = await _evalJs(selectorJs);
     var html = (result['result']?['value'] as String?) ?? '';
-    if (removeScripts) html = html.replaceAll(RegExp(r'<script[\s\S]*?<\/script>', caseSensitive: false), '');
-    if (removeStyles) html = html.replaceAll(RegExp(r'<style[\s\S]*?<\/style>', caseSensitive: false), '');
+    if (removeScripts)
+      html = html.replaceAll(
+          RegExp(r'<script[\s\S]*?<\/script>', caseSensitive: false), '');
+    if (removeStyles)
+      html = html.replaceAll(
+          RegExp(r'<style[\s\S]*?<\/style>', caseSensitive: false), '');
     if (removeComments) html = html.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
-    if (removeMeta) html = html.replaceAll(RegExp(r'<meta[^>]*/?>', caseSensitive: false), '');
+    if (removeMeta)
+      html =
+          html.replaceAll(RegExp(r'<meta[^>]*/?>', caseSensitive: false), '');
     if (minify) html = html.replaceAll(RegExp(r'\s+'), ' ').trim();
     return html;
   }
 
   /// Get visible text content (skips hidden elements).
   Future<String> getVisibleText({String? selector}) async {
-    final root = selector != null ? 'document.querySelector(${jsonEncode(selector)})' : 'document.body';
+    final root = selector != null
+        ? 'document.querySelector(${jsonEncode(selector)})'
+        : 'document.body';
     final js = '''
 (function() {
   var root = $root;
@@ -319,7 +345,8 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Set geolocation.
-  Future<Map<String, dynamic>> setGeolocation(double latitude, double longitude, {double accuracy = 100}) async {
+  Future<Map<String, dynamic>> setGeolocation(double latitude, double longitude,
+      {double accuracy = 100}) async {
     await _call('Emulation.setGeolocationOverride', {
       'latitude': latitude,
       'longitude': longitude,
@@ -337,7 +364,9 @@ extension CdpBrowserMethods on CdpDriver {
   /// Set dark/light mode.
   Future<Map<String, dynamic>> setColorScheme(String scheme) async {
     await _call('Emulation.setEmulatedMedia', {
-      'features': [{'name': 'prefers-color-scheme', 'value': scheme}],
+      'features': [
+        {'name': 'prefers-color-scheme', 'value': scheme}
+      ],
     });
     return {"success": true, "scheme": scheme};
   }
@@ -349,7 +378,8 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Throttle network (simulate slow connections).
-  Future<Map<String, dynamic>> throttleNetwork({int latencyMs = 0, int downloadKbps = -1, int uploadKbps = -1}) async {
+  Future<Map<String, dynamic>> throttleNetwork(
+      {int latencyMs = 0, int downloadKbps = -1, int uploadKbps = -1}) async {
     await _call('Network.emulateNetworkConditions', {
       'offline': false,
       'latency': latencyMs,
@@ -381,7 +411,8 @@ extension CdpBrowserMethods on CdpDriver {
   // ── File upload ──
 
   /// Upload file to input[type=file].
-  Future<Map<String, dynamic>> uploadFile(String selector, List<String> filePaths) async {
+  Future<Map<String, dynamic>> uploadFile(
+      String selector, List<String> filePaths) async {
     // Find the file input node
     final doc = await _call('DOM.getDocument');
     final rootNodeId = doc['root']?['nodeId'] as int? ?? 0;
@@ -390,7 +421,8 @@ extension CdpBrowserMethods on CdpDriver {
       'selector': selector,
     });
     final nodeId = result['nodeId'] as int?;
-    if (nodeId == null || nodeId == 0) return {"success": false, "message": "File input not found"};
+    if (nodeId == null || nodeId == 0)
+      return {"success": false, "message": "File input not found"};
 
     await _call('DOM.setFileInputFiles', {
       'nodeId': nodeId,
@@ -409,7 +441,8 @@ extension CdpBrowserMethods on CdpDriver {
     // Dialog events come as CDP events — handled in _onMessage
   }
 
-  Future<Map<String, dynamic>> handleDialog(bool accept, {String? promptText}) async {
+  Future<Map<String, dynamic>> handleDialog(bool accept,
+      {String? promptText}) async {
     await _call('Page.handleJavaScriptDialog', {
       'accept': accept,
       if (promptText != null) 'promptText': promptText,
@@ -440,11 +473,13 @@ extension CdpBrowserMethods on CdpDriver {
       }
       return result;
     }
+
     final frames = flatten(tree['frameTree'] as Map<String, dynamic>? ?? {});
     return {"frames": frames, "count": frames.length};
   }
 
-  Future<Map<String, dynamic>> evalInFrame(String frameId, String expression) async {
+  Future<Map<String, dynamic>> evalInFrame(
+      String frameId, String expression) async {
     // Create isolated world in the target frame
     final world = await _call('Page.createIsolatedWorld', {
       'frameId': frameId,
@@ -452,7 +487,8 @@ extension CdpBrowserMethods on CdpDriver {
       'grantUniveralAccess': true,
     });
     final contextId = world['executionContextId'] as int?;
-    if (contextId == null) return {"success": false, "message": "Cannot access frame"};
+    if (contextId == null)
+      return {"success": false, "message": "Cannot access frame"};
     final result = await _call('Runtime.evaluate', {
       'expression': expression,
       'contextId': contextId,
@@ -465,15 +501,19 @@ extension CdpBrowserMethods on CdpDriver {
 
   Future<Map<String, dynamic>> getTabs() async {
     final client = HttpClient();
-    final request = await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json'));
+    final request =
+        await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json'));
     final response = await request.close();
     final body = await response.transform(utf8.decoder).join();
     client.close();
-    final tabs = (jsonDecode(body) as List).where((t) => t['type'] == 'page').map((t) => {
-      'id': t['id'],
-      'title': t['title'],
-      'url': t['url'],
-    }).toList();
+    final tabs = (jsonDecode(body) as List)
+        .where((t) => t['type'] == 'page')
+        .map((t) => {
+              'id': t['id'],
+              'title': t['title'],
+              'url': t['url'],
+            })
+        .toList();
     return {"tabs": tabs, "count": tabs.length};
   }
 
@@ -483,7 +523,10 @@ extension CdpBrowserMethods on CdpDriver {
       final tabs = await getTabs();
       final tabList = tabs['tabs'] as List?;
       if (tabList != null && tabList.length >= _maxTabs) {
-        return {"success": false, "error": "Max tabs limit reached ($_maxTabs). Close some tabs first."};
+        return {
+          "success": false,
+          "error": "Max tabs limit reached ($_maxTabs). Close some tabs first."
+        };
       }
     } catch (_) {}
     final result = await _call('Target.createTarget', {'url': url});
@@ -504,9 +547,12 @@ extension CdpBrowserMethods on CdpDriver {
 
   // _interceptRules field is in CdpDriver class
 
-  Future<Map<String, dynamic>> interceptRequests(String urlPattern, {int? statusCode, String? body, Map<String, String>? headers}) async {
+  Future<Map<String, dynamic>> interceptRequests(String urlPattern,
+      {int? statusCode, String? body, Map<String, String>? headers}) async {
     await _call('Fetch.enable', {
-      'patterns': [{'urlPattern': urlPattern, 'requestStage': 'Response'}],
+      'patterns': [
+        {'urlPattern': urlPattern, 'requestStage': 'Response'}
+      ],
     });
     _interceptRules[urlPattern] = {
       'statusCode': statusCode ?? 200,
@@ -584,16 +630,22 @@ extension CdpBrowserMethods on CdpDriver {
 
   Future<Map<String, dynamic>> compareScreenshot(String baselinePath) async {
     final current = await takeScreenshot();
-    if (current == null) return {"success": false, "message": "Screenshot failed"};
+    if (current == null)
+      return {"success": false, "message": "Screenshot failed"};
 
-    final currentFile = File('${Directory.systemTemp.path}/flutter_skill_compare_${DateTime.now().millisecondsSinceEpoch}.png');
+    final currentFile = File(
+        '${Directory.systemTemp.path}/flutter_skill_compare_${DateTime.now().millisecondsSinceEpoch}.png');
     await currentFile.writeAsBytes(base64.decode(current));
 
     final baselineFile = File(baselinePath);
     if (!baselineFile.existsSync()) {
       // No baseline — save current as baseline
       await currentFile.copy(baselinePath);
-      return {"success": true, "action": "baseline_created", "path": baselinePath};
+      return {
+        "success": true,
+        "action": "baseline_created",
+        "path": baselinePath
+      };
     }
 
     // Basic pixel comparison
@@ -629,7 +681,8 @@ extension CdpBrowserMethods on CdpDriver {
 
   // ── Wait for network idle ──
 
-  Future<Map<String, dynamic>> waitForNetworkIdle({int timeoutMs = 10000, int idleMs = 500}) async {
+  Future<Map<String, dynamic>> waitForNetworkIdle(
+      {int timeoutMs = 10000, int idleMs = 500}) async {
     final result = await _evalJs('''
       new Promise((resolve) => {
         let pending = 0;
@@ -668,7 +721,8 @@ extension CdpBrowserMethods on CdpDriver {
   // ── Session/tab storage ──
 
   Future<Map<String, dynamic>> getSessionStorage() async {
-    final result = await _evalJs('JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))');
+    final result = await _evalJs(
+        'JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))');
     final v = result['result']?['value'] as String?;
     if (v == null) return {};
     return jsonDecode(v) as Map<String, dynamic>;
@@ -679,5 +733,4 @@ extension CdpBrowserMethods on CdpDriver {
     final result = await _evalJs('window.length');
     return {"window_count": result['result']?['value'] ?? 1};
   }
-
 }

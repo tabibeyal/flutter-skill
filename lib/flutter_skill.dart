@@ -113,7 +113,13 @@ class FlutterSkillBinding {
               },
             });
           }
-          return jsonEncode({'found': true, 'element': {'type': element.widget.runtimeType.toString(), 'key': key}});
+          return jsonEncode({
+            'found': true,
+            'element': {
+              'type': element.widget.runtimeType.toString(),
+              'key': key
+            }
+          });
 
         case 'get_text':
           final key = params['key'] as String?;
@@ -132,10 +138,13 @@ class FlutterSkillBinding {
           final key = params['key'] as String?;
           final text = params['text'] as String?;
           final element = _findElement(key: key, text: text);
-          if (element == null) return jsonEncode({'success': false, 'message': 'Element not found'});
+          if (element == null)
+            return jsonEncode(
+                {'success': false, 'message': 'Element not found'});
           final renderObj = element.renderObject;
           if (renderObj is RenderBox) {
-            final center = renderObj.localToGlobal(renderObj.size.center(Offset.zero));
+            final center =
+                renderObj.localToGlobal(renderObj.size.center(Offset.zero));
             // Schedule the tap
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _performTapAt(center.dx, center.dy);
@@ -148,10 +157,13 @@ class FlutterSkillBinding {
           final key = params['key'] as String?;
           final textVal = params['text'] as String? ?? '';
           final element = key != null ? _findElementByKey(key) : null;
-          if (element == null) return jsonEncode({'success': false, 'message': 'Element not found'});
+          if (element == null)
+            return jsonEncode(
+                {'success': false, 'message': 'Element not found'});
           final renderObj = element.renderObject;
           if (renderObj is RenderBox) {
-            final center = renderObj.localToGlobal(renderObj.size.center(Offset.zero));
+            final center =
+                renderObj.localToGlobal(renderObj.size.center(Offset.zero));
             // Tap to focus, then enter text
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               await _performTapAt(center.dx, center.dy);
@@ -162,7 +174,8 @@ class FlutterSkillBinding {
                 controller.text = textVal;
               }
             });
-            return jsonEncode({'success': true, 'message': 'Text entry scheduled'});
+            return jsonEncode(
+                {'success': true, 'message': 'Text entry scheduled'});
           }
           return jsonEncode({'success': false, 'message': 'No render object'});
 
@@ -191,6 +204,7 @@ class FlutterSkillBinding {
       }
       el.visitChildren(visit);
     }
+
     visit(element);
     return controller;
   }
@@ -212,8 +226,9 @@ class FlutterSkillBinding {
     });
 
     // 1b. Interactive Elements Structured (Enhanced inspect)
-    developer.registerExtension('ext.flutter.flutter_skill.interactiveStructured',
-        (method, parameters) async {
+    developer
+        .registerExtension('ext.flutter.flutter_skill.interactiveStructured',
+            (method, parameters) async {
       try {
         final elements = _findInteractiveElementsStructured();
         return developer.ServiceExtensionResponse.result(
@@ -244,7 +259,8 @@ class FlutterSkillBinding {
         final key = parameters['key'];
         final text = parameters['text'];
         final refId = parameters['ref'];
-        final result = await _performTapWithDetails(key: key, text: text, refId: refId);
+        final result =
+            await _performTapWithDetails(key: key, text: text, refId: refId);
         return developer.ServiceExtensionResponse.result(jsonEncode(result));
       } catch (e, stack) {
         return _errorResponse(e, stack);
@@ -267,7 +283,8 @@ class FlutterSkillBinding {
             },
           }));
         }
-        final result = await _performEnterTextWithDetails(key: key, text: text, refId: refId);
+        final result = await _performEnterTextWithDetails(
+            key: key, text: text, refId: refId);
         return developer.ServiceExtensionResponse.result(jsonEncode(result));
       } catch (e, stack) {
         return _errorResponse(e, stack);
@@ -705,8 +722,11 @@ class FlutterSkillBinding {
             jsonEncode({'success': false, 'error': 'Missing key parameter'}),
           );
         }
-        final modifiers = (parameters['modifiers'] ?? '').split(',').where((s) => s.isNotEmpty).toList();
-        
+        final modifiers = (parameters['modifiers'] ?? '')
+            .split(',')
+            .where((s) => s.isNotEmpty)
+            .toList();
+
         final keyMap = <String, LogicalKeyboardKey>{
           'enter': LogicalKeyboardKey.enter,
           'tab': LogicalKeyboardKey.tab,
@@ -724,8 +744,8 @@ class FlutterSkillBinding {
           'pagedown': LogicalKeyboardKey.pageDown,
         };
 
-        final logicalKey = keyMap[key.toLowerCase()]
-            ?? LogicalKeyboardKey.findKeyByKeyId(key.codeUnitAt(0));
+        final logicalKey = keyMap[key.toLowerCase()] ??
+            LogicalKeyboardKey.findKeyByKeyId(key.codeUnitAt(0));
 
         if (logicalKey == null) {
           return developer.ServiceExtensionResponse.result(
@@ -751,20 +771,26 @@ class FlutterSkillBinding {
           final binding = WidgetsBinding.instance;
           // ignore: unused_local_variable
           final pointer = _pointerCounter++;
-          
+
           // Create a RawKeyDownEvent and dispatch through the focus system
           // ignore: unused_local_variable
           final keyDown = KeyDownEvent(
-            physicalKey: PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter,
+            physicalKey: PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ??
+                PhysicalKeyboardKey.enter,
             logicalKey: logicalKey,
-            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+            timeStamp:
+                Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
           );
 
           // Dispatch through ServicesBinding
-          await ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
+          await ServicesBinding.instance.keyEventManager
+              .handleKeyData(ui.KeyData(
             type: ui.KeyEventType.down,
-            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
-            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter).usbHidUsage,
+            timeStamp:
+                Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ??
+                    PhysicalKeyboardKey.enter)
+                .usbHidUsage,
             logical: logicalKey.keyId,
             character: key.length == 1 ? key : null,
             synthesized: false,
@@ -772,10 +798,14 @@ class FlutterSkillBinding {
 
           await Future.delayed(const Duration(milliseconds: 50));
 
-          await ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
+          await ServicesBinding.instance.keyEventManager
+              .handleKeyData(ui.KeyData(
             type: ui.KeyEventType.up,
-            timeStamp: Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
-            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ?? PhysicalKeyboardKey.enter).usbHidUsage,
+            timeStamp:
+                Duration(milliseconds: DateTime.now().millisecondsSinceEpoch),
+            physical: (PhysicalKeyboardKey.findKeyByCode(logicalKey.keyId) ??
+                    PhysicalKeyboardKey.enter)
+                .usbHidUsage,
             logical: logicalKey.keyId,
             character: null,
             synthesized: false,
@@ -1064,7 +1094,7 @@ class FlutterSkillBinding {
     if (SemanticRefGenerator.isLegacyRef(refId)) {
       return _findElementByLegacyRef(refId);
     }
-    
+
     // First, try cached element
     final cachedElement = SemanticRefGenerator.getCachedElement(refId);
     if (cachedElement != null) {
@@ -1074,11 +1104,11 @@ class FlutterSkillBinding {
         return element;
       }
     }
-    
+
     // Check last inspect result cache
     if (_lastInspectResult != null && _lastInspectResult!.containsKey(refId)) {
       final targetElementData = _lastInspectResult![refId]!;
-      
+
       // Extract bounds to find the element at center position
       final bounds = targetElementData['bounds'] as Map<String, dynamic>?;
       if (bounds != null) {
@@ -1086,39 +1116,39 @@ class FlutterSkillBinding {
         final y = bounds['y'] as int? ?? 0;
         final w = bounds['w'] as int? ?? 0;
         final h = bounds['h'] as int? ?? 0;
-        
+
         if (w > 0 && h > 0) {
           final centerX = x + w / 2;
           final centerY = y + h / 2;
           return _findElementAtPosition(Offset(centerX, centerY));
         }
       }
-      
+
       // Fallback: try to find by text, label, or key if available
       final text = targetElementData['text'] as String?;
       final label = targetElementData['label'] as String?;
       final key = targetElementData['key'] as String?;
-      
+
       if (key != null) {
         final found = _findElementByKey(key);
         if (found != null) return found;
       }
-      
+
       if (text != null) {
         final found = _findElementByText(text);
         if (found != null) return found;
       }
-      
+
       if (label != null) {
         final found = _findElementByText(label);
         if (found != null) return found;
       }
     }
-    
+
     // Cache miss - do fresh inspect to rebuild cache
     final structured = _findInteractiveElementsStructured();
     final elements = structured['elements'] as List<dynamic>? ?? [];
-    
+
     // Find the element with matching ref ID
     Map<String, dynamic>? targetElementData;
     for (final elementData in elements) {
@@ -1127,9 +1157,9 @@ class FlutterSkillBinding {
         break;
       }
     }
-    
+
     if (targetElementData == null) return null;
-    
+
     // Extract bounds to find the element at center position
     final bounds = targetElementData['bounds'] as Map<String, dynamic>?;
     if (bounds != null) {
@@ -1137,31 +1167,31 @@ class FlutterSkillBinding {
       final y = bounds['y'] as int? ?? 0;
       final w = bounds['w'] as int? ?? 0;
       final h = bounds['h'] as int? ?? 0;
-      
+
       if (w > 0 && h > 0) {
         final centerX = x + w / 2;
         final centerY = y + h / 2;
         return _findElementAtPosition(Offset(centerX, centerY));
       }
     }
-    
+
     return null;
   }
-  
+
   /// Handle legacy ref format for backward compatibility
   static Element? _findElementByLegacyRef(String refId) {
     final legacyData = SemanticRefGenerator.parseLegacyRef(refId);
     if (legacyData == null) return null;
-    
+
     // Re-run inspect to get current elements
     final structured = _findInteractiveElementsStructured();
     final elements = structured['elements'] as List<dynamic>? ?? [];
-    
+
     final role = legacyData['role'] as String?;
     final index = legacyData['index'] as int? ?? 0;
-    
+
     if (role == null) return null;
-    
+
     // Find elements of matching semantic role and get by index
     final matchingElements = <Map<String, dynamic>>[];
     for (final elementData in elements) {
@@ -1172,36 +1202,37 @@ class FlutterSkillBinding {
         }
       }
     }
-    
+
     if (matchingElements.isEmpty || index >= matchingElements.length) {
       return null;
     }
-    
+
     // Get element at legacy index
     final targetElementData = matchingElements[index];
-    
+
     // Find by ref ID using the new system
     final newRefId = targetElementData['ref'] as String?;
     if (newRefId != null) {
       return _findElementByRefId(newRefId);
     }
-    
+
     return null;
   }
 
   /// Find element at a specific position by traversing the widget tree
   static Element? _findElementAtPosition(Offset position) {
     Element? found;
-    
+
     void visit(Element element) {
       if (found != null) return;
-      
+
       final renderObject = element.renderObject;
       if (renderObject is RenderBox && renderObject.hasSize) {
         final offset = renderObject.localToGlobal(Offset.zero);
         final size = renderObject.size;
-        
-        final bounds = Rect.fromLTWH(offset.dx, offset.dy, size.width, size.height);
+
+        final bounds =
+            Rect.fromLTWH(offset.dx, offset.dy, size.width, size.height);
         if (bounds.contains(position)) {
           // Check if this is an interactive element
           final widget = element.widget;
@@ -1211,7 +1242,7 @@ class FlutterSkillBinding {
           }
         }
       }
-      
+
       element.visitChildren(visit);
     }
 
@@ -1242,7 +1273,9 @@ class FlutterSkillBinding {
   }
 
   /// Helper method to enter text into a specific element
-  static Future<Map<String, dynamic>> _enterTextIntoElement(Element element, String text, {required String method}) async {
+  static Future<Map<String, dynamic>> _enterTextIntoElement(
+      Element element, String text,
+      {required String method}) async {
     final renderObject = element.renderObject;
     if (renderObject is! RenderBox) {
       return {
@@ -1255,7 +1288,8 @@ class FlutterSkillBinding {
       };
     }
 
-    final center = renderObject.localToGlobal(renderObject.size.center(Offset.zero));
+    final center =
+        renderObject.localToGlobal(renderObject.size.center(Offset.zero));
 
     // Show indicator if enabled
     if (_indicatorsEnabled && _indicatorOverlay != null) {
@@ -1347,12 +1381,12 @@ class FlutterSkillBinding {
   static Future<Map<String, dynamic>> _performTapWithDetails(
       {String? key, String? text, String? refId}) async {
     Element? element;
-    
+
     // If refId is provided, find element by ref ID first
     if (refId != null) {
       element = _findElementByRefId(refId);
     }
-    
+
     // Fallback to key/text search if ref not found or not provided
     if (element == null) {
       element = _findElement(key: key, text: text);
@@ -1667,7 +1701,7 @@ class FlutterSkillBinding {
   static Future<Map<String, dynamic>> _performEnterTextWithDetails(
       {String? key, required String text, String? refId}) async {
     Element? element;
-    
+
     // If refId is provided, find element by ref ID first
     if (refId != null) {
       element = _findElementByRefId(refId);
@@ -1676,7 +1710,7 @@ class FlutterSkillBinding {
         return await _enterTextIntoElement(element, text, method: 'ref_id');
       }
     }
-    
+
     // If no key or refId provided (null or empty), try the currently focused TextField
     if ((key == null || key.isEmpty) && refId == null) {
       final focusedField = _findFocusedTextField();
@@ -1740,7 +1774,8 @@ class FlutterSkillBinding {
       if (key != null) {
         final similarKeys = _findSimilarKeys(key);
         if (similarKeys.isNotEmpty) {
-          suggestions.add('Similar keys found: ${similarKeys.take(5).toList()}');
+          suggestions
+              .add('Similar keys found: ${similarKeys.take(5).toList()}');
         }
 
         // Find TextField keys specifically
@@ -1751,19 +1786,22 @@ class FlutterSkillBinding {
                 k.toLowerCase().contains('text'))
             .toList();
         if (textFieldKeys.isNotEmpty) {
-          suggestions
-              .add('TextField keys available: ${textFieldKeys.take(5).toList()}');
+          suggestions.add(
+              'TextField keys available: ${textFieldKeys.take(5).toList()}');
         }
       }
 
-      suggestions.add('Use inspect_interactive() to find TextField elements with ref IDs');
-      suggestions.add('Or omit key/ref to enter text into the currently focused TextField');
+      suggestions.add(
+          'Use inspect_interactive() to find TextField elements with ref IDs');
+      suggestions.add(
+          'Or omit key/ref to enter text into the currently focused TextField');
 
       return {
         'success': false,
         'error': {
           'code': ErrorCode.elementNotFound,
-          'message': 'No TextField matching ${key != null ? "key '$key'" : (refId != null ? "ref '$refId'" : "criteria")} found',
+          'message':
+              'No TextField matching ${key != null ? "key '$key'" : (refId != null ? "ref '$refId'" : "criteria")} found',
         },
         'target': {'key': key, 'ref': refId},
         'suggestions': suggestions,
@@ -1771,7 +1809,8 @@ class FlutterSkillBinding {
     }
 
     // Use the helper method to enter text into the found element
-    return await _enterTextIntoElement(element, text, method: key != null ? 'key' : 'fallback');
+    return await _enterTextIntoElement(element, text,
+        method: key != null ? 'key' : 'fallback');
   }
 
   static Future<bool> _performScroll({String? key, String? text}) async {
@@ -2281,31 +2320,29 @@ class FlutterSkillBinding {
           enabled = widget.onPressed != null;
         }
         state['enabled'] = enabled;
-        
       } else if (widget is TextField || widget is TextFormField) {
         type = widget.runtimeType.toString();
         actions = ['tap', 'enter_text'];
-        
+
         // Get field label/hint - improved TextFormField label extraction
         if (widget is TextField) {
-          label = widget.decoration?.labelText ?? 
-                  widget.decoration?.hintText;
+          label = widget.decoration?.labelText ?? widget.decoration?.hintText;
         } else if (widget is TextFormField) {
           // For TextFormField, try to extract the label from the decoration
           // by looking at the child TextField
           String? extractedLabel;
-          
+
           void findTextField(Element e) {
             if (extractedLabel != null) return;
             final w = e.widget;
             if (w is TextField) {
-              extractedLabel = w.decoration?.labelText ?? 
-                               w.decoration?.hintText;
+              extractedLabel =
+                  w.decoration?.labelText ?? w.decoration?.hintText;
               return;
             }
             e.visitChildren(findTextField);
           }
-          
+
           findTextField(element);
           label = extractedLabel ?? 'Text Field';
         }
@@ -2314,57 +2351,50 @@ class FlutterSkillBinding {
         final currentValue = _getTextFieldValueByElement(element);
         state['value'] = currentValue ?? '';
         state['enabled'] = true; // TextFields are typically enabled
-        
       } else if (widget is Checkbox) {
         type = 'Checkbox';
         actions = ['tap'];
-        
+
         state['value'] = widget.value ?? false;
         state['enabled'] = widget.onChanged != null;
-        
       } else if (widget is Switch) {
         type = 'Switch';
         actions = ['tap'];
-        
+
         state['value'] = widget.value;
         state['enabled'] = widget.onChanged != null;
-        
       } else if (widget is Slider) {
         type = 'Slider';
-        actions = ['tap', 'swipe'];  // Can tap to set value or swipe to adjust
-        
+        actions = ['tap', 'swipe']; // Can tap to set value or swipe to adjust
+
         state['value'] = widget.value;
         state['min'] = widget.min;
         state['max'] = widget.max;
         state['enabled'] = widget.onChanged != null;
-        
       } else if (widget is DropdownButton) {
         type = 'DropdownButton';
         actions = ['tap'];
-        
+
         // Get current value if available
         state['value'] = widget.value?.toString() ?? '';
         state['enabled'] = widget.onChanged != null;
-        
       } else if (widget is InkWell && widget.onTap != null) {
         type = 'InkWell';
         text = _extractTextFrom(element);
         actions = ['tap', 'long_press'];
-        
+
         state['enabled'] = true;
-        
       } else if (widget is GestureDetector && widget.onTap != null) {
         type = 'GestureDetector';
         text = _extractTextFrom(element);
         actions = ['tap', 'long_press'];
-        
+
         state['enabled'] = true;
-        
       } else if (widget is ListTile) {
         type = 'ListTile';
         text = _extractTextFrom(element);
         actions = ['tap', 'long_press'];
-        
+
         state['enabled'] = widget.enabled;
       }
 
@@ -2395,7 +2425,7 @@ class FlutterSkillBinding {
         if (renderObject is RenderBox && renderObject.hasSize) {
           final offset = renderObject.localToGlobal(Offset.zero);
           final size = renderObject.size;
-          
+
           // Helper function to safely convert double to int
           int safeRound(double value) {
             if (!value.isFinite) return 0;
@@ -2410,12 +2440,12 @@ class FlutterSkillBinding {
           };
           elementEntry['bounds'] = bounds;
 
-          final isVisible = size.width > 0 && 
-                           size.height > 0 &&
-                           offset.dx.isFinite && 
-                           offset.dy.isFinite;
+          final isVisible = size.width > 0 &&
+              size.height > 0 &&
+              offset.dx.isFinite &&
+              offset.dy.isFinite;
           state['visible'] = isVisible;
-          
+
           // Cache element for performance optimization
           if (isVisible && refId.isNotEmpty) {
             SemanticRefGenerator.cacheElement(refId, element, bounds);
@@ -2470,7 +2500,7 @@ class FlutterSkillBinding {
       }
     });
 
-    final summary = summaryParts.isEmpty 
+    final summary = summaryParts.isEmpty
         ? 'No interactive elements found'
         : '${elements.length} interactive: ${summaryParts.join(', ')}';
 
@@ -2492,7 +2522,7 @@ class FlutterSkillBinding {
   /// Helper method to get TextField value by Element (used by structured inspect)
   static String? _getTextFieldValueByElement(Element element) {
     EditableTextState? editableTextState;
-    
+
     void findEditable(Element e) {
       if (editableTextState != null) return;
       if (e is StatefulElement && e.state is EditableTextState) {

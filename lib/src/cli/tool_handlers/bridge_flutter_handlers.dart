@@ -2,7 +2,8 @@ part of '../server.dart';
 
 extension _BridgeFlutterHandlers on FlutterMcpServer {
   /// Handle bridge/Flutter platform tools (non-CDP, non-connection)
-  Future<dynamic> _handleBridgeFlutterTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleBridgeFlutterTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     final handlers = [
       _handleInspectionTool,
       _handleInteractionTool,

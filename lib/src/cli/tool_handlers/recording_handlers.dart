@@ -3,7 +3,8 @@ part of '../server.dart';
 extension _RecordingHandlers on FlutterMcpServer {
   /// Test recording and video tools
   /// Returns null if the tool is not handled.
-  Future<dynamic> _handleRecordingTools(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _handleRecordingTools(
+      String name, Map<String, dynamic> args) async {
     if (name == 'record_start') {
       _isRecording = true;
       _recordedSteps.clear();
@@ -16,7 +17,11 @@ extension _RecordingHandlers on FlutterMcpServer {
       final duration = _recordingStartTime != null
           ? DateTime.now().difference(_recordingStartTime!).inMilliseconds
           : 0;
-      return {"steps": _recordedSteps, "duration_ms": duration, "step_count": _recordedSteps.length};
+      return {
+        "steps": _recordedSteps,
+        "duration_ms": duration,
+        "step_count": _recordedSteps.length
+      };
     }
 
     if (name == 'record_export') {
@@ -53,13 +58,20 @@ extension _RecordingHandlers on FlutterMcpServer {
         default:
           code = jsonEncode(_recordedSteps);
       }
-      return {"format": format, "code": code, "step_count": _recordedSteps.length};
+      return {
+        "format": format,
+        "code": code,
+        "step_count": _recordedSteps.length
+      };
     }
 
     // Video recording tools
     if (name == 'video_start') {
       if (_videoProcess != null) {
-        return {"success": false, "error": "Video recording already in progress"};
+        return {
+          "success": false,
+          "error": "Video recording already in progress"
+        };
       }
       final platform = await _detectSimulatorPlatform();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -68,14 +80,16 @@ extension _RecordingHandlers on FlutterMcpServer {
       try {
         Process process;
         if (platform == 'ios') {
-          process = await Process.start('xcrun', ['simctl', 'io', 'booted', 'recordVideo', path]);
+          process = await Process.start(
+              'xcrun', ['simctl', 'io', 'booted', 'recordVideo', path]);
           _videoProcess = process;
           _videoPath = path;
         } else {
           // Android: record on device, pull later
           final devicePath = '/sdcard/flutter_skill_video_$timestamp.mp4';
           final adb = _findAdb();
-          process = await Process.start(adb, ['-s', 'emulator-5554', 'shell', 'screenrecord', devicePath]);
+          process = await Process.start(adb,
+              ['-s', 'emulator-5554', 'shell', 'screenrecord', devicePath]);
           _videoProcess = process;
           _videoPath = path; // local path for after pull
           _videoDevicePath = devicePath;
@@ -93,7 +107,8 @@ extension _RecordingHandlers on FlutterMcpServer {
       }
       try {
         _videoProcess!.kill(ProcessSignal.sigint);
-        await _videoProcess!.exitCode.timeout(const Duration(seconds: 5), onTimeout: () {
+        await _videoProcess!.exitCode.timeout(const Duration(seconds: 5),
+            onTimeout: () {
           _videoProcess!.kill();
           return -1;
         });
@@ -108,7 +123,8 @@ extension _RecordingHandlers on FlutterMcpServer {
       // For Android, pull the file from device
       if (platform == 'android' && devicePath != null && path != null) {
         try {
-          await Process.run(_findAdb(), ['-s', 'emulator-5554', 'pull', devicePath, path]);
+          await Process.run(
+              _findAdb(), ['-s', 'emulator-5554', 'pull', devicePath, path]);
         } catch (_) {}
       }
       return {"path": path, "platform": platform, "success": true};

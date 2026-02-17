@@ -6,37 +6,81 @@ extension _ToolDefinitions on FlutterMcpServer {
     // Determine current connection mode for smart filtering
     final hasCdp = _cdpDriver != null;
     final hasBridge = _client is BridgeDriver && _cdpDriver == null;
-    final hasFlutter = _client is FlutterSkillClient && _client is! BridgeDriver;
+    final hasFlutter =
+        _client is FlutterSkillClient && _client is! BridgeDriver;
     final hasConnection = _client != null || hasCdp;
 
     // CDP-only tools that don't apply to bridge/Flutter platforms
     const cdpOnlyTools = <String>{
-      'connect_cdp', 'get_title', 'get_page_source', 'get_visible_text',
-      'count_elements', 'is_visible', 'get_attribute', 'get_css_property',
-      'get_bounding_box', 'get_cookies', 'set_cookie', 'clear_cookies',
-      'get_local_storage', 'set_local_storage', 'clear_local_storage',
-      'get_session_storage', 'get_console_messages', 'get_network_requests',
-      'navigate', 'go_forward', 'reload', 'set_viewport', 'emulate_device',
-      'generate_pdf', 'wait_for_navigation', 'wait_for_network_idle',
-      'get_tabs', 'new_tab', 'close_tab', 'switch_tab', 'get_frames',
-      'eval_in_frame', 'get_window_handles', 'install_dialog_handler',
-      'handle_dialog', 'intercept_requests', 'clear_interceptions',
-      'block_urls', 'throttle_network', 'go_offline', 'clear_browser_data',
-      'accessibility_audit', 'set_geolocation', 'set_timezone',
-      'set_color_scheme', 'upload_file', 'compare_screenshot',
-      'highlight_element', 'mock_response', 'highlight_elements',
+      'connect_cdp',
+      'get_title',
+      'get_page_source',
+      'get_visible_text',
+      'count_elements',
+      'is_visible',
+      'get_attribute',
+      'get_css_property',
+      'get_bounding_box',
+      'get_cookies',
+      'set_cookie',
+      'clear_cookies',
+      'get_local_storage',
+      'set_local_storage',
+      'clear_local_storage',
+      'get_session_storage',
+      'get_console_messages',
+      'get_network_requests',
+      'navigate',
+      'go_forward',
+      'reload',
+      'set_viewport',
+      'emulate_device',
+      'generate_pdf',
+      'wait_for_navigation',
+      'wait_for_network_idle',
+      'get_tabs',
+      'new_tab',
+      'close_tab',
+      'switch_tab',
+      'get_frames',
+      'eval_in_frame',
+      'get_window_handles',
+      'install_dialog_handler',
+      'handle_dialog',
+      'intercept_requests',
+      'clear_interceptions',
+      'block_urls',
+      'throttle_network',
+      'go_offline',
+      'clear_browser_data',
+      'accessibility_audit',
+      'set_geolocation',
+      'set_timezone',
+      'set_color_scheme',
+      'upload_file',
+      'compare_screenshot',
+      'highlight_element',
+      'mock_response',
+      'highlight_elements',
     };
 
     // Flutter VM Service-only tools
     const flutterOnlyTools = <String>{
-      'get_widget_tree', 'get_widget_properties', 'find_by_type',
-      'hot_reload', 'hot_restart',
+      'get_widget_tree',
+      'get_widget_properties',
+      'find_by_type',
+      'hot_reload',
+      'hot_restart',
     };
 
     // Mobile-only tools
     const mobileOnlyTools = <String>{
-      'native_tap', 'native_input_text', 'native_swipe', 'native_screenshot',
-      'auth_biometric', 'auth_deeplink',
+      'native_tap',
+      'native_input_text',
+      'native_swipe',
+      'native_screenshot',
+      'auth_biometric',
+      'auth_deeplink',
     };
 
     final allTools = <Map<String, dynamic>>[
@@ -323,7 +367,8 @@ Omitting session_id in other tools will use the active session.""",
       // CDP Connection
       {
         "name": "connect_cdp",
-        "description": """Connect to any web page via Chrome DevTools Protocol (CDP).
+        "description":
+            """Connect to any web page via Chrome DevTools Protocol (CDP).
 
 No SDK injection needed — works with ANY website, React/Vue/Angular apps, or any web content.
 
@@ -350,8 +395,7 @@ They will automatically route through the CDP connection.""",
             },
             "port": {
               "type": "integer",
-              "description":
-                  "Chrome remote debugging port (default: 9222)"
+              "description": "Chrome remote debugging port (default: 9222)"
             },
             "launch_chrome": {
               "type": "boolean",
@@ -360,7 +404,8 @@ They will automatically route through the CDP connection.""",
             },
             "headless": {
               "type": "boolean",
-              "description": "Run Chrome in headless mode (default: false). Useful for CI/CD."
+              "description":
+                  "Run Chrome in headless mode (default: false). Useful for CI/CD."
             },
             "chrome_path": {
               "type": "string",
@@ -368,7 +413,8 @@ They will automatically route through the CDP connection.""",
             },
             "proxy": {
               "type": "string",
-              "description": "Proxy server URL (e.g. 'http://proxy:8080' or 'socks5://proxy:1080')."
+              "description":
+                  "Proxy server URL (e.g. 'http://proxy:8080' or 'socks5://proxy:1080')."
             },
             "ignore_ssl": {
               "type": "boolean",
@@ -376,7 +422,8 @@ They will automatically route through the CDP connection.""",
             },
             "max_tabs": {
               "type": "integer",
-              "description": "Maximum number of tabs allowed (default: 20). Prevents runaway tab creation."
+              "description":
+                  "Maximum number of tabs allowed (default: 20). Prevents runaway tab creation."
             },
           },
           "required": ["url"],
@@ -394,10 +441,23 @@ Returns status code, headers, and response body.""",
           "type": "object",
           "properties": {
             "url": {"type": "string", "description": "Request URL"},
-            "method": {"type": "string", "description": "HTTP method (GET, POST, PUT, PATCH, DELETE). Default: GET"},
-            "headers": {"type": "object", "description": "Request headers as key-value pairs"},
-            "body": {"type": "string", "description": "Request body (typically JSON string)"},
-            "timeout": {"type": "integer", "description": "Timeout in milliseconds (default: 30000)"},
+            "method": {
+              "type": "string",
+              "description":
+                  "HTTP method (GET, POST, PUT, PATCH, DELETE). Default: GET"
+            },
+            "headers": {
+              "type": "object",
+              "description": "Request headers as key-value pairs"
+            },
+            "body": {
+              "type": "string",
+              "description": "Request body (typically JSON string)"
+            },
+            "timeout": {
+              "type": "integer",
+              "description": "Timeout in milliseconds (default: 30000)"
+            },
           },
           "required": ["url"],
         },
@@ -430,71 +490,737 @@ After starting, point the web SDK at ws://127.0.0.1:<port>.""",
       },
 
       // CDP-exclusive tools (web testing superpowers)
-      {"name": "eval", "description": "Execute JavaScript in the browser and return the result. Works with CDP and bridge connections.", "inputSchema": {"type": "object", "properties": {"expression": {"type": "string", "description": "JavaScript expression to evaluate"}}, "required": ["expression"]}},
-      {"name": "press_key", "description": "Press a keyboard key (Enter, Tab, Escape, ArrowUp, etc.)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Key name (Enter, Tab, Escape, Backspace, ArrowUp, ArrowDown, Space, or any character)"}, "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modifier keys: Alt, Control, Meta, Shift"}}, "required": ["key"]}},
-      {"name": "hover", "description": "Hover over an element (triggers CSS :hover styles and mouseover events)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "text": {"type": "string"}, "ref": {"type": "string"}}}},
-      {"name": "select_option", "description": "Select an option in a <select> dropdown", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "Element ID or test ID"}, "value": {"type": "string", "description": "Option value to select"}}, "required": ["key", "value"]}},
-      {"name": "set_checkbox", "description": "Check or uncheck a checkbox", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "checked": {"type": "boolean"}}, "required": ["key"]}},
-      {"name": "fill", "description": "Fill an input field (clear + set value — faster than enter_text for forms)", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
-      {"name": "get_cookies", "description": "Get all browser cookies for the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_cookie", "description": "Set a browser cookie", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "value": {"type": "string"}, "domain": {"type": "string"}, "path": {"type": "string"}}, "required": ["name", "value"]}},
-      {"name": "clear_cookies", "description": "Clear all browser cookies", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_local_storage", "description": "Get all localStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_local_storage", "description": "Set a localStorage value", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}},
-      {"name": "clear_local_storage", "description": "Clear all localStorage data", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_console_messages", "description": "Get browser console log messages", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_network_requests", "description": "Get all network requests made by the page (via Performance API)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_viewport", "description": "Set browser viewport size (responsive testing)", "inputSchema": {"type": "object", "properties": {"width": {"type": "integer"}, "height": {"type": "integer"}, "device_scale_factor": {"type": "number"}}, "required": ["width", "height"]}},
-      {"name": "emulate_device", "description": "Emulate a device viewport + user agent. 143+ presets: iPhone 12-16 (all sizes), SE, Pixel 5-9, Galaxy S21-S24, Z Fold/Flip, OnePlus, Xiaomi, Huawei, iPad Pro/Air/Mini, Galaxy Tab, Surface Pro, MacBook Air/Pro, Dell XPS, desktop resolutions (1080p/1440p/4K) with Chrome/Firefox/Safari/Edge UAs. Supports flexible naming: 'iPhone 14 Pro', 'iphone-14-pro', 'iphone14pro' all work. Pass empty device to list all available presets.", "inputSchema": {"type": "object", "properties": {"device": {"type": "string", "description": "Device name (e.g. 'iphone-16-pro-max', 'pixel-8', 'galaxy-s24-ultra', 'ipad-pro-11', 'macbook-pro-16', 'desktop-1080p'). Empty string lists all devices."}}, "required": ["device"]}},
-      {"name": "generate_pdf", "description": "Generate a PDF of the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "navigate", "description": "Navigate to a URL", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
-      {"name": "go_forward", "description": "Navigate forward in browser history", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "reload", "description": "Reload the current page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "get_attribute", "description": "Get an HTML element's attribute value", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "attribute": {"type": "string"}}, "required": ["key", "attribute"]}},
-      {"name": "get_css_property", "description": "Get computed CSS property of an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}, "property": {"type": "string"}}, "required": ["key", "property"]}},
-      {"name": "get_bounding_box", "description": "Get element position and size", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "focus", "description": "Focus an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "blur", "description": "Remove focus from an element", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "count_elements", "description": "Count elements matching a CSS selector", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string"}}, "required": ["selector"]}},
-      {"name": "is_visible", "description": "Check if an element is visible on page", "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-      {"name": "get_page_source", "description": "Get the HTML source of the current page with optional cleaning", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector to get HTML for a specific element only"}, "remove_scripts": {"type": "boolean", "description": "Strip <script> tags"}, "remove_styles": {"type": "boolean", "description": "Strip <style> tags"}, "remove_comments": {"type": "boolean", "description": "Strip HTML comments"}, "remove_meta": {"type": "boolean", "description": "Strip <meta> tags"}, "minify": {"type": "boolean", "description": "Collapse whitespace"}, "clean_html": {"type": "boolean", "description": "Convenience: removes scripts, styles, comments, and meta tags"}}}},
-      {"name": "get_visible_text", "description": "Get only visible text content from the page (skips display:none, visibility:hidden elements). CDP only.", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector to scope text extraction"}}}},
-      {"name": "get_window_handles", "description": "Get all browser window/tab handles", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "install_dialog_handler", "description": "Install auto-handler for JS dialogs (alert/confirm/prompt)", "inputSchema": {"type": "object", "properties": {"auto_accept": {"type": "boolean", "description": "Auto-accept dialogs (default: true)"}}}},
-      {"name": "wait_for_navigation", "description": "Wait for page navigation to complete", "inputSchema": {"type": "object", "properties": {"timeout_ms": {"type": "integer", "description": "Timeout in ms (default: 30000)"}}}},
-      {"name": "get_title", "description": "Get the page title", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "set_geolocation", "description": "Override browser geolocation", "inputSchema": {"type": "object", "properties": {"latitude": {"type": "number"}, "longitude": {"type": "number"}}, "required": ["latitude", "longitude"]}},
-      {"name": "set_color_scheme", "description": "Set dark/light mode preference", "inputSchema": {"type": "object", "properties": {"scheme": {"type": "string", "enum": ["dark", "light"]}}, "required": ["scheme"]}},
-      {"name": "block_urls", "description": "Block network requests matching URL patterns (ads, trackers, etc.)", "inputSchema": {"type": "object", "properties": {"patterns": {"type": "array", "items": {"type": "string"}}}, "required": ["patterns"]}},
-      {"name": "throttle_network", "description": "Simulate slow network (3G, offline, etc.)", "inputSchema": {"type": "object", "properties": {"latency_ms": {"type": "integer"}, "download_kbps": {"type": "integer"}, "upload_kbps": {"type": "integer"}}}},
-      {"name": "go_offline", "description": "Simulate offline mode (no network)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "clear_browser_data", "description": "Clear all browser data (cookies, cache, localStorage, sessionStorage)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "upload_file", "description": "Upload file(s) to a file input element", "inputSchema": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector for input[type=file]"}, "files": {"type": "array", "items": {"type": "string"}, "description": "File paths to upload"}}, "required": ["selector", "files"]}},
-      {"name": "handle_dialog", "description": "Accept or dismiss browser dialog (alert/confirm/prompt)", "inputSchema": {"type": "object", "properties": {"accept": {"type": "boolean"}, "prompt_text": {"type": "string"}}, "required": ["accept"]}},
-      {"name": "get_frames", "description": "List all iframes on the page", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "eval_in_frame", "description": "Execute JavaScript inside a specific iframe", "inputSchema": {"type": "object", "properties": {"frame_id": {"type": "string"}, "expression": {"type": "string"}}, "required": ["frame_id", "expression"]}},
-      {"name": "get_tabs", "description": "List all open browser tabs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "new_tab", "description": "Open a new browser tab with a URL", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
-      {"name": "close_tab", "description": "Close a browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
-      {"name": "switch_tab", "description": "Switch to a different browser tab", "inputSchema": {"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"]}},
-      {"name": "intercept_requests", "description": "Mock/intercept network requests matching a URL pattern (return custom responses)", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string"}, "status_code": {"type": "integer"}, "body": {"type": "string"}, "headers": {"type": "object"}}, "required": ["url_pattern"]}},
-      {"name": "clear_interceptions", "description": "Remove all network request interceptions", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "accessibility_audit", "description": "Run accessibility audit (WCAG checks: missing alt, labels, heading order, contrast, lang, viewport)", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "compare_screenshot", "description": "Visual regression test — compare current page to a baseline screenshot", "inputSchema": {"type": "object", "properties": {"baseline_path": {"type": "string", "description": "Path to baseline PNG image"}}, "required": ["baseline_path"]}},
-      {"name": "wait_for_network_idle", "description": "Wait until all network requests complete (no pending fetch/XHR)", "inputSchema": {"type": "object", "properties": {"timeout_ms": {"type": "integer"}, "idle_ms": {"type": "integer"}}}},
-      {"name": "get_session_storage", "description": "Get all sessionStorage key-value pairs", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "type_text", "description": "Type text character by character (realistic typing simulation)", "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}},
-      {"name": "set_timezone", "description": "Override browser timezone", "inputSchema": {"type": "object", "properties": {"timezone": {"type": "string", "description": "IANA timezone (e.g. America/New_York)"}}, "required": ["timezone"]}},
-      {"name": "highlight_element", "description": "Highlight an element with a colored overlay for visual debugging. Injects a temporary colored border+background on the matched element.", "inputSchema": {"type": "object", "properties": {"key": {"type": "string", "description": "CSS selector, element ID, or data-testid"}, "ref": {"type": "string", "description": "Element ref from snapshot"}, "color": {"type": "string", "description": "Highlight color (default: red)", "default": "red"}, "duration_ms": {"type": "integer", "description": "How long to show highlight in ms (default: 3000)", "default": 3000}}, "required": ["key"]}},
-      {"name": "mock_response", "description": "Mock/intercept network responses for a URL pattern. Returns custom status code and body for matching requests.", "inputSchema": {"type": "object", "properties": {"url_pattern": {"type": "string", "description": "URL pattern to match (glob)"}, "status_code": {"type": "integer", "description": "HTTP status code to return"}, "body": {"type": "string", "description": "Response body to return"}, "headers": {"type": "object", "description": "Response headers"}}, "required": ["url_pattern", "status_code", "body"]}},
-      {"name": "download_file", "description": "Download a file from a URL and save it to disk.", "inputSchema": {"type": "object", "properties": {"url": {"type": "string", "description": "URL to download"}, "save_path": {"type": "string", "description": "Local file path to save to"}}, "required": ["url", "save_path"]}},
-      {"name": "cancel_operation", "description": "Cancel a running long operation (wait_for_element, wait_for_gone, wait_for_network_idle) by operation ID.", "inputSchema": {"type": "object", "properties": {"operation_id": {"type": "string", "description": "ID of the operation to cancel"}}, "required": ["operation_id"]}},
-      {"name": "highlight_elements", "description": "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.", "inputSchema": {"type": "object", "properties": {"show": {"type": "boolean", "description": "true to show highlights, false to remove them", "default": true}}}},
+      {
+        "name": "eval",
+        "description":
+            "Execute JavaScript in the browser and return the result. Works with CDP and bridge connections.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string",
+              "description": "JavaScript expression to evaluate"
+            }
+          },
+          "required": ["expression"]
+        }
+      },
+      {
+        "name": "press_key",
+        "description":
+            "Press a keyboard key (Enter, Tab, Escape, ArrowUp, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description":
+                  "Key name (Enter, Tab, Escape, Backspace, ArrowUp, ArrowDown, Space, or any character)"
+            },
+            "modifiers": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Modifier keys: Alt, Control, Meta, Shift"
+            }
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "hover",
+        "description":
+            "Hover over an element (triggers CSS :hover styles and mouseover events)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "text": {"type": "string"},
+            "ref": {"type": "string"}
+          }
+        }
+      },
+      {
+        "name": "select_option",
+        "description": "Select an option in a <select> dropdown",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Element ID or test ID"},
+            "value": {"type": "string", "description": "Option value to select"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "set_checkbox",
+        "description": "Check or uncheck a checkbox",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "checked": {"type": "boolean"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "fill",
+        "description":
+            "Fill an input field (clear + set value — faster than enter_text for forms)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "get_cookies",
+        "description": "Get all browser cookies for the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_cookie",
+        "description": "Set a browser cookie",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "value": {"type": "string"},
+            "domain": {"type": "string"},
+            "path": {"type": "string"}
+          },
+          "required": ["name", "value"]
+        }
+      },
+      {
+        "name": "clear_cookies",
+        "description": "Clear all browser cookies",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_local_storage",
+        "description": "Get all localStorage key-value pairs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_local_storage",
+        "description": "Set a localStorage value",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      {
+        "name": "clear_local_storage",
+        "description": "Clear all localStorage data",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_console_messages",
+        "description": "Get browser console log messages",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_network_requests",
+        "description":
+            "Get all network requests made by the page (via Performance API)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_viewport",
+        "description": "Set browser viewport size (responsive testing)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "width": {"type": "integer"},
+            "height": {"type": "integer"},
+            "device_scale_factor": {"type": "number"}
+          },
+          "required": ["width", "height"]
+        }
+      },
+      {
+        "name": "emulate_device",
+        "description":
+            "Emulate a device viewport + user agent. 143+ presets: iPhone 12-16 (all sizes), SE, Pixel 5-9, Galaxy S21-S24, Z Fold/Flip, OnePlus, Xiaomi, Huawei, iPad Pro/Air/Mini, Galaxy Tab, Surface Pro, MacBook Air/Pro, Dell XPS, desktop resolutions (1080p/1440p/4K) with Chrome/Firefox/Safari/Edge UAs. Supports flexible naming: 'iPhone 14 Pro', 'iphone-14-pro', 'iphone14pro' all work. Pass empty device to list all available presets.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": "string",
+              "description":
+                  "Device name (e.g. 'iphone-16-pro-max', 'pixel-8', 'galaxy-s24-ultra', 'ipad-pro-11', 'macbook-pro-16', 'desktop-1080p'). Empty string lists all devices."
+            }
+          },
+          "required": ["device"]
+        }
+      },
+      {
+        "name": "generate_pdf",
+        "description": "Generate a PDF of the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "navigate",
+        "description": "Navigate to a URL",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string"}
+          },
+          "required": ["url"]
+        }
+      },
+      {
+        "name": "go_forward",
+        "description": "Navigate forward in browser history",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "reload",
+        "description": "Reload the current page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "get_attribute",
+        "description": "Get an HTML element's attribute value",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "attribute": {"type": "string"}
+          },
+          "required": ["key", "attribute"]
+        }
+      },
+      {
+        "name": "get_css_property",
+        "description": "Get computed CSS property of an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "property": {"type": "string"}
+          },
+          "required": ["key", "property"]
+        }
+      },
+      {
+        "name": "get_bounding_box",
+        "description": "Get element position and size",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "focus",
+        "description": "Focus an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "blur",
+        "description": "Remove focus from an element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "count_elements",
+        "description": "Count elements matching a CSS selector",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {"type": "string"}
+          },
+          "required": ["selector"]
+        }
+      },
+      {
+        "name": "is_visible",
+        "description": "Check if an element is visible on page",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"}
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "get_page_source",
+        "description":
+            "Get the HTML source of the current page with optional cleaning",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description":
+                  "CSS selector to get HTML for a specific element only"
+            },
+            "remove_scripts": {
+              "type": "boolean",
+              "description": "Strip <script> tags"
+            },
+            "remove_styles": {
+              "type": "boolean",
+              "description": "Strip <style> tags"
+            },
+            "remove_comments": {
+              "type": "boolean",
+              "description": "Strip HTML comments"
+            },
+            "remove_meta": {
+              "type": "boolean",
+              "description": "Strip <meta> tags"
+            },
+            "minify": {"type": "boolean", "description": "Collapse whitespace"},
+            "clean_html": {
+              "type": "boolean",
+              "description":
+                  "Convenience: removes scripts, styles, comments, and meta tags"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_visible_text",
+        "description":
+            "Get only visible text content from the page (skips display:none, visibility:hidden elements). CDP only.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "CSS selector to scope text extraction"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_window_handles",
+        "description": "Get all browser window/tab handles",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "install_dialog_handler",
+        "description":
+            "Install auto-handler for JS dialogs (alert/confirm/prompt)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "auto_accept": {
+              "type": "boolean",
+              "description": "Auto-accept dialogs (default: true)"
+            }
+          }
+        }
+      },
+      {
+        "name": "wait_for_navigation",
+        "description": "Wait for page navigation to complete",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": {
+              "type": "integer",
+              "description": "Timeout in ms (default: 30000)"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_title",
+        "description": "Get the page title",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "set_geolocation",
+        "description": "Override browser geolocation",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "latitude": {"type": "number"},
+            "longitude": {"type": "number"}
+          },
+          "required": ["latitude", "longitude"]
+        }
+      },
+      {
+        "name": "set_color_scheme",
+        "description": "Set dark/light mode preference",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "enum": ["dark", "light"]
+            }
+          },
+          "required": ["scheme"]
+        }
+      },
+      {
+        "name": "block_urls",
+        "description":
+            "Block network requests matching URL patterns (ads, trackers, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "patterns": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "required": ["patterns"]
+        }
+      },
+      {
+        "name": "throttle_network",
+        "description": "Simulate slow network (3G, offline, etc.)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "latency_ms": {"type": "integer"},
+            "download_kbps": {"type": "integer"},
+            "upload_kbps": {"type": "integer"}
+          }
+        }
+      },
+      {
+        "name": "go_offline",
+        "description": "Simulate offline mode (no network)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "clear_browser_data",
+        "description":
+            "Clear all browser data (cookies, cache, localStorage, sessionStorage)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "upload_file",
+        "description": "Upload file(s) to a file input element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "CSS selector for input[type=file]"
+            },
+            "files": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "File paths to upload"
+            }
+          },
+          "required": ["selector", "files"]
+        }
+      },
+      {
+        "name": "handle_dialog",
+        "description":
+            "Accept or dismiss browser dialog (alert/confirm/prompt)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "accept": {"type": "boolean"},
+            "prompt_text": {"type": "string"}
+          },
+          "required": ["accept"]
+        }
+      },
+      {
+        "name": "get_frames",
+        "description": "List all iframes on the page",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "eval_in_frame",
+        "description": "Execute JavaScript inside a specific iframe",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "frame_id": {"type": "string"},
+            "expression": {"type": "string"}
+          },
+          "required": ["frame_id", "expression"]
+        }
+      },
+      {
+        "name": "get_tabs",
+        "description": "List all open browser tabs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "new_tab",
+        "description": "Open a new browser tab with a URL",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string"}
+          },
+          "required": ["url"]
+        }
+      },
+      {
+        "name": "close_tab",
+        "description": "Close a browser tab",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {"type": "string"}
+          },
+          "required": ["target_id"]
+        }
+      },
+      {
+        "name": "switch_tab",
+        "description": "Switch to a different browser tab",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target_id": {"type": "string"}
+          },
+          "required": ["target_id"]
+        }
+      },
+      {
+        "name": "intercept_requests",
+        "description":
+            "Mock/intercept network requests matching a URL pattern (return custom responses)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {"type": "string"},
+            "status_code": {"type": "integer"},
+            "body": {"type": "string"},
+            "headers": {"type": "object"}
+          },
+          "required": ["url_pattern"]
+        }
+      },
+      {
+        "name": "clear_interceptions",
+        "description": "Remove all network request interceptions",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "accessibility_audit",
+        "description":
+            "Run accessibility audit (WCAG checks: missing alt, labels, heading order, contrast, lang, viewport)",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "compare_screenshot",
+        "description":
+            "Visual regression test — compare current page to a baseline screenshot",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseline_path": {
+              "type": "string",
+              "description": "Path to baseline PNG image"
+            }
+          },
+          "required": ["baseline_path"]
+        }
+      },
+      {
+        "name": "wait_for_network_idle",
+        "description":
+            "Wait until all network requests complete (no pending fetch/XHR)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": {"type": "integer"},
+            "idle_ms": {"type": "integer"}
+          }
+        }
+      },
+      {
+        "name": "get_session_storage",
+        "description": "Get all sessionStorage key-value pairs",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "type_text",
+        "description":
+            "Type text character by character (realistic typing simulation)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {"type": "string"}
+          },
+          "required": ["text"]
+        }
+      },
+      {
+        "name": "set_timezone",
+        "description": "Override browser timezone",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone (e.g. America/New_York)"
+            }
+          },
+          "required": ["timezone"]
+        }
+      },
+      {
+        "name": "highlight_element",
+        "description":
+            "Highlight an element with a colored overlay for visual debugging. Injects a temporary colored border+background on the matched element.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "CSS selector, element ID, or data-testid"
+            },
+            "ref": {
+              "type": "string",
+              "description": "Element ref from snapshot"
+            },
+            "color": {
+              "type": "string",
+              "description": "Highlight color (default: red)",
+              "default": "red"
+            },
+            "duration_ms": {
+              "type": "integer",
+              "description": "How long to show highlight in ms (default: 3000)",
+              "default": 3000
+            }
+          },
+          "required": ["key"]
+        }
+      },
+      {
+        "name": "mock_response",
+        "description":
+            "Mock/intercept network responses for a URL pattern. Returns custom status code and body for matching requests.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {
+              "type": "string",
+              "description": "URL pattern to match (glob)"
+            },
+            "status_code": {
+              "type": "integer",
+              "description": "HTTP status code to return"
+            },
+            "body": {
+              "type": "string",
+              "description": "Response body to return"
+            },
+            "headers": {"type": "object", "description": "Response headers"}
+          },
+          "required": ["url_pattern", "status_code", "body"]
+        }
+      },
+      {
+        "name": "download_file",
+        "description": "Download a file from a URL and save it to disk.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string", "description": "URL to download"},
+            "save_path": {
+              "type": "string",
+              "description": "Local file path to save to"
+            }
+          },
+          "required": ["url", "save_path"]
+        }
+      },
+      {
+        "name": "cancel_operation",
+        "description":
+            "Cancel a running long operation (wait_for_element, wait_for_gone, wait_for_network_idle) by operation ID.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "operation_id": {
+              "type": "string",
+              "description": "ID of the operation to cancel"
+            }
+          },
+          "required": ["operation_id"]
+        }
+      },
+      {
+        "name": "highlight_elements",
+        "description":
+            "Toggle colored outlines on ALL interactive elements (like Playwright's inspector). Useful for visual debugging and test development.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "show": {
+              "type": "boolean",
+              "description": "true to show highlights, false to remove them",
+              "default": true
+            }
+          }
+        }
+      },
 
       // WebMCP: Structured page tools
-      {"name": "discover_page_tools", "description": "Discover all structured tools registered by the app. Works on ALL platforms: web (JS-registered tools, data-mcp-tool attributes, well-known manifests, auto-forms), mobile (native registered tools), desktop (registered tools). Use this to find callable tools on the current page/screen.", "inputSchema": {"type": "object", "properties": {}}},
-      {"name": "call_page_tool", "description": "Call a discovered tool by name with parameters. Works on ALL platforms. Routes to the appropriate handler (JS function, form submit, native handler). Use discover_page_tools first to see available tools.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "description": "Tool name (from discover_page_tools)"}, "params": {"type": "object", "description": "Parameters to pass to the tool"}}, "required": ["name"]}},
-      {"name": "auto_discover_forms", "description": "Auto-detect ALL <form> elements on the page and convert them into callable tools with field names, labels, types, and validation info. CDP-only.", "inputSchema": {"type": "object", "properties": {}}},
+      {
+        "name": "discover_page_tools",
+        "description":
+            "Discover all structured tools registered by the app. Works on ALL platforms: web (JS-registered tools, data-mcp-tool attributes, well-known manifests, auto-forms), mobile (native registered tools), desktop (registered tools). Use this to find callable tools on the current page/screen.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+      {
+        "name": "call_page_tool",
+        "description":
+            "Call a discovered tool by name with parameters. Works on ALL platforms. Routes to the appropriate handler (JS function, form submit, native handler). Use discover_page_tools first to see available tools.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Tool name (from discover_page_tools)"
+            },
+            "params": {
+              "type": "object",
+              "description": "Parameters to pass to the tool"
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      {
+        "name": "auto_discover_forms",
+        "description":
+            "Auto-detect ALL <form> elements on the page and convert them into callable tools with field names, labels, types, and validation info. CDP-only.",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
 
       // Basic Inspection
       {
@@ -743,7 +1469,11 @@ For elements without text (icons, images), use coordinates from inspect():
         "inputSchema": {
           "type": "object",
           "properties": {
-            "ref": {"type": "string", "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"},
+            "ref": {
+              "type": "string",
+              "description":
+                  "Semantic ref ID from inspect_interactive (RECOMMENDED)"
+            },
             "key": {"type": "string", "description": "Widget key"},
             "text": {"type": "string", "description": "Text to find"},
             "x": {"type": "number", "description": "X coordinate (use with y)"},
@@ -777,7 +1507,8 @@ Option 3: Tap a TextField first, then enter_text(text: "value") without key/ref 
           "properties": {
             "ref": {
               "type": "string",
-              "description": "Semantic ref ID from inspect_interactive (RECOMMENDED)"
+              "description":
+                  "Semantic ref ID from inspect_interactive (RECOMMENDED)"
             },
             "key": {
               "type": "string",
@@ -1627,7 +2358,8 @@ Detailed diagnostic report with:
       },
       {
         "name": "assert_batch",
-        "description": "Run multiple assertions in a single call. Returns all results (does not fail-fast).",
+        "description":
+            "Run multiple assertions in a single call. Returns all results (does not fail-fast).",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1637,11 +2369,25 @@ Detailed diagnostic report with:
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": {"type": "string", "enum": ["visible", "not_visible", "text", "element_count"], "description": "Assertion type"},
+                  "type": {
+                    "type": "string",
+                    "enum": ["visible", "not_visible", "text", "element_count"],
+                    "description": "Assertion type"
+                  },
                   "key": {"type": "string", "description": "Element key"},
-                  "text": {"type": "string", "description": "Text to find (for visible/not_visible) or expected text (for text assertion)"},
-                  "expected": {"type": "string", "description": "Expected value for text assertion"},
-                  "count": {"type": "integer", "description": "Expected count for element_count assertion"},
+                  "text": {
+                    "type": "string",
+                    "description":
+                        "Text to find (for visible/not_visible) or expected text (for text assertion)"
+                  },
+                  "expected": {
+                    "type": "string",
+                    "description": "Expected value for text assertion"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "Expected count for element_count assertion"
+                  },
                 },
                 "required": ["type"],
               },
@@ -1715,37 +2461,61 @@ Detailed diagnostic report with:
       // Auth Tools
       {
         "name": "auth_inject_session",
-        "description": "Inject auth token into app storage (cookie, localStorage, or shared_preferences).",
+        "description":
+            "Inject auth token into app storage (cookie, localStorage, or shared_preferences).",
         "inputSchema": {
           "type": "object",
           "properties": {
             "token": {"type": "string", "description": "Auth token to inject"},
-            "key": {"type": "string", "description": "Storage key (default: auth_token)"},
-            "storage_type": {"type": "string", "enum": ["cookie", "local_storage", "shared_preferences"], "description": "Storage type"},
+            "key": {
+              "type": "string",
+              "description": "Storage key (default: auth_token)"
+            },
+            "storage_type": {
+              "type": "string",
+              "enum": ["cookie", "local_storage", "shared_preferences"],
+              "description": "Storage type"
+            },
           },
           "required": ["token"],
         },
       },
       {
         "name": "auth_biometric",
-        "description": "Simulate biometric authentication on iOS simulator or Android emulator.",
+        "description":
+            "Simulate biometric authentication on iOS simulator or Android emulator.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "action": {"type": "string", "enum": ["enroll", "match", "fail"], "description": "Biometric action"},
+            "action": {
+              "type": "string",
+              "enum": ["enroll", "match", "fail"],
+              "description": "Biometric action"
+            },
           },
           "required": ["action"],
         },
       },
       {
         "name": "auth_otp",
-        "description": "Generate TOTP code from secret, or read OTP from simulator clipboard.",
+        "description":
+            "Generate TOTP code from secret, or read OTP from simulator clipboard.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "secret": {"type": "string", "description": "TOTP secret (base32). If omitted, reads clipboard."},
-            "digits": {"type": "integer", "description": "OTP digits (default: 6)"},
-            "period": {"type": "integer", "description": "TOTP period in seconds (default: 30)"},
+            "secret": {
+              "type": "string",
+              "description":
+                  "TOTP secret (base32). If omitted, reads clipboard."
+            },
+            "digits": {
+              "type": "integer",
+              "description": "OTP digits (default: 6)"
+            },
+            "period": {
+              "type": "integer",
+              "description": "TOTP period in seconds (default: 30)"
+            },
           },
         },
       },
@@ -1779,7 +2549,22 @@ Detailed diagnostic report with:
         "inputSchema": {
           "type": "object",
           "properties": {
-            "format": {"type": "string", "enum": ["jest", "pytest", "dart_test", "playwright", "cypress", "selenium", "xcuitest", "espresso", "json"], "description": "Export format: jest (JS), pytest (Python), dart_test (Dart), playwright (JS), cypress (JS), selenium (Python), xcuitest (Swift), espresso (Kotlin), json (raw)"},
+            "format": {
+              "type": "string",
+              "enum": [
+                "jest",
+                "pytest",
+                "dart_test",
+                "playwright",
+                "cypress",
+                "selenium",
+                "xcuitest",
+                "espresso",
+                "json"
+              ],
+              "description":
+                  "Export format: jest (JS), pytest (Python), dart_test (Dart), playwright (JS), cypress (JS), selenium (Python), xcuitest (Swift), espresso (Kotlin), json (raw)"
+            },
           },
           "required": ["format"],
         },
@@ -1806,7 +2591,8 @@ Detailed diagnostic report with:
       // AI Visual Verification
       {
         "name": "visual_verify",
-        "description": """Take a screenshot AND text snapshot for AI visual verification.
+        "description":
+            """Take a screenshot AND text snapshot for AI visual verification.
 
 Returns both a screenshot file and structured text snapshot so the calling AI can verify
 the UI matches the expected description. Optionally checks for specific elements.
@@ -1824,12 +2610,14 @@ for the AI to compare against the provided description.""",
           "properties": {
             "description": {
               "type": "string",
-              "description": "What the UI should look like (e.g., 'login form with email and password fields')"
+              "description":
+                  "What the UI should look like (e.g., 'login form with email and password fields')"
             },
             "check_elements": {
               "type": "array",
               "items": {"type": "string"},
-              "description": "Specific elements that should be visible (matched against snapshot refs and text)"
+              "description":
+                  "Specific elements that should be visible (matched against snapshot refs and text)"
             },
             "quality": {
               "type": "number",
@@ -1876,7 +2664,11 @@ can visually compare them. Also returns text snapshots for structural comparison
         "inputSchema": {
           "type": "object",
           "properties": {
-            "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"},
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Session IDs (default: all)"
+            },
           },
         },
       },
@@ -1889,7 +2681,11 @@ can visually compare them. Also returns text snapshots for structural comparison
             "ref": {"type": "string", "description": "Element ref to tap"},
             "key": {"type": "string", "description": "Element key to tap"},
             "text": {"type": "string", "description": "Element text to tap"},
-            "session_ids": {"type": "array", "items": {"type": "string"}, "description": "Session IDs (default: all)"},
+            "session_ids": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Session IDs (default: all)"
+            },
           },
         },
       },
@@ -1897,7 +2693,8 @@ can visually compare them. Also returns text snapshots for structural comparison
       // Cross-Platform Test Orchestration
       {
         "name": "multi_platform_test",
-        "description": "Run the same test steps across all connected platforms simultaneously. Great for cross-platform verification.",
+        "description":
+            "Run the same test steps across all connected platforms simultaneously. Great for cross-platform verification.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1910,16 +2707,19 @@ can visually compare them. Also returns text snapshots for structural comparison
                   "args": {"type": "object"},
                 },
               },
-              "description": "Sequence of tool calls to execute on each platform"
+              "description":
+                  "Sequence of tool calls to execute on each platform"
             },
             "session_ids": {
               "type": "array",
               "items": {"type": "string"},
-              "description": "Specific sessions to test (default: all connected)"
+              "description":
+                  "Specific sessions to test (default: all connected)"
             },
             "stop_on_failure": {
               "type": "boolean",
-              "description": "Stop all platforms on first failure (default: false)"
+              "description":
+                  "Stop all platforms on first failure (default: false)"
             },
           },
           "required": ["actions"],
@@ -1927,14 +2727,16 @@ can visually compare them. Also returns text snapshots for structural comparison
       },
       {
         "name": "compare_platforms",
-        "description": "Take snapshots from all connected platforms and compare element presence. Identifies cross-platform inconsistencies.",
+        "description":
+            "Take snapshots from all connected platforms and compare element presence. Identifies cross-platform inconsistencies.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "session_ids": {
               "type": "array",
               "items": {"type": "string"},
-              "description": "Specific sessions to compare (default: all connected)"
+              "description":
+                  "Specific sessions to compare (default: all connected)"
             },
           },
         },
@@ -1942,20 +2744,32 @@ can visually compare them. Also returns text snapshots for structural comparison
       // === Plugin Tools ===
       {
         "name": "list_plugins",
-        "description": "List all loaded custom plugin tools with their descriptions.",
+        "description":
+            "List all loaded custom plugin tools with their descriptions.",
         "inputSchema": {"type": "object", "properties": {}},
       },
       // === Test Report Generation ===
       {
         "name": "generate_report",
-        "description": "Generate a test report from recorded test steps and assertions. Supports HTML, JSON, and Markdown formats.",
+        "description":
+            "Generate a test report from recorded test steps and assertions. Supports HTML, JSON, and Markdown formats.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "format": {"type": "string", "enum": ["html", "json", "markdown"], "description": "Report format (default: html)"},
+            "format": {
+              "type": "string",
+              "enum": ["html", "json", "markdown"],
+              "description": "Report format (default: html)"
+            },
             "title": {"type": "string", "description": "Report title"},
-            "output_path": {"type": "string", "description": "Where to save the report file"},
-            "include_screenshots": {"type": "boolean", "description": "Embed screenshots in report (default: true)"},
+            "output_path": {
+              "type": "string",
+              "description": "Where to save the report file"
+            },
+            "include_screenshots": {
+              "type": "boolean",
+              "description": "Embed screenshots in report (default: true)"
+            },
           },
         },
       },
@@ -1971,7 +2785,8 @@ can visually compare them. Also returns text snapshots for structural comparison
     }
 
     // Smart filtering: when connected, only return relevant tools
-    if (!hasConnection) return allTools; // No connection = show all for discovery
+    if (!hasConnection)
+      return allTools; // No connection = show all for discovery
 
     return allTools.where((tool) {
       final name = tool['name'] as String;

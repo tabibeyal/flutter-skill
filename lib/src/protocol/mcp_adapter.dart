@@ -141,9 +141,8 @@ class McpAdapter {
         if (headerEnd < 0) break;
 
         final headerStr = buffer.substring(0, headerEnd);
-        final match =
-            RegExp(r'Content-Length:\s*(\d+)', caseSensitive: false)
-                .firstMatch(headerStr);
+        final match = RegExp(r'Content-Length:\s*(\d+)', caseSensitive: false)
+            .firstMatch(headerStr);
         if (match == null) break;
 
         final contentLength = int.parse(match.group(1)!);
@@ -199,8 +198,7 @@ class McpAdapter {
 
           case 'tools/call':
             final name = params['name'] as String? ?? '';
-            final args =
-                (params['arguments'] as Map<String, dynamic>?) ?? {};
+            final args = (params['arguments'] as Map<String, dynamic>?) ?? {};
             result = await handleToolCall(name, args);
             break;
 
@@ -212,10 +210,7 @@ class McpAdapter {
             _sendResponse({
               'jsonrpc': '2.0',
               'id': id,
-              'error': {
-                'code': -32601,
-                'message': 'Method not found: $method'
-              },
+              'error': {'code': -32601, 'message': 'Method not found: $method'},
             });
             return;
         }

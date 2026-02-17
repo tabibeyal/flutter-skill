@@ -3,16 +3,23 @@ part of '../server.dart';
 extension _ParallelHandlers on FlutterMcpServer {
   /// Parallel and multi-platform testing tools
   /// Returns null if the tool is not handled.
-  Future<dynamic> _handleParallelTools(String name, Map<String, dynamic> args) async {
+  Future<dynamic> _handleParallelTools(
+      String name, Map<String, dynamic> args) async {
     if (name == 'parallel_snapshot') {
-      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final sessionIds =
+          (args['session_ids'] as List<dynamic>?)?.cast<String>() ??
+              _sessions.keys.toList();
       final futures = sessionIds.map((sid) async {
         try {
           final c = _clients[sid];
           if (c == null) return {"session_id": sid, "error": "Not connected"};
           if (c is FlutterSkillClient) {
             final structured = await c.getInteractiveElementsStructured();
-            return {"session_id": sid, "snapshot": structured, "platform": _sessions[sid]?.deviceId};
+            return {
+              "session_id": sid,
+              "snapshot": structured,
+              "platform": _sessions[sid]?.deviceId
+            };
           }
           return {"session_id": sid, "error": "Not a Flutter client"};
         } catch (e) {
@@ -24,16 +31,28 @@ extension _ParallelHandlers on FlutterMcpServer {
     }
 
     if (name == 'parallel_tap') {
-      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final sessionIds =
+          (args['session_ids'] as List<dynamic>?)?.cast<String>() ??
+              _sessions.keys.toList();
       final ref = args['ref'] as String?;
       final key = args['key'] as String?;
       final text = args['text'] as String?;
       final futures = sessionIds.map((sid) async {
         try {
           final c = _clients[sid];
-          if (c == null) return {"session_id": sid, "success": false, "error": "Not connected"};
+          if (c == null)
+            return {
+              "session_id": sid,
+              "success": false,
+              "error": "Not connected"
+            };
           final result = await c.tap(key: key, text: text, ref: ref);
-          return {"session_id": sid, "success": true, "platform": _sessions[sid]?.deviceId, "result": result};
+          return {
+            "session_id": sid,
+            "success": true,
+            "platform": _sessions[sid]?.deviceId,
+            "result": result
+          };
         } catch (e) {
           return {"session_id": sid, "success": false, "error": e.toString()};
         }
@@ -44,7 +63,9 @@ extension _ParallelHandlers on FlutterMcpServer {
 
     if (name == 'multi_platform_test') {
       final actions = (args['actions'] as List<dynamic>?) ?? [];
-      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final sessionIds =
+          (args['session_ids'] as List<dynamic>?)?.cast<String>() ??
+              _sessions.keys.toList();
       final stopOnFailure = args['stop_on_failure'] as bool? ?? false;
       final savedSessionId = _activeSessionId;
 
@@ -57,7 +78,8 @@ extension _ParallelHandlers on FlutterMcpServer {
 
         for (final action in actions) {
           if (stopped) break;
-          final toolName = (action as Map<String, dynamic>)['tool'] as String? ?? '';
+          final toolName =
+              (action as Map<String, dynamic>)['tool'] as String? ?? '';
           final toolArgs = Map<String, dynamic>.from(
             (action['args'] as Map<String, dynamic>?) ?? {},
           );
@@ -70,7 +92,11 @@ extension _ParallelHandlers on FlutterMcpServer {
             final result = await _executeToolInner(toolName, toolArgs);
             sw.stop();
             final success = result is Map ? (result['error'] == null) : true;
-            steps.add({'tool': toolName, 'success': success, 'time_ms': sw.elapsedMilliseconds});
+            steps.add({
+              'tool': toolName,
+              'success': success,
+              'time_ms': sw.elapsedMilliseconds
+            });
             if (success) {
               passed++;
             } else {
@@ -79,7 +105,12 @@ extension _ParallelHandlers on FlutterMcpServer {
             }
           } catch (e) {
             sw.stop();
-            steps.add({'tool': toolName, 'success': false, 'time_ms': sw.elapsedMilliseconds, 'error': e.toString()});
+            steps.add({
+              'tool': toolName,
+              'success': false,
+              'time_ms': sw.elapsedMilliseconds,
+              'error': e.toString()
+            });
             failed++;
             if (stopOnFailure) stopped = true;
           }
@@ -97,8 +128,10 @@ extension _ParallelHandlers on FlutterMcpServer {
       _activeSessionId = savedSessionId;
 
       final results = Map.fromEntries(entries);
-      final allPassed = results.values.where((r) => (r['failed'] as int) == 0).length;
-      final someFailed = results.values.where((r) => (r['failed'] as int) > 0).length;
+      final allPassed =
+          results.values.where((r) => (r['failed'] as int) == 0).length;
+      final someFailed =
+          results.values.where((r) => (r['failed'] as int) > 0).length;
 
       return {
         'platforms_tested': sessionIds.length,
@@ -112,13 +145,16 @@ extension _ParallelHandlers on FlutterMcpServer {
     }
 
     if (name == 'compare_platforms') {
-      final sessionIds = (args['session_ids'] as List<dynamic>?)?.cast<String>() ?? _sessions.keys.toList();
+      final sessionIds =
+          (args['session_ids'] as List<dynamic>?)?.cast<String>() ??
+              _sessions.keys.toList();
 
       // Take snapshots from all platforms in parallel
       final futures = sessionIds.map((sid) async {
         try {
           final c = _clients[sid];
-          if (c == null) return MapEntry(sid, <String, dynamic>{'error': 'Not connected'});
+          if (c == null)
+            return MapEntry(sid, <String, dynamic>{'error': 'Not connected'});
           if (c is FlutterSkillClient) {
             final structured = await c.getInteractiveElementsStructured();
             final elements = (structured['elements'] is List)
@@ -128,7 +164,8 @@ extension _ParallelHandlers on FlutterMcpServer {
             for (final el in elements) {
               if (el is Map) {
                 final type = el['type'] as String? ?? '';
-                final text = el['text'] as String? ?? el['label'] as String? ?? '';
+                final text =
+                    el['text'] as String? ?? el['label'] as String? ?? '';
                 elementKeys.add('$type:$text');
               }
             }
@@ -138,7 +175,8 @@ extension _ParallelHandlers on FlutterMcpServer {
               'elements': elementKeys.toList(),
             });
           }
-          return MapEntry(sid, <String, dynamic>{'error': 'Not a Flutter client'});
+          return MapEntry(
+              sid, <String, dynamic>{'error': 'Not a Flutter client'});
         } catch (e) {
           return MapEntry(sid, <String, dynamic>{'error': e.toString()});
         }
@@ -152,7 +190,8 @@ extension _ParallelHandlers on FlutterMcpServer {
       final platformElements = <String, Set<String>>{};
       for (final entry in platformData.entries) {
         if (entry.value.containsKey('elements')) {
-          final elems = (entry.value['elements'] as List).cast<String>().toSet();
+          final elems =
+              (entry.value['elements'] as List).cast<String>().toSet();
           platformElements[entry.key] = elems;
           allElements.addAll(elems);
         }
@@ -171,8 +210,14 @@ extension _ParallelHandlers on FlutterMcpServer {
         if (presence.values.any((v) => !v)) {
           inconsistencies.add({
             'element': element,
-            'present_on': presence.entries.where((e) => e.value).map((e) => e.key).toList(),
-            'missing_on': presence.entries.where((e) => !e.value).map((e) => e.key).toList(),
+            'present_on': presence.entries
+                .where((e) => e.value)
+                .map((e) => e.key)
+                .toList(),
+            'missing_on': presence.entries
+                .where((e) => !e.value)
+                .map((e) => e.key)
+                .toList(),
           });
         }
       }

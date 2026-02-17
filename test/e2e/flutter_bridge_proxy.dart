@@ -42,7 +42,8 @@ late String isolateId;
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    print('Usage: dart run test/e2e/flutter_bridge_proxy.dart <vm_service_uri>');
+    print(
+        'Usage: dart run test/e2e/flutter_bridge_proxy.dart <vm_service_uri>');
     print('  e.g. ws://127.0.0.1:50000/abc123=/ws');
     exit(1);
   }
@@ -54,7 +55,8 @@ Future<void> main(List<String> args) async {
     if (!uri.endsWith('/ws')) uri = '$uri/ws';
   }
 
-  final port = args.length > 1 ? int.tryParse(args[1]) ?? bridgePort : bridgePort;
+  final port =
+      args.length > 1 ? int.tryParse(args[1]) ?? bridgePort : bridgePort;
 
   print('🔌 Connecting to VM Service: $uri');
   vmService = await vmServiceConnectUri(uri);
@@ -196,7 +198,8 @@ Future<Map<String, dynamic>> _dispatch(
       });
 
     case 'inspect_interactive':
-      final raw = await _callExtension('ext.flutter.flutter_skill.interactiveStructured', {});
+      final raw = await _callExtension(
+          'ext.flutter.flutter_skill.interactiveStructured', {});
       // Unwrap: the extension returns {data: {elements: [...]}} but bridge protocol expects {elements: [...]}
       if (raw.containsKey('data') && raw['data'] is Map) {
         return raw['data'] as Map<String, dynamic>;
@@ -204,10 +207,12 @@ Future<Map<String, dynamic>> _dispatch(
       return raw;
 
     case 'tap':
-      return _callExtension('ext.flutter.flutter_skill.tap', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.tap', _stringifyParams(params));
 
     case 'enter_text':
-      return _callExtension('ext.flutter.flutter_skill.enterText', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.enterText', _stringifyParams(params));
 
     case 'get_text':
       return _handleGetText(params);
@@ -222,7 +227,8 @@ Future<Map<String, dynamic>> _dispatch(
       return _handleScroll(params);
 
     case 'swipe':
-      return _callExtension('ext.flutter.flutter_skill.swipe', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.swipe', _stringifyParams(params));
 
     case 'screenshot':
       return _callExtension('ext.flutter.flutter_skill.screenshot', {
@@ -233,13 +239,16 @@ Future<Map<String, dynamic>> _dispatch(
       return _callExtension('ext.flutter.flutter_skill.goBack', {});
 
     case 'long_press':
-      return _callExtension('ext.flutter.flutter_skill.longPress', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.longPress', _stringifyParams(params));
 
     case 'double_tap':
-      return _callExtension('ext.flutter.flutter_skill.doubleTap', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.doubleTap', _stringifyParams(params));
 
     case 'drag':
-      return _callExtension('ext.flutter.flutter_skill.drag', _stringifyParams(params));
+      return _callExtension(
+          'ext.flutter.flutter_skill.drag', _stringifyParams(params));
 
     case 'get_logs':
       return _callExtension('ext.flutter.flutter_skill.getLogs', {});
@@ -282,20 +291,22 @@ Map<String, String> _stringifyParams(Map<String, dynamic> params) {
 Future<Map<String, dynamic>> _handleGetText(Map<String, dynamic> params) async {
   final key = params['key'] as String?;
   final text = params['text'] as String?;
-  
+
   // Try by key first
   if (key != null) {
     try {
-      final result = await _callExtension('ext.flutter.flutter_skill.getTextValue', {'key': key});
+      final result = await _callExtension(
+          'ext.flutter.flutter_skill.getTextValue', {'key': key});
       if (result['value'] != null) {
         return {'text': result['value'], 'success': true};
       }
     } catch (_) {}
   }
-  
+
   // Scan interactive elements for matching key or text
   try {
-    final inspectResult = await _callExtension('ext.flutter.flutter_skill.interactive', {
+    final inspectResult =
+        await _callExtension('ext.flutter.flutter_skill.interactive', {
       'includePositions': 'true',
     });
     final elements = inspectResult['elements'] as List? ?? [];
@@ -316,7 +327,8 @@ Future<Map<String, dynamic>> _handleGetText(Map<String, dynamic> params) async {
 }
 
 /// find_element: try waitForElement first, fall back to scanning interactive elements
-Future<Map<String, dynamic>> _handleFindElement(Map<String, dynamic> params) async {
+Future<Map<String, dynamic>> _handleFindElement(
+    Map<String, dynamic> params) async {
   final key = params['key']?.toString();
   final text = params['text']?.toString();
 
@@ -327,7 +339,8 @@ Future<Map<String, dynamic>> _handleFindElement(Map<String, dynamic> params) asy
   args['timeout'] = '2000';
 
   try {
-    final result = await _callExtension('ext.flutter.flutter_skill.waitForElement', args);
+    final result =
+        await _callExtension('ext.flutter.flutter_skill.waitForElement', args);
     if (result['found'] == true) {
       return {
         'found': true,
@@ -339,7 +352,8 @@ Future<Map<String, dynamic>> _handleFindElement(Map<String, dynamic> params) asy
 
   // Fallback: scan interactive elements for text/key match
   try {
-    final inspectResult = await _callExtension('ext.flutter.flutter_skill.interactive', {
+    final inspectResult =
+        await _callExtension('ext.flutter.flutter_skill.interactive', {
       'includePositions': 'true',
     });
     final elements = inspectResult['elements'] as List? ?? [];
@@ -360,7 +374,8 @@ Future<Map<String, dynamic>> _handleFindElement(Map<String, dynamic> params) asy
 }
 
 /// wait_for_element: forward timeout param, with fallback scan
-Future<Map<String, dynamic>> _handleWaitForElement(Map<String, dynamic> params) async {
+Future<Map<String, dynamic>> _handleWaitForElement(
+    Map<String, dynamic> params) async {
   final key = params['key']?.toString();
   final text = params['text']?.toString();
   final timeout = int.tryParse((params['timeout'] ?? 5000).toString()) ?? 5000;
@@ -372,7 +387,8 @@ Future<Map<String, dynamic>> _handleWaitForElement(Map<String, dynamic> params) 
   args['timeout'] = timeout.toString();
 
   try {
-    final result = await _callExtension('ext.flutter.flutter_skill.waitForElement', args);
+    final result =
+        await _callExtension('ext.flutter.flutter_skill.waitForElement', args);
     if (result['found'] == true) {
       return {'found': true};
     }
@@ -382,7 +398,8 @@ Future<Map<String, dynamic>> _handleWaitForElement(Map<String, dynamic> params) 
   final deadline = DateTime.now().add(Duration(milliseconds: timeout));
   while (DateTime.now().isBefore(deadline)) {
     try {
-      final inspectResult = await _callExtension('ext.flutter.flutter_skill.interactive', {
+      final inspectResult =
+          await _callExtension('ext.flutter.flutter_skill.interactive', {
         'includePositions': 'true',
       });
       final elements = inspectResult['elements'] as List? ?? [];
@@ -391,7 +408,8 @@ Future<Map<String, dynamic>> _handleWaitForElement(Map<String, dynamic> params) 
         final elKey = el['key']?.toString();
         final elText = el['text']?.toString();
         if (key != null && elKey == key) return {'found': true};
-        if (text != null && elText != null && elText.contains(text)) return {'found': true};
+        if (text != null && elText != null && elText.contains(text))
+          return {'found': true};
       }
     } catch (_) {}
     await Future.delayed(const Duration(milliseconds: 200));
@@ -404,7 +422,8 @@ Future<Map<String, dynamic>> _handleWaitForElement(Map<String, dynamic> params) 
 Future<Map<String, dynamic>> _handleScroll(Map<String, dynamic> params) async {
   final args = _stringifyParams(params);
   try {
-    final result = await _callExtension('ext.flutter.flutter_skill.swipe', args);
+    final result =
+        await _callExtension('ext.flutter.flutter_skill.swipe', args);
     return {'success': result['success'] ?? true};
   } catch (e) {
     return {'success': true}; // scroll is best-effort

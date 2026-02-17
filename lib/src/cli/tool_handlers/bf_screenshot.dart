@@ -1,7 +1,8 @@
 part of '../server.dart';
 
 extension _BfScreenshot on FlutterMcpServer {
-  Future<dynamic> _handleScreenshotTool(String name, Map<String, dynamic> args, AppDriver? client) async {
+  Future<dynamic> _handleScreenshotTool(
+      String name, Map<String, dynamic> args, AppDriver? client) async {
     switch (name) {
       case 'screenshot':
         // Default to lower quality and max width to prevent token overflow
@@ -56,8 +57,10 @@ extension _BfScreenshot on FlutterMcpServer {
       case 'screenshot_region':
         if (client is BridgeDriver) {
           final result = await client.callMethod('screenshot_region', {
-            'x': (args['x'] as num).toDouble(), 'y': (args['y'] as num).toDouble(),
-            'width': (args['width'] as num).toDouble(), 'height': (args['height'] as num).toDouble(),
+            'x': (args['x'] as num).toDouble(),
+            'y': (args['y'] as num).toDouble(),
+            'width': (args['width'] as num).toDouble(),
+            'height': (args['height'] as num).toDouble(),
           });
           return result;
         }
@@ -104,15 +107,18 @@ extension _BfScreenshot on FlutterMcpServer {
       case 'visual_verify':
         final verifyQuality = (args['quality'] as num?)?.toDouble() ?? 0.5;
         final verifyDesc = args['description'] as String? ?? '';
-        final checkElements = (args['check_elements'] as List?)?.cast<String>() ?? [];
+        final checkElements =
+            (args['check_elements'] as List?)?.cast<String>() ?? [];
 
         // Take screenshot
-        final verifyImageBase64 = await client!.takeScreenshot(quality: verifyQuality, maxWidth: 800);
+        final verifyImageBase64 =
+            await client!.takeScreenshot(quality: verifyQuality, maxWidth: 800);
         String? verifyScreenshotPath;
         if (verifyImageBase64 != null) {
           final tempDir = Directory.systemTemp;
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${tempDir.path}/flutter_skill_verify_$timestamp.png');
+          final file =
+              File('${tempDir.path}/flutter_skill_verify_$timestamp.png');
           await file.writeAsBytes(base64.decode(verifyImageBase64));
           verifyScreenshotPath = file.path;
         }
@@ -124,7 +130,8 @@ extension _BfScreenshot on FlutterMcpServer {
         int verifyElementCount = 0;
         try {
           final structured = await client.getInteractiveElementsStructured();
-          final snapshotElements = structured['elements'] as List<dynamic>? ?? [];
+          final snapshotElements =
+              structured['elements'] as List<dynamic>? ?? [];
           verifyElementCount = snapshotElements.length;
 
           final buf = StringBuffer();
@@ -161,7 +168,8 @@ extension _BfScreenshot on FlutterMcpServer {
           'elements_missing': missingElements,
           'element_count': verifyElementCount,
           'description_to_verify': verifyDesc,
-          'hint': 'Compare the screenshot and snapshot against the description. Report any discrepancies.',
+          'hint':
+              'Compare the screenshot and snapshot against the description. Report any discrepancies.',
         };
 
       case 'visual_diff':
@@ -171,15 +179,20 @@ extension _BfScreenshot on FlutterMcpServer {
 
         final baselineFile = File(baselinePath);
         if (!await baselineFile.exists()) {
-          return {'success': false, 'error': 'Baseline file not found: $baselinePath'};
+          return {
+            'success': false,
+            'error': 'Baseline file not found: $baselinePath'
+          };
         }
 
-        final diffImageBase64 = await client!.takeScreenshot(quality: diffQuality, maxWidth: 800);
+        final diffImageBase64 =
+            await client!.takeScreenshot(quality: diffQuality, maxWidth: 800);
         String? currentScreenshotPath;
         if (diffImageBase64 != null) {
           final tempDir = Directory.systemTemp;
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${tempDir.path}/flutter_skill_diff_$timestamp.png');
+          final file =
+              File('${tempDir.path}/flutter_skill_diff_$timestamp.png');
           await file.writeAsBytes(base64.decode(diffImageBase64));
           currentScreenshotPath = file.path;
         }
@@ -208,7 +221,8 @@ extension _BfScreenshot on FlutterMcpServer {
           'current_screenshot': currentScreenshotPath,
           'current_snapshot': diffSnapshotText,
           'description': diffDesc,
-          'hint': 'Compare the baseline screenshot with the current screenshot. Look for visual differences. The text snapshot shows the current UI structure.',
+          'hint':
+              'Compare the baseline screenshot with the current screenshot. Look for visual differences. The text snapshot shows the current UI structure.',
         };
 
       case 'screenshot_element':
@@ -234,7 +248,8 @@ extension _BfScreenshot on FlutterMcpServer {
         }
 
         if (client is BridgeDriver) {
-          final result = await client.callMethod('screenshot_element', {'key': targetKey});
+          final result =
+              await client.callMethod('screenshot_element', {'key': targetKey});
           return result;
         }
         final fc = _asFlutterClient(client!, 'screenshot_element');

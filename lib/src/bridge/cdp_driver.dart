@@ -82,8 +82,7 @@ class CdpDriver implements AppDriver {
     // Discover tabs via CDP JSON endpoint
     final wsUrl = await _discoverTarget();
     if (wsUrl == null) {
-      throw Exception(
-          'Could not find debuggable tab on port $_port. '
+      throw Exception('Could not find debuggable tab on port $_port. '
           'Ensure Chrome is running with --remote-debugging-port=$_port');
     }
 
@@ -130,7 +129,8 @@ class CdpDriver implements AppDriver {
   }
 
   @override
-  Future<Map<String, dynamic>> tap({String? key, String? text, String? ref}) async {
+  Future<Map<String, dynamic>> tap(
+      {String? key, String? text, String? ref}) async {
     // Find element and get its center coordinates
     final selector = _buildSelector(key: key, text: text, ref: ref);
     final bounds = await _getElementBounds(selector, text: text);
@@ -144,8 +144,10 @@ class CdpDriver implements AppDriver {
     final cx = bounds['cx'] as double;
     final cy = bounds['cy'] as double;
 
-    await _dispatchMouseEvent('mousePressed', cx, cy, button: 'left', clickCount: 1);
-    await _dispatchMouseEvent('mouseReleased', cx, cy, button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mousePressed', cx, cy,
+        button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mouseReleased', cx, cy,
+        button: 'left', clickCount: 1);
 
     return {
       'success': true,
@@ -154,7 +156,8 @@ class CdpDriver implements AppDriver {
   }
 
   @override
-  Future<Map<String, dynamic>> enterText(String? key, String text, {String? ref}) async {
+  Future<Map<String, dynamic>> enterText(String? key, String text,
+      {String? ref}) async {
     // Focus the element first
     if (key != null || ref != null) {
       final selector = _buildSelector(key: key, ref: ref);
@@ -207,11 +210,16 @@ class CdpDriver implements AppDriver {
   }
 
   @override
-  Future<bool> swipe({required String direction, double distance = 300, String? key}) async {
+  Future<bool> swipe(
+      {required String direction, double distance = 300, String? key}) async {
     // Get viewport dimensions
     final metrics = await _call('Page.getLayoutMetrics');
-    final vw = (metrics['cssLayoutViewport']?['clientWidth'] as num?)?.toDouble() ?? 800.0;
-    final vh = (metrics['cssLayoutViewport']?['clientHeight'] as num?)?.toDouble() ?? 600.0;
+    final vw =
+        (metrics['cssLayoutViewport']?['clientWidth'] as num?)?.toDouble() ??
+            800.0;
+    final vh =
+        (metrics['cssLayoutViewport']?['clientHeight'] as num?)?.toDouble() ??
+            600.0;
 
     double startX = vw / 2, startY = vh / 2, endX = vw / 2, endY = vh / 2;
 
@@ -241,7 +249,8 @@ class CdpDriver implements AppDriver {
   }
 
   @override
-  Future<List<dynamic>> getInteractiveElements({bool includePositions = true}) async {
+  Future<List<dynamic>> getInteractiveElements(
+      {bool includePositions = true}) async {
     final result = await _evalJs('''
       (() => {
         const selectors = 'a, button, input, select, textarea, [role="button"], [role="link"], [role="checkbox"], [role="radio"], [role="tab"], [onclick], [tabindex]';
@@ -299,7 +308,10 @@ class CdpDriver implements AppDriver {
       // Parse array-like properties
       final elements = <dynamic>[];
       for (final prop in (props['result'] as List? ?? [])) {
-        if (prop is Map && prop['value']?['type'] == 'object' && prop['name'] != '__proto__' && prop['name'] != 'length') {
+        if (prop is Map &&
+            prop['value']?['type'] == 'object' &&
+            prop['name'] != '__proto__' &&
+            prop['name'] != 'length') {
           final elObjId = prop['value']['objectId'] as String?;
           if (elObjId != null) {
             final elProps = await _call('Runtime.getProperties', {
@@ -401,7 +413,9 @@ class CdpDriver implements AppDriver {
     // Default to JPEG@80 for speed; use PNG only when quality=1.0 explicitly AND no maxWidth
     final useJpeg = quality < 1.0 || maxWidth != null;
     final params = <String, dynamic>{
-      'format': useJpeg ? 'jpeg' : 'jpeg', // Always JPEG for CDP — 3-5x faster than PNG
+      'format': useJpeg
+          ? 'jpeg'
+          : 'jpeg', // Always JPEG for CDP — 3-5x faster than PNG
       'quality': (quality * 80).round().clamp(30, 100),
     };
     if (maxWidth != null) {
@@ -431,7 +445,8 @@ class CdpDriver implements AppDriver {
   // ── Extended methods used by server.dart ──
 
   /// Take a screenshot of a specific region.
-  Future<String?> takeRegionScreenshot(double x, double y, double width, double height) async {
+  Future<String?> takeRegionScreenshot(
+      double x, double y, double width, double height) async {
     final result = await _call('Page.captureScreenshot', {
       'format': 'png',
       'clip': {
@@ -469,7 +484,10 @@ class CdpDriver implements AppDriver {
       })()
     ''');
     final found = result['result']?['value'] == true;
-    return {'success': found, 'message': found ? 'Scrolled to element' : 'Element not found'};
+    return {
+      'success': found,
+      'message': found ? 'Scrolled to element' : 'Element not found'
+    };
   }
 
   /// Navigate back.
@@ -491,7 +509,8 @@ class CdpDriver implements AppDriver {
   }
 
   /// Wait for an element to appear.
-  Future<bool> waitForElement({String? key, String? text, int timeout = 5000}) async {
+  Future<bool> waitForElement(
+      {String? key, String? text, int timeout = 5000}) async {
     final selector = _buildSelector(key: key, text: text);
     final sw = Stopwatch()..start();
     while (sw.elapsedMilliseconds < timeout) {
@@ -508,7 +527,8 @@ class CdpDriver implements AppDriver {
   }
 
   /// Wait for an element to disappear.
-  Future<bool> waitForGone({String? key, String? text, int timeout = 5000}) async {
+  Future<bool> waitForGone(
+      {String? key, String? text, int timeout = 5000}) async {
     final selector = _buildSelector(key: key, text: text);
     final sw = Stopwatch()..start();
     while (sw.elapsedMilliseconds < timeout) {
@@ -540,12 +560,15 @@ class CdpDriver implements AppDriver {
 
   /// Tap at specific coordinates.
   Future<void> tapAt(double x, double y) async {
-    await _dispatchMouseEvent('mousePressed', x, y, button: 'left', clickCount: 1);
-    await _dispatchMouseEvent('mouseReleased', x, y, button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mousePressed', x, y,
+        button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mouseReleased', x, y,
+        button: 'left', clickCount: 1);
   }
 
   /// Long press an element.
-  Future<bool> longPress({String? key, String? text, int duration = 500}) async {
+  Future<bool> longPress(
+      {String? key, String? text, int duration = 500}) async {
     final selector = _buildSelector(key: key, text: text);
     final bounds = await _getElementBounds(selector, text: text);
     if (bounds == null) return false;
@@ -564,10 +587,14 @@ class CdpDriver implements AppDriver {
     if (bounds == null) return false;
     final cx = bounds['cx'] as double;
     final cy = bounds['cy'] as double;
-    await _dispatchMouseEvent('mousePressed', cx, cy, button: 'left', clickCount: 1);
-    await _dispatchMouseEvent('mouseReleased', cx, cy, button: 'left', clickCount: 1);
-    await _dispatchMouseEvent('mousePressed', cx, cy, button: 'left', clickCount: 2);
-    await _dispatchMouseEvent('mouseReleased', cx, cy, button: 'left', clickCount: 2);
+    await _dispatchMouseEvent('mousePressed', cx, cy,
+        button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mouseReleased', cx, cy,
+        button: 'left', clickCount: 1);
+    await _dispatchMouseEvent('mousePressed', cx, cy,
+        button: 'left', clickCount: 2);
+    await _dispatchMouseEvent('mouseReleased', cx, cy,
+        button: 'left', clickCount: 2);
     return true;
   }
 
@@ -597,7 +624,8 @@ class CdpDriver implements AppDriver {
   // ── Extended interaction methods ──
 
   /// Drag from one point to another.
-  Future<Map<String, dynamic>> drag(double startX, double startY, double endX, double endY) async {
+  Future<Map<String, dynamic>> drag(
+      double startX, double startY, double endX, double endY) async {
     await _dispatchMouseEvent('mousePressed', startX, startY, button: 'left');
     // Smooth drag in steps
     const steps = 10;
@@ -634,45 +662,70 @@ class CdpDriver implements AppDriver {
   }
 
   /// Edge swipe (simulate from edge of viewport).
-  Future<Map<String, dynamic>> edgeSwipe(String direction, {String edge = 'left', int distance = 200}) async {
-    final viewport = await _evalJs('[window.innerWidth, window.innerHeight].join(",")');
-    final dims = (viewport['result']?['value'] as String? ?? '1280,720').split(',');
+  Future<Map<String, dynamic>> edgeSwipe(String direction,
+      {String edge = 'left', int distance = 200}) async {
+    final viewport =
+        await _evalJs('[window.innerWidth, window.innerHeight].join(",")');
+    final dims =
+        (viewport['result']?['value'] as String? ?? '1280,720').split(',');
     final w = double.parse(dims[0]);
     final h = double.parse(dims[1]);
     double startX, startY, endX, endY;
     switch (direction) {
       case 'right':
-        startX = 5; startY = h / 2; endX = distance.toDouble(); endY = h / 2;
+        startX = 5;
+        startY = h / 2;
+        endX = distance.toDouble();
+        endY = h / 2;
         break;
       case 'left':
-        startX = w - 5; startY = h / 2; endX = w - distance; endY = h / 2;
+        startX = w - 5;
+        startY = h / 2;
+        endX = w - distance;
+        endY = h / 2;
         break;
       case 'up':
-        startX = w / 2; startY = h - 5; endX = w / 2; endY = h - distance;
+        startX = w / 2;
+        startY = h - 5;
+        endX = w / 2;
+        endY = h - distance;
         break;
       case 'down':
       default:
-        startX = w / 2; startY = 5; endX = w / 2; endY = distance.toDouble();
+        startX = w / 2;
+        startY = 5;
+        endX = w / 2;
+        endY = distance.toDouble();
     }
     return swipeCoordinates(startX, startY, endX, endY);
   }
 
   /// Custom gesture (series of points).
-  Future<Map<String, dynamic>> gesture(List<Map<String, dynamic>> points) async {
+  Future<Map<String, dynamic>> gesture(
+      List<Map<String, dynamic>> points) async {
     if (points.isEmpty) return {"success": false, "message": "No points"};
     final first = points.first;
-    await _dispatchMouseEvent('mousePressed', (first['x'] as num).toDouble(), (first['y'] as num).toDouble(), button: 'left');
+    await _dispatchMouseEvent('mousePressed', (first['x'] as num).toDouble(),
+        (first['y'] as num).toDouble(),
+        button: 'left');
     for (var i = 1; i < points.length; i++) {
-      await _dispatchMouseEvent('mouseMoved', (points[i]['x'] as num).toDouble(), (points[i]['y'] as num).toDouble(), button: 'left');
+      await _dispatchMouseEvent(
+          'mouseMoved',
+          (points[i]['x'] as num).toDouble(),
+          (points[i]['y'] as num).toDouble(),
+          button: 'left');
       await Future.delayed(const Duration(milliseconds: 20));
     }
     final last = points.last;
-    await _dispatchMouseEvent('mouseReleased', (last['x'] as num).toDouble(), (last['y'] as num).toDouble(), button: 'left');
+    await _dispatchMouseEvent('mouseReleased', (last['x'] as num).toDouble(),
+        (last['y'] as num).toDouble(),
+        button: 'left');
     return {"success": true};
   }
 
   /// Scroll until element is visible.
-  Future<Map<String, dynamic>> scrollUntilVisible(String key, {int maxScrolls = 10, String direction = 'down'}) async {
+  Future<Map<String, dynamic>> scrollUntilVisible(String key,
+      {int maxScrolls = 10, String direction = 'down'}) async {
     for (var i = 0; i < maxScrolls; i++) {
       final result = await _evalJs('''
         (() => {
@@ -682,12 +735,16 @@ class CdpDriver implements AppDriver {
           return rect.top >= 0 && rect.bottom <= window.innerHeight;
         })()
       ''');
-      if (result['result']?['value'] == true) return {"success": true, "scrolls": i};
+      if (result['result']?['value'] == true)
+        return {"success": true, "scrolls": i};
       final dy = direction == 'up' ? -300 : 300;
       await _evalJs('window.scrollBy(0, $dy)');
       await Future.delayed(const Duration(milliseconds: 200));
     }
-    return {"success": false, "message": "Element '$key' not visible after $maxScrolls scrolls"};
+    return {
+      "success": false,
+      "message": "Element '$key' not visible after $maxScrolls scrolls"
+    };
   }
 
   /// Get checkbox state.
@@ -810,8 +867,10 @@ class CdpDriver implements AppDriver {
   }
 
   /// Assert element count.
-  Future<Map<String, dynamic>> assertElementCount(String selector, int expectedCount) async {
-    final result = await _evalJs('document.querySelectorAll("$selector").length');
+  Future<Map<String, dynamic>> assertElementCount(
+      String selector, int expectedCount) async {
+    final result =
+        await _evalJs('document.querySelectorAll("$selector").length');
     final count = result['result']?['value'] as int? ?? 0;
     return {
       "success": count == expectedCount,
@@ -822,7 +881,8 @@ class CdpDriver implements AppDriver {
 
   /// Wait for idle.
   Future<Map<String, dynamic>> waitForIdle({int timeoutMs = 5000}) async {
-    await Future.delayed(Duration(milliseconds: timeoutMs > 2000 ? 2000 : timeoutMs));
+    await Future.delayed(
+        Duration(milliseconds: timeoutMs > 2000 ? 2000 : timeoutMs));
     return {"success": true, "message": "Page idle"};
   }
 
@@ -900,13 +960,18 @@ class CdpDriver implements AppDriver {
   }
 
   /// Hover over element.
-  Future<Map<String, dynamic>> hover({String? key, String? text, String? ref}) async {
+  Future<Map<String, dynamic>> hover(
+      {String? key, String? text, String? ref}) async {
     final bounds = await _getElementBounds(key ?? '', text: text, ref: ref);
-    if (bounds == null) return {"success": false, "message": "Element not found"};
+    if (bounds == null)
+      return {"success": false, "message": "Element not found"};
     final cx = bounds['x']! + bounds['w']! / 2;
     final cy = bounds['y']! + bounds['h']! / 2;
     await _dispatchMouseEvent('mouseMoved', cx, cy);
-    return {"success": true, "position": {"x": cx, "y": cy}};
+    return {
+      "success": true,
+      "position": {"x": cx, "y": cy}
+    };
   }
 
   /// Select option in a <select> element.
@@ -970,13 +1035,20 @@ class CdpDriver implements AppDriver {
     final chromePaths = <String>[];
 
     if (Platform.isMacOS) {
-      chromePaths.add('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
+      chromePaths
+          .add('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
       chromePaths.add('/Applications/Chromium.app/Contents/MacOS/Chromium');
     } else if (Platform.isLinux) {
-      chromePaths.addAll(['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']);
+      chromePaths.addAll([
+        'google-chrome',
+        'google-chrome-stable',
+        'chromium',
+        'chromium-browser'
+      ]);
     } else if (Platform.isWindows) {
       chromePaths.add(r'C:\Program Files\Google\Chrome\Application\chrome.exe');
-      chromePaths.add(r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe');
+      chromePaths
+          .add(r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe');
     }
 
     // Allow custom Chrome path
@@ -1010,17 +1082,18 @@ class CdpDriver implements AppDriver {
       }
     }
 
-    throw Exception(
-        'Could not find Chrome. Tried: ${chromePaths.join(', ')}. '
+    throw Exception('Could not find Chrome. Tried: ${chromePaths.join(', ')}. '
         'Start Chrome manually with --remote-debugging-port=$_port');
   }
 
   /// Poll CDP endpoint until it responds (replaces fixed 2s delay after Chrome launch)
   Future<void> _waitForCdpReady() async {
     final client = http.Client();
-    for (var i = 0; i < 40; i++) { // 40 * 50ms = 2s max
+    for (var i = 0; i < 40; i++) {
+      // 40 * 50ms = 2s max
       try {
-        final resp = await client.get(Uri.parse('http://127.0.0.1:$_port/json/version'))
+        final resp = await client
+            .get(Uri.parse('http://127.0.0.1:$_port/json/version'))
             .timeout(const Duration(milliseconds: 200));
         if (resp.statusCode == 200) {
           client.close();
@@ -1056,7 +1129,8 @@ class CdpDriver implements AppDriver {
     for (var i = 0; i < 10; i++) {
       try {
         final client = HttpClient();
-        final request = await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json'));
+        final request =
+            await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json'));
         final response = await request.close();
         final body = await response.transform(utf8.decoder).join();
         client.close();
@@ -1081,7 +1155,8 @@ class CdpDriver implements AppDriver {
     return null;
   }
 
-  Future<Map<String, dynamic>> _call(String method, [Map<String, dynamic>? params]) async {
+  Future<Map<String, dynamic>> _call(String method,
+      [Map<String, dynamic>? params]) async {
     if (_ws == null || !_connected) {
       throw Exception('Not connected via CDP');
     }
@@ -1101,7 +1176,8 @@ class CdpDriver implements AppDriver {
       const Duration(seconds: 30),
       onTimeout: () {
         _pending.remove(id);
-        throw TimeoutException('CDP call "$method" timed out', const Duration(seconds: 30));
+        throw TimeoutException(
+            'CDP call "$method" timed out', const Duration(seconds: 30));
       },
     );
   }
@@ -1223,7 +1299,8 @@ function _dqAll(sel, root) {
         String tagSelector;
         switch (tag) {
           case 'button':
-            tagSelector = 'button, [role="button"], input[type="submit"], input[type="button"]';
+            tagSelector =
+                'button, [role="button"], input[type="submit"], input[type="button"]';
             break;
           case 'input':
             tagSelector = 'input, textarea, select';
@@ -1257,7 +1334,8 @@ function _dqAll(sel, root) {
   }
 
   /// Get element bounds (returns {x, y, w, h, cx, cy} or null).
-  Future<Map<String, double>?> _getElementBounds(String selector, {String? text, String? ref}) async {
+  Future<Map<String, double>?> _getElementBounds(String selector,
+      {String? text, String? ref}) async {
     final result = await _evalJs('''
       (() => {
         const el = ${_jsFindElement(selector, text: text, ref: ref)};
@@ -1312,7 +1390,6 @@ function _dqAll(sel, root) {
       // Malformed message
     }
   }
-
 
   void _onDisconnect() {
     _connected = false;

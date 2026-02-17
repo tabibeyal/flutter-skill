@@ -13,7 +13,8 @@ extension _PluginHandlers on FlutterMcpServer {
           final content = await entity.readAsString();
           final plugin = jsonDecode(content) as Map<String, dynamic>;
           final name = plugin['name'] as String?;
-          final description = plugin['description'] as String? ?? 'Custom plugin';
+          final description =
+              plugin['description'] as String? ?? 'Custom plugin';
           final steps = (plugin['steps'] as List<dynamic>?) ?? [];
           if (name == null || steps.isEmpty) continue;
           _pluginTools.add({
@@ -34,13 +35,15 @@ extension _PluginHandlers on FlutterMcpServer {
   }
 
   /// Execute a plugin by running its steps sequentially
-  Future<dynamic> _executePlugin(Map<String, dynamic> plugin, Map<String, dynamic> args) async {
+  Future<dynamic> _executePlugin(
+      Map<String, dynamic> plugin, Map<String, dynamic> args) async {
     final steps = (plugin['steps'] as List<dynamic>);
     final results = <Map<String, dynamic>>[];
     for (int i = 0; i < steps.length; i++) {
       final step = steps[i] as Map<String, dynamic>;
       final toolName = step['tool'] as String;
-      final toolArgs = Map<String, dynamic>.from((step['args'] as Map<String, dynamic>?) ?? {});
+      final toolArgs = Map<String, dynamic>.from(
+          (step['args'] as Map<String, dynamic>?) ?? {});
       // Allow overriding step args from the call args
       toolArgs.addAll(args);
       final stopwatch = Stopwatch()..start();
@@ -76,5 +79,4 @@ extension _PluginHandlers on FlutterMcpServer {
       'results': results,
     };
   }
-
 }
