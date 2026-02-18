@@ -14,6 +14,8 @@ Future<void> runExplore(List<String> args) async {
   String reportPath = './explore-report.html';
   int cdpPort = 9222;
   bool headless = true;
+  int maxPages = 10;
+  int maxLinks = 20;
 
   for (final arg in args) {
     if (arg.startsWith('--depth=')) {
@@ -24,6 +26,10 @@ Future<void> runExplore(List<String> args) async {
       cdpPort = int.parse(arg.substring(11));
     } else if (arg == '--no-headless') {
       headless = false;
+    } else if (arg.startsWith('--max-pages=')) {
+      maxPages = int.parse(arg.substring(12));
+    } else if (arg.startsWith('--max-links=')) {
+      maxLinks = int.parse(arg.substring(12));
     } else if (!arg.startsWith('-')) {
       url = arg;
     }
@@ -37,6 +43,8 @@ Future<void> runExplore(List<String> args) async {
     print('  --report=PATH      HTML report output path (default: ./explore-report.html)');
     print('  --cdp-port=N       Chrome DevTools port (default: 9222)');
     print('  --no-headless      Run Chrome with UI visible');
+    print('  --max-pages=N      Max pages to visit (default: 10)');
+    print('  --max-links=N      Max links to follow per page (default: 20)');
     exit(1);
   }
 
@@ -54,6 +62,8 @@ Future<void> runExplore(List<String> args) async {
     reportPath: reportPath,
     cdpPort: cdpPort,
     headless: headless,
+    maxPages: maxPages,
+    maxLinks: maxLinks,
   );
 
   await agent.run();
@@ -80,6 +90,8 @@ class _ExploreAgent {
   final String reportPath;
   final int cdpPort;
   final bool headless;
+  final int maxPages;
+  final int maxLinks;
 
   late CdpDriver _cdp;
 
@@ -98,6 +110,8 @@ class _ExploreAgent {
     required this.reportPath,
     required this.cdpPort,
     required this.headless,
+    required this.maxPages,
+    required this.maxLinks,
   });
 
   Future<void> run() async {
@@ -119,6 +133,8 @@ class _ExploreAgent {
     _queue.add((startUrl, 0));
 
     while (_queue.isNotEmpty) {
+      if (_visited.length >= maxPages) break;
+
       final (pageUrl, currentDepth) = _queue.removeAt(0);
       final normalizedUrl = _normalizeUrl(pageUrl);
 
@@ -131,9 +147,10 @@ class _ExploreAgent {
       final result = await _explorePage(pageUrl, currentDepth);
       _visited[normalizedUrl] = result;
 
-      // Queue discovered links
+      // Queue discovered links (limited by maxLinks)
       if (currentDepth < maxDepth) {
-        for (final link in result.discoveredLinks) {
+        final linksToFollow = result.discoveredLinks.take(maxLinks).toList();
+        for (final link in linksToFollow) {
           final normLink = _normalizeUrl(link);
           if (!_visited.containsKey(normLink) &&
               _isSameOrigin(link, startUrl)) {
@@ -215,16 +232,27 @@ class _ExploreAgent {
       // Re-install error monitoring after navigation
       await _setupConsoleMonitoring();
 
+      // Extra wait for SPA frameworks to render
+      await Future.delayed(const Duration(seconds: 1));
+
       // Take screenshot
       final screenshot = await _cdp.takeScreenshot(quality: 0.8);
       if (screenshot != null) {
         result.screenshotBase64 = screenshot;
       }
 
-      // Discover interactive elements
-      final structured = await _cdp.getInteractiveElementsStructured();
-      final elements =
+      // Discover interactive elements (with SPA retry)
+      var structured = await _cdp.getInteractiveElementsStructured();
+      var elements =
           (structured['elements'] as List<dynamic>?) ?? [];
+
+      // If no elements found, retry after extra wait (SPA may still be rendering)
+      if (elements.isEmpty) {
+        print('   ⏳ No elements found, retrying after 2s (SPA?)...');
+        await Future.delayed(const Duration(seconds: 2));
+        structured = await _cdp.getInteractiveElementsStructured();
+        elements = (structured['elements'] as List<dynamic>?) ?? [];
+      }
       result.elementCount = elements.length;
       print('   📦 Found ${elements.length} interactive elements');
 

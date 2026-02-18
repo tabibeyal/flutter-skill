@@ -113,7 +113,7 @@ Future<void> runServe(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, serverPort);
 
   // Shared mutable state
-  final state = _ServeState(toolCache, DateTime.now());
+  final state = _ServeState(toolCache, DateTime.now(), cdpPort);
 
   // Background: poll for DOM changes
   if (watch) {
@@ -126,7 +126,12 @@ Future<void> runServe(List<String> args) async {
           state.updatedAt = DateTime.now();
         }
       } catch (e) {
-        // CDP connection may drop — ignore
+        // CDP connection may drop — try to recover
+        if (e.toString().contains('-32000') ||
+            e.toString().contains('Inspected target navigated or closed')) {
+          print('⚠️ CDP target lost, attempting to reconnect...');
+          await _reconnectCdpTarget(cdp, cdpPort);
+        }
       }
     });
   }
@@ -144,6 +149,12 @@ Future<void> runServe(List<String> args) async {
       }
       await _handleRequest(request, cdp, state);
     } catch (e) {
+      // Try to recover from CDP target loss on any request
+      if (e.toString().contains('-32000') ||
+          e.toString().contains('Inspected target navigated or closed')) {
+        print('   ⚠️ CDP target lost, attempting to reconnect...');
+        await _reconnectCdpTarget(cdp, state.cdpPort);
+      }
       print('   ❌ Request error: $e');
       try {
         request.response
@@ -160,7 +171,36 @@ Future<void> runServe(List<String> args) async {
 class _ServeState {
   List<Map<String, dynamic>> tools;
   DateTime updatedAt;
-  _ServeState(this.tools, this.updatedAt);
+  final int cdpPort;
+  _ServeState(this.tools, this.updatedAt, this.cdpPort);
+}
+
+/// Reconnect to the CDP target after it navigates or closes
+Future<void> _reconnectCdpTarget(CdpDriver cdp, int cdpPort) async {
+  try {
+    await Future.delayed(const Duration(seconds: 1));
+    // Fetch the latest tab list from CDP
+    final client = HttpClient();
+    final request = await client.getUrl(Uri.parse('http://localhost:$cdpPort/json'));
+    final response = await request.close();
+    final body = await response.transform(utf8.decoder).join();
+    final tabs = (jsonDecode(body) as List).cast<Map<String, dynamic>>();
+    client.close();
+
+    // Find first page-type tab
+    final pageTab = tabs.firstWhere(
+      (t) => t['type'] == 'page',
+      orElse: () => tabs.isNotEmpty ? tabs.first : <String, dynamic>{},
+    );
+
+    final wsUrl = pageTab['webSocketDebuggerUrl'] as String?;
+    if (wsUrl != null && wsUrl.isNotEmpty) {
+      await cdp.reconnectTo(wsUrl);
+      print('   ✅ Reconnected to CDP target: ${pageTab['url']}');
+    }
+  } catch (e) {
+    print('   ❌ Failed to reconnect CDP target: $e');
+  }
 }
 
 /// Handle HTTP requests
@@ -350,6 +390,8 @@ Future<void> _handleRequest(
         await cdp.call('Page.navigate', {'url': navUrl});
         // Wait for page load
         await Future.delayed(const Duration(seconds: 3));
+        // Re-discover CDP target in case of redirect
+        await _reconnectCdpTarget(cdp, state.cdpPort);
         // Re-setup observers and re-scan tools
         await _setupHotReloadDetection(cdp);
         state.tools = await _discoverAndPrint(cdp);
@@ -360,10 +402,25 @@ Future<void> _handleRequest(
           ..write(
               jsonEncode({'navigated': navUrl, 'tools': state.tools.length}));
       } catch (e) {
-        response
-          ..statusCode = 500
-          ..headers.contentType = ContentType.json
-          ..write(jsonEncode({'error': e.toString()}));
+        // Try to recover from CDP target loss
+        if (e.toString().contains('-32000') ||
+            e.toString().contains('Inspected target navigated or closed')) {
+          print('   ⚠️ CDP target lost during navigation, reconnecting...');
+          await Future.delayed(const Duration(seconds: 1));
+          await _reconnectCdpTarget(cdp, state.cdpPort);
+          state.tools = await _discoverAndPrint(cdp);
+          state.updatedAt = DateTime.now();
+          response
+            ..statusCode = 200
+            ..headers.contentType = ContentType.json
+            ..write(
+                jsonEncode({'navigated': navUrl, 'tools': state.tools.length, 'reconnected': true}));
+        } else {
+          response
+            ..statusCode = 500
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode({'error': e.toString()}));
+        }
       }
       await response.close();
 

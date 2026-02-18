@@ -16,6 +16,7 @@ Future<void> runDiff(List<String> args) async {
   bool headless = true;
   int depth = 2;
   double threshold = 0.05;
+  int maxPages = 10;
 
   for (final arg in args) {
     if (arg.startsWith('--baseline=')) {
@@ -30,6 +31,8 @@ Future<void> runDiff(List<String> args) async {
       depth = int.parse(arg.substring(8));
     } else if (arg.startsWith('--threshold=')) {
       threshold = double.parse(arg.substring(12));
+    } else if (arg.startsWith('--max-pages=')) {
+      maxPages = int.parse(arg.substring(12));
     } else if (!arg.startsWith('-')) {
       url = arg;
     }
@@ -47,6 +50,7 @@ Future<void> runDiff(List<String> args) async {
     print('  --depth=N          Max crawl depth (default: 2)');
     print('  --threshold=N      Pixel diff threshold 0-1 (default: 0.05)');
     print('  --no-headless      Run Chrome with UI visible');
+    print('  --max-pages=N      Max pages to visit (default: 10)');
     exit(1);
   }
 
@@ -75,7 +79,7 @@ Future<void> runDiff(List<String> args) async {
 
     // Discover pages
     print('🕷️  Discovering pages (depth: $depth)...');
-    final pages = await _discoverPages(cdp, url, depth);
+    final pages = await _discoverPages(cdp, url, depth, maxPages: maxPages);
     print('   Found ${pages.length} pages');
 
     if (!baselineExists) {
@@ -179,7 +183,7 @@ Future<void> runDiff(List<String> args) async {
 
 /// Discover pages by crawling links
 Future<List<String>> _discoverPages(
-    CdpDriver cdp, String startUrl, int maxDepth) async {
+    CdpDriver cdp, String startUrl, int maxDepth, {int maxPages = 10}) async {
   final visited = <String>{};
   final toVisit = <String>[startUrl];
   final baseUri = Uri.parse(startUrl);
@@ -189,6 +193,7 @@ Future<List<String>> _discoverPages(
     toVisit.clear();
 
     for (final pageUrl in currentBatch) {
+      if (visited.length >= maxPages) break;
       if (visited.contains(pageUrl)) continue;
       visited.add(pageUrl);
 

@@ -14,6 +14,8 @@ Future<void> runSecurity(List<String> args) async {
   String reportPath = 'security-report.html';
   int cdpPort = 9222;
   bool headless = true;
+  int maxPages = 10;
+  int maxLinks = 20;
 
   for (final arg in args) {
     if (arg.startsWith('--depth=')) {
@@ -24,6 +26,10 @@ Future<void> runSecurity(List<String> args) async {
       cdpPort = int.parse(arg.substring(11));
     } else if (arg == '--no-headless') {
       headless = false;
+    } else if (arg.startsWith('--max-pages=')) {
+      maxPages = int.parse(arg.substring(12));
+    } else if (arg.startsWith('--max-links=')) {
+      maxLinks = int.parse(arg.substring(12));
     } else if (!arg.startsWith('-')) {
       url = arg;
     }
@@ -39,6 +45,8 @@ Future<void> runSecurity(List<String> args) async {
         '  --report=PATH      HTML report output path (default: security-report.html)');
     print('  --cdp-port=N       Chrome DevTools port (default: 9222)');
     print('  --no-headless      Run Chrome with UI visible');
+    print('  --max-pages=N      Max pages to scan (default: 10)');
+    print('  --max-links=N      Max links to follow per page (default: 20)');
     exit(1);
   }
 
@@ -55,6 +63,8 @@ Future<void> runSecurity(List<String> args) async {
     cdpPort: cdpPort,
     headless: headless,
     reportPath: reportPath,
+    maxPages: maxPages,
+    maxLinks: maxLinks,
   );
 
   final findings = await scanner.run();
@@ -195,6 +205,8 @@ class SecurityScanner {
   final int cdpPort;
   final bool headless;
   final String reportPath;
+  final int maxPages;
+  final int maxLinks;
 
   late CdpDriver _cdp;
   final List<SecurityFinding> _findings = [];
@@ -208,6 +220,8 @@ class SecurityScanner {
     required this.cdpPort,
     required this.headless,
     required this.reportPath,
+    this.maxPages = 10,
+    this.maxLinks = 20,
   });
 
   Future<List<SecurityFinding>> run() async {
@@ -231,6 +245,8 @@ class SecurityScanner {
     _queue.add((startUrl, 0));
 
     while (_queue.isNotEmpty) {
+      if (_visited.length >= maxPages) break;
+
       final (pageUrl, currentDepth) = _queue.removeAt(0);
       final normalizedUrl = _normalizeUrl(pageUrl);
 
@@ -326,7 +342,7 @@ class SecurityScanner {
         ''');
         final linksJson = linksResult['result']?['value'] as String?;
         if (linksJson != null) {
-          final links = (jsonDecode(linksJson) as List).cast<String>();
+          final links = (jsonDecode(linksJson) as List).cast<String>().take(maxLinks).toList();
           for (final link in links) {
             final normLink = _normalizeUrl(link);
             if (!_visited.containsKey(normLink) &&
@@ -386,7 +402,19 @@ class SecurityScanner {
       } catch (_) {}
     }
 
-    for (final entry in expectedSecurityHeaders.entries) {
+    // Only report truly critical missing headers (CSP and HSTS)
+    const criticalHeaders = {
+      'Content-Security-Policy': {
+        'severity': 'High',
+        'description': 'Prevents XSS and data injection attacks',
+      },
+      'Strict-Transport-Security': {
+        'severity': 'High',
+        'description': 'Enforces HTTPS connections',
+      },
+    };
+
+    for (final entry in criticalHeaders.entries) {
       final headerName = entry.key;
       final config = entry.value;
       final headerLower = headerName.toLowerCase();
@@ -676,6 +704,7 @@ class SecurityScanner {
     print('   🛡️ Checking CSRF protection...');
 
     try {
+      // Check all forms (not just POST) for CSRF tokens
       final result = await _cdp.evaluate('''
         JSON.stringify(
           Array.from(document.querySelectorAll('form'))
@@ -688,10 +717,10 @@ class SecurityScanner {
                 form.querySelector('input[name*="token"]') ||
                 form.querySelector('input[name*="_token"]') ||
                 form.querySelector('input[name="authenticity_token"]') ||
-                form.querySelector('meta[name="csrf-token"]')
-              )
+                document.querySelector('meta[name="csrf-token"]')
+              ),
+              hasInputs: form.querySelectorAll('input, textarea, select').length > 0
             }))
-            .filter(f => f.method === 'POST')
         )
       ''');
 
@@ -701,14 +730,17 @@ class SecurityScanner {
       final forms =
           (jsonDecode(val) as List).cast<Map<String, dynamic>>();
 
+      // Only report forms that are POST and have inputs but no CSRF token
       for (final form in forms) {
-        if (form['hasCSRFToken'] != true) {
+        final method = form['method'] as String? ?? 'GET';
+        final hasInputs = form['hasInputs'] == true;
+        if (method == 'POST' && hasInputs && form['hasCSRFToken'] != true) {
           _findings.add(SecurityFinding(
             category: 'CSRF',
             severity: 'High',
             title: 'POST form without CSRF token',
             description:
-                'A POST form was found without a CSRF protection token.',
+                'A POST form with input fields was found without a CSRF protection token.',
             url: pageUrl,
             evidence: 'Form action: ${form['action']}',
             recommendation:

@@ -17,6 +17,8 @@ Future<void> runPlan(List<String> args) async {
   bool headless = true;
   bool includeSecurity = true;
   bool includeA11y = true;
+  int maxPages = 10;
+  int maxLinks = 20;
 
   for (final arg in args) {
     if (arg.startsWith('--depth=')) {
@@ -33,6 +35,10 @@ Future<void> runPlan(List<String> args) async {
       includeSecurity = false;
     } else if (arg == '--no-a11y') {
       includeA11y = false;
+    } else if (arg.startsWith('--max-pages=')) {
+      maxPages = int.parse(arg.substring(12));
+    } else if (arg.startsWith('--max-links=')) {
+      maxLinks = int.parse(arg.substring(12));
     } else if (!arg.startsWith('-')) {
       url = arg;
     }
@@ -50,6 +56,8 @@ Future<void> runPlan(List<String> args) async {
     print('  --no-headless      Run Chrome with UI visible');
     print('  --no-security      Exclude security test cases');
     print('  --no-a11y          Exclude accessibility test cases');
+    print('  --max-pages=N      Max pages to visit (default: 10)');
+    print('  --max-links=N      Max links to follow per page (default: 20)');
     exit(1);
   }
 
@@ -70,6 +78,8 @@ Future<void> runPlan(List<String> args) async {
     headless: headless,
     includeSecurity: includeSecurity,
     includeA11y: includeA11y,
+    maxPages: maxPages,
+    maxLinks: maxLinks,
   );
 
   final plan = await generator.generate();
@@ -147,6 +157,8 @@ class _PlanGenerator {
   final bool headless;
   final bool includeSecurity;
   final bool includeA11y;
+  final int maxPages;
+  final int maxLinks;
 
   late CdpDriver _cdp;
   final Map<String, _PageInfo> _visited = {};
@@ -159,6 +171,8 @@ class _PlanGenerator {
     required this.headless,
     required this.includeSecurity,
     required this.includeA11y,
+    required this.maxPages,
+    required this.maxLinks,
   });
 
   Future<Map<String, dynamic>> generate() async {
@@ -176,6 +190,8 @@ class _PlanGenerator {
     _queue.add((startUrl, 0));
 
     while (_queue.isNotEmpty) {
+      if (_visited.length >= maxPages) break;
+
       final (pageUrl, currentDepth) = _queue.removeAt(0);
       final normalizedUrl = _normalizeUrl(pageUrl);
 
@@ -187,7 +203,8 @@ class _PlanGenerator {
       _visited[normalizedUrl] = info;
 
       if (currentDepth < maxDepth) {
-        for (final link in info.links) {
+        final linksToFollow = info.links.take(maxLinks).toList();
+        for (final link in linksToFollow) {
           final normLink = _normalizeUrl(link);
           if (!_visited.containsKey(normLink) &&
               _isSameOrigin(link, startUrl)) {

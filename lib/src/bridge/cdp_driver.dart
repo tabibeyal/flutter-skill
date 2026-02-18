@@ -114,6 +114,33 @@ class CdpDriver implements AppDriver {
     }
   }
 
+  /// Reconnect to a new WebSocket URL (e.g., after target navigates away)
+  Future<void> reconnectTo(String wsUrl) async {
+    _connected = false;
+    _failAllPending('Reconnecting');
+    try {
+      await _ws?.close();
+    } catch (_) {}
+    _ws = null;
+
+    _ws = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 10));
+    _connected = true;
+
+    _ws!.listen(
+      _onMessage,
+      onDone: _onDisconnect,
+      onError: (_) => _onDisconnect(),
+      cancelOnError: false,
+    );
+
+    // Re-enable required CDP domains
+    await Future.wait([
+      _call('Page.enable'),
+      _call('DOM.enable'),
+      _call('Runtime.enable'),
+    ]);
+  }
+
   @override
   Future<void> disconnect() async {
     _connected = false;

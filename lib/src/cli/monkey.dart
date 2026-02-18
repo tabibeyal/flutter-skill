@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -16,6 +17,7 @@ Future<void> runMonkey(List<String> args) async {
   String reportPath = './monkey-report.html';
   int cdpPort = 9222;
   bool headless = true;
+  bool stayOnSite = true;
 
   for (final arg in args) {
     if (arg.startsWith('--duration=')) {
@@ -30,6 +32,8 @@ Future<void> runMonkey(List<String> args) async {
       cdpPort = int.parse(arg.substring(11));
     } else if (arg == '--no-headless') {
       headless = false;
+    } else if (arg == '--no-stay-on-site') {
+      stayOnSite = false;
     } else if (!arg.startsWith('-')) {
       url = arg;
     }
@@ -45,6 +49,7 @@ Future<void> runMonkey(List<String> args) async {
     print('  --report=PATH    HTML report output (default: ./monkey-report.html)');
     print('  --cdp-port=N     Chrome DevTools port (default: 9222)');
     print('  --no-headless    Show browser window');
+    print('  --no-stay-on-site  Allow navigation to external sites');
     exit(1);
   }
 
@@ -288,17 +293,56 @@ Future<void> runMonkey(List<String> args) async {
       // Post-action checks
       await _monkeyDelay(rng);
 
-      // Check for white screen (crash detection)
+      // Stay-on-site: if navigated to a different domain, go back
+      if (stayOnSite) {
+        try {
+          final locResult = await cdp.sendCommand('Runtime.evaluate', {
+            'expression': 'window.location.href',
+            'returnByValue': true,
+          });
+          final currentUrl = locResult['result']?['value']?.toString() ?? '';
+          if (currentUrl.isNotEmpty) {
+            final currentHost = Uri.tryParse(currentUrl)?.host ?? '';
+            final startHost = Uri.tryParse(url)?.host ?? '';
+            if (currentHost.isNotEmpty && startHost.isNotEmpty && currentHost != startHost) {
+              print('  ↩️ Navigated off-site to $currentHost, going back');
+              await cdp.sendCommand('Runtime.evaluate', {
+                'expression': 'history.back()',
+              });
+              await Future.delayed(const Duration(seconds: 1));
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Check for white screen (crash detection) — with improved logic
       try {
+        // Wait 500ms to let page render before checking
+        await Future.delayed(const Duration(milliseconds: 500));
+
         final result = await cdp.sendCommand('Runtime.evaluate', {
-          'expression': 'document.body ? document.body.innerText.trim() : ""',
+          'expression': '''
+            JSON.stringify({
+              url: window.location.href,
+              innerHtmlLen: document.body ? document.body.innerHTML.length : 0
+            })
+          ''',
           'returnByValue': true,
         });
-        final bodyText = result['result']?['value']?.toString() ?? '';
-        if (bodyText.isEmpty) {
+        final jsonStr = result['result']?['value']?.toString() ?? '{}';
+        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+        final currentUrl = data['url'] as String? ?? '';
+        final innerHtmlLen = data['innerHtmlLen'] as int? ?? 0;
+
+        // Don't flag about:blank or chrome:// as white screens
+        final isSpecialUrl = currentUrl.startsWith('about:') ||
+            currentUrl.startsWith('chrome://') ||
+            currentUrl.startsWith('chrome-error://');
+
+        if (!isSpecialUrl && innerHtmlLen < 100) {
           errors.add(_MonkeyError(
             type: 'white_screen',
-            message: 'Page appears blank (possible crash)',
+            message: 'Page appears blank (innerHTML length: $innerHtmlLen, possible crash)',
             actionIndex: actionCount,
             timestamp: DateTime.now(),
           ));
@@ -429,7 +473,7 @@ Future<void> _generateMonkeyReport({
     buf.writeln('  <span class="type $typeClass">${action.type.toUpperCase()}</span>');
     buf.writeln('  <span>${_escHtml(action.detail)}</span>');
     if (action.error != null) {
-      buf.writeln('  <span style="color:red">⚠ ${_escHtml(action.error!)}</span>');
+      buf.writeln('  <span style="color:red">⚠ ${_escHtml(action.error ?? "")}</span>');
     }
     // Inline screenshot thumbnail
     final scr = screenshots['${action.index}'];
