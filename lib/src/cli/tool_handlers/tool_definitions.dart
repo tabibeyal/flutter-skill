@@ -54,6 +54,13 @@ extension _ToolDefinitions on FlutterMcpServer {
       'go_offline',
       'clear_browser_data',
       'accessibility_audit',
+      'a11y_full_audit',
+      'a11y_tab_order',
+      'a11y_color_contrast',
+      'a11y_screen_reader',
+      'save_session',
+      'restore_session',
+      'session_diff',
       'set_geolocation',
       'set_timezone',
       'set_color_scheme',
@@ -3081,6 +3088,340 @@ can visually compare them. Also returns text snapshots for structural comparison
             },
           },
         },
+      },
+      // ── Test Coverage Mapping ──
+      {
+        "name": "coverage_start",
+        "description": "Start tracking test coverage — records which pages, elements, and actions were tested",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "coverage_stop",
+        "description": "Stop tracking and return coverage summary",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "coverage_report",
+        "description": "Generate test coverage report — which pages/elements were tested vs untested",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "format": {"type": "string", "enum": ["json", "html"], "description": "Report format (default: json)"},
+            "save_path": {"type": "string", "description": "Path to save the report"},
+          },
+        },
+      },
+      {
+        "name": "coverage_gaps",
+        "description": "Identify untested pages, untested interactive elements, and missing test scenarios",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      // ── Smart Wait ──
+      {
+        "name": "wait_for_stable",
+        "description": "Wait until page is visually stable — no DOM changes, no pending requests, no animations",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": {"type": "integer", "description": "Timeout in milliseconds (default: 10000)"},
+            "stability_ms": {"type": "integer", "description": "Page must be stable for this duration (default: 500)"},
+          },
+        },
+      },
+      {
+        "name": "wait_for_url",
+        "description": "Wait until URL matches a pattern (useful after navigation/redirect)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {"type": "string", "description": "Regex pattern to match URL"},
+            "timeout_ms": {"type": "integer", "description": "Timeout in milliseconds (default: 10000)"},
+          },
+          "required": ["url_pattern"],
+        },
+      },
+      {
+        "name": "wait_for_text",
+        "description": "Wait until specific text appears on page",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {"type": "string", "description": "Text to wait for"},
+            "timeout_ms": {"type": "integer", "description": "Timeout in milliseconds (default: 10000)"},
+          },
+          "required": ["text"],
+        },
+      },
+      {
+        "name": "wait_for_element_count",
+        "description": "Wait until element count matches expected (e.g., wait for list to load)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "selector": {"type": "string", "description": "Element selector/key to count"},
+            "count": {"type": "integer", "description": "Expected count"},
+            "comparison": {"type": "string", "enum": ["eq", "gt", "lt", "gte", "lte"], "description": "Comparison operator (default: eq)"},
+            "timeout_ms": {"type": "integer", "description": "Timeout in milliseconds (default: 10000)"},
+          },
+          "required": ["selector"],
+        },
+      },
+      // ── Data-Driven Testing ──
+      {
+        "name": "test_with_data",
+        "description": "Run same test actions with multiple data sets (data-driven testing). Useful for form testing with different inputs.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "data_sets": {
+              "type": "array",
+              "items": {"type": "object"},
+              "description": "Array of data objects, each used as variables in the actions",
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tool": {"type": "string"},
+                  "arguments": {"type": "object"},
+                },
+              },
+              "description": "Actions to execute per data set. Use {{field_name}} in arguments to reference data.",
+            },
+            "reset_between": {"type": "boolean", "description": "Reset app between data sets (default: true)"},
+          },
+          "required": ["data_sets", "actions"],
+        },
+      },
+      {
+        "name": "generate_test_data",
+        "description": "Generate test data for common scenarios (emails, names, addresses, edge cases)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["email", "name", "phone", "address", "number", "date", "url", "password", "text", "edge_cases"]},
+            "count": {"type": "integer", "description": "Number of items to generate (default: 5)"},
+            "locale": {"type": "string", "description": "Locale for generated data (default: en-US)"},
+          },
+          "required": ["type"],
+        },
+      },
+
+      // ── Smart Self-Healing Tests ──
+      {
+        "name": "smart_tap",
+        "description": "Tap with self-healing: if element not found by key, tries text match, semantic ref, visual similarity, and nearby elements",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "text": {"type": "string"},
+            "ref": {"type": "string", "description": "Semantic ref like button:Login"},
+            "heal_strategy": {"type": "string", "enum": ["strict", "moderate", "aggressive"], "default": "moderate"},
+          },
+        },
+      },
+      {
+        "name": "smart_enter_text",
+        "description": "Enter text with self-healing: finds input by key, placeholder, label, or nearby text",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "text": {"type": "string"},
+            "value": {"type": "string"},
+            "heal_strategy": {"type": "string", "enum": ["strict", "moderate", "aggressive"], "default": "moderate"},
+          },
+        },
+      },
+      {
+        "name": "smart_assert",
+        "description": "Assert with self-healing: if exact match fails, tries fuzzy match, partial text, normalized whitespace",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["visible", "text", "count"]},
+            "key": {"type": "string"},
+            "text": {"type": "string"},
+            "expected": {},
+            "tolerance": {"type": "number", "default": 0.8, "description": "Similarity threshold 0-1"},
+          },
+          "required": ["type"],
+        },
+      },
+
+      // ── Network Mock Tools ──
+      {
+        "name": "mock_api",
+        "description": "Mock an API endpoint — intercept requests matching URL pattern and return custom response",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url_pattern": {"type": "string", "description": "URL pattern to match (glob or regex)"},
+            "method": {"type": "string"},
+            "status": {"type": "integer", "default": 200},
+            "body": {"type": "string"},
+            "headers": {"type": "object"},
+            "delay_ms": {"type": "integer", "default": 0},
+          },
+          "required": ["url_pattern"],
+        },
+      },
+      {
+        "name": "mock_clear",
+        "description": "Clear all API mocks",
+        "inputSchema": {"type": "object", "properties": {}},
+      },
+      {
+        "name": "record_network",
+        "description": "Start recording all network requests for replay later",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filter_url": {"type": "string", "description": "Only record URLs matching this pattern"},
+          },
+        },
+      },
+      {
+        "name": "replay_network",
+        "description": "Replay recorded network requests as mocks (for offline testing)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recording_id": {"type": "string"},
+          },
+        },
+      },
+
+      // ── Multi-Device Sync Testing ──
+      {
+        "name": "multi_connect",
+        "description": "Connect to multiple devices/browsers simultaneously for cross-device testing",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string"},
+                  "type": {"type": "string", "enum": ["cdp", "bridge", "android", "ios"]},
+                  "url": {"type": "string"},
+                  "port": {"type": "integer"}
+                }
+              }
+            }
+          },
+          "required": ["devices"]
+        }
+      },
+      {
+        "name": "multi_action",
+        "description": "Execute same action on all connected devices simultaneously",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {"type": "string", "description": "Tool name to execute"},
+            "arguments": {"type": "object"},
+            "devices": {"type": "array", "items": {"type": "string"}, "description": "Device names (omit for all)"}
+          },
+          "required": ["action", "arguments"]
+        }
+      },
+      {
+        "name": "multi_compare",
+        "description": "Compare screenshots/snapshots across all connected devices",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["screenshot", "snapshot"]},
+            "save_dir": {"type": "string"}
+          }
+        }
+      },
+      {
+        "name": "multi_disconnect",
+        "description": "Disconnect all multi-device sessions",
+        "inputSchema": {"type": "object", "properties": {}}
+      },
+
+      // ── Deep Accessibility Audit ──
+      {
+        "name": "a11y_full_audit",
+        "description": "Comprehensive WCAG 2.1 audit: color contrast, keyboard nav, ARIA roles, focus order, heading hierarchy, form labels, alt text, link text, touch target size",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "level": {"type": "string", "enum": ["A", "AA", "AAA"]},
+            "include_warnings": {"type": "boolean"}
+          }
+        }
+      },
+      {
+        "name": "a11y_tab_order",
+        "description": "Test keyboard tab navigation order — reports the sequence of focused elements",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "max_tabs": {"type": "integer"}
+          }
+        }
+      },
+      {
+        "name": "a11y_color_contrast",
+        "description": "Check color contrast ratios for all text elements against WCAG standards",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "level": {"type": "string", "enum": ["AA", "AAA"]}
+          }
+        }
+      },
+      {
+        "name": "a11y_screen_reader",
+        "description": "Simulate screen reader navigation — reports what a screen reader would announce for each element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "max_elements": {"type": "integer"}
+          }
+        }
+      },
+
+      // ── Session Persistence ──
+      {
+        "name": "save_session",
+        "description": "Save current test session state (cookies, localStorage, URL, element cache) to file for later resumption",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string"}
+          }
+        }
+      },
+      {
+        "name": "restore_session",
+        "description": "Restore a previously saved test session — navigates to URL, restores cookies and storage",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string"}
+          }
+        }
+      },
+      {
+        "name": "session_diff",
+        "description": "Compare two saved sessions — detect changes in cookies, storage, URL, DOM structure",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path_a": {"type": "string"},
+            "path_b": {"type": "string"}
+          },
+          "required": ["path_a", "path_b"]
+        }
       },
     ];
 

@@ -11,6 +11,7 @@ import 'package:flutter_skill/src/cli/demo.dart';
 import 'package:flutter_skill/src/cli/serve.dart';
 import 'package:flutter_skill/src/cli/test_runner.dart';
 import 'package:flutter_skill/src/cli/explore.dart';
+import 'package:flutter_skill/src/cli/monkey.dart';
 
 void main(List<String> args) async {
   if (args.isEmpty) {
@@ -26,6 +27,7 @@ void main(List<String> args) async {
     print('  screenshot   Take a screenshot of the running app');
     print('  serve <url>  Zero-config WebMCP server — any site → AI tools');
     print('  explore <url> AI Test Agent — auto-explore and test any web app');
+    print('  monkey <url>  Monkey testing — random fuzz testing for web apps');
     print('  test <url>   Zero-config web testing — launch Chrome + CDP');
     print('  doctor       Check installation and environment health');
     print('  setup        Install tool priority rules for Claude Code');
@@ -136,6 +138,9 @@ void main(List<String> args) async {
         serverArgs.addAll(commandArgs.where((a) => a != testUrl && !a.startsWith('--url=')));
         await runServer(serverArgs);
       }
+      break;
+    case 'monkey':
+      await runMonkey(commandArgs);
       break;
     default:
       print('Unknown command: $command');

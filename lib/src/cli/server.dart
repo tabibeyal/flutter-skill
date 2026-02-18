@@ -48,6 +48,14 @@ part 'tool_handlers/parallel_handlers.dart';
 part 'tool_handlers/api_handlers.dart';
 part 'tool_handlers/reliability_handlers.dart';
 part 'tool_handlers/visual_regression_handlers.dart';
+part 'tool_handlers/multi_device_handlers.dart';
+part 'tool_handlers/accessibility_deep_handlers.dart';
+part 'tool_handlers/session_handlers.dart';
+part 'tool_handlers/self_healing_handlers.dart';
+part 'tool_handlers/network_mock_handlers.dart';
+part 'tool_handlers/coverage_handlers.dart';
+part 'tool_handlers/smart_wait_handlers.dart';
+part 'tool_handlers/data_driven_handlers.dart';
 
 const String currentVersion = '0.8.3';
 
@@ -244,8 +252,17 @@ class FlutterMcpServer {
   // CDP driver for vanilla web testing
   CdpDriver? _cdpDriver;
 
+  // Network mock state
+  _NetworkMockState? _networkMockState;
+
   // Web bridge listener for browser-based SDKs
   WebBridgeListener? _webBridgeListener;
+
+  // Coverage tracking state
+  bool _coverageTracking = false;
+  final Set<String> _coveragePages = {};
+  final Set<String> _coverageElements = {};
+  final List<Map<String, dynamic>> _coverageActions = [];
 
   // Native platform drivers (for interacting with native OS views)
   final Map<String, NativeDriver> _nativeDrivers = {};
@@ -581,6 +598,14 @@ class FlutterMcpServer {
       _handleParallelTools,
       _handleApiTools,
       _handleReliabilityTools,
+      _handleCoverageTools,
+      _handleSmartWaitTools,
+      _handleDataDrivenTools,
+      _handleSelfHealingTools,
+      _handleNetworkMockTools,
+      _handleMultiDeviceTools,
+      _handleAccessibilityDeepTools,
+      _handleSessionPersistenceTools,
     ];
     for (final handler in handlers) {
       final result = await handler(name, args);

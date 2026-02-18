@@ -34,6 +34,7 @@ class CdpDriver implements AppDriver {
   /// Pending CDP calls keyed by request id.
   final Map<int, Completer<Map<String, dynamic>>> _pending = {};
   final Map<String, void Function()> _eventSubscriptions = {};
+  final Map<String, List<void Function(Map<String, dynamic>)>> _eventListeners = {};
   bool _dialogHandlerInstalled = false;
   final Map<String, Map<String, dynamic>> _interceptRules = {};
 
@@ -1160,6 +1161,22 @@ class CdpDriver implements AppDriver {
           [Map<String, dynamic>? params]) =>
       _call(method, params);
 
+  /// Alias for [call] used by monkey testing and other modules.
+  Future<Map<String, dynamic>> sendCommand(String method,
+          [Map<String, dynamic>? params]) =>
+      _call(method, params);
+
+  /// Register a listener for a CDP event (supports multiple listeners per event).
+  void onEvent(String method, void Function(Map<String, dynamic> params) callback) {
+    _eventListeners.putIfAbsent(method, () => []);
+    _eventListeners[method]!.add(callback);
+  }
+
+  /// Remove all listeners for a CDP event.
+  void removeEventListeners(String method) {
+    _eventListeners.remove(method);
+  }
+
   Future<Map<String, dynamic>> _call(String method,
       [Map<String, dynamic>? params]) async {
     if (_ws == null || !_connected) {
@@ -1390,6 +1407,13 @@ function _dqAll(sel, root) {
       final method = json['method'] as String?;
       if (method != null) {
         _eventSubscriptions[method]?.call();
+        final listeners = _eventListeners[method];
+        if (listeners != null) {
+          final params = (json['params'] as Map<String, dynamic>?) ?? {};
+          for (final cb in listeners) {
+            cb(params);
+          }
+        }
       }
     } catch (e) {
       // Malformed message
