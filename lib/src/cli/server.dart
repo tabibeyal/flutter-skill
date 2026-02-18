@@ -65,6 +65,7 @@ part 'tool_handlers/security_handlers.dart';
 part 'tool_handlers/diff_handlers.dart';
 part 'tool_handlers/bug_report_handlers.dart';
 part 'tool_handlers/fixture_handlers.dart';
+part 'tool_handlers/explore_handlers.dart';
 
 const String currentVersion = '0.8.3';
 
@@ -619,6 +620,7 @@ class FlutterMcpServer {
       _handleBugReportTools,
       _handleFixtureTools,
       _handleSecurityTools,
+      _handleExploreTools,
       _handleNetworkConditionTools,
       _handleLogAnalysisTools,
       _handleCrossBrowserTools,

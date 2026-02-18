@@ -3478,6 +3478,70 @@ can visually compare them. Also returns text snapshots for structural comparison
         "description": "Scan for sensitive data exposure in localStorage, sessionStorage, cookies, console logs, page source",
         "inputSchema": {"type": "object", "properties": {}}
       },
+      // ======================== AI Explore ========================
+      {
+        "name": "page_summary",
+        "description": "Get a compact semantic page summary via Chrome Accessibility Tree. Returns nav items, forms, buttons, headings, landmarks, and page features (~200 tokens). Use this instead of screenshots for AI-driven testing — 95% less tokens.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_ax_tree": {"type": "boolean", "default": false, "description": "Include raw accessibility tree nodes"},
+            "max_elements": {"type": "integer", "default": 50, "description": "Max AX tree nodes to return"}
+          }
+        }
+      },
+      {
+        "name": "explore_actions",
+        "description": "Execute a batch of UI actions (tap, fill, scroll, back, navigate, press, select). Send multiple actions at once to reduce round-trips. Returns results for each action plus console errors.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "description": "Actions to execute in order",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {"type": "string", "enum": ["tap", "fill", "scroll", "back", "navigate", "press", "select"]},
+                  "target": {"type": "string", "description": "Element ref (e.g. 'button:Login', 'input:Username', 'link:Home') or URL for navigate"},
+                  "value": {"type": "string", "description": "Value for fill/select actions"}
+                },
+                "required": ["type", "target"]
+              }
+            }
+          },
+          "required": ["actions"]
+        }
+      },
+      {
+        "name": "boundary_test",
+        "description": "Run boundary/security tests on an input field — XSS, SQL injection, long strings, emoji, null bytes, special chars. Returns pass/fail per payload with XSS reflection detection.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target": {"type": "string", "description": "Input field ref (e.g. 'input:Username')"},
+            "payloads": {"type": "array", "items": {"type": "string"}, "description": "Custom test payloads (uses built-in set if omitted)"}
+          },
+          "required": ["target"]
+        }
+      },
+      {
+        "name": "explore_report",
+        "description": "Generate an HTML explore report from step data collected during AI-driven testing.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "steps": {
+              "type": "array",
+              "description": "Array of step objects with url, actions, bugs, a11y_issues",
+              "items": {"type": "object"}
+            },
+            "title": {"type": "string", "default": "Explore Report"},
+            "output": {"type": "string", "default": "./explore-report.html"}
+          },
+          "required": ["steps"]
+        }
+      },
       // ======================== Diff Testing ========================
       {
         "name": "diff_baseline_create",

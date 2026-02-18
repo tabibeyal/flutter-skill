@@ -3038,6 +3038,66 @@ can visually compare them. Also returns text snapshots for structural comparison
           "required": ["env"]
         }
       },
+      // ======================== AI Explore ========================
+      {
+        "name": "page_summary",
+        "description": "Get compact semantic page summary via Chrome Accessibility Tree — nav items, forms, buttons, headings, landmarks, features. ~200 tokens vs ~4000 for screenshots. Use for AI-driven autonomous testing.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_ax_tree": {"type": "boolean", "default": false, "description": "Include raw accessibility tree nodes"},
+            "max_elements": {"type": "integer", "default": 50, "description": "Max AX tree nodes to return"}
+          }
+        }
+      },
+      {
+        "name": "explore_actions",
+        "description": "Execute a batch of UI actions (tap, fill, scroll, back, navigate, press, select). Send multiple actions at once to reduce LLM round-trips. Returns results + console errors.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "description": "Actions to execute in order",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {"type": "string", "enum": ["tap", "fill", "scroll", "back", "navigate", "press", "select"]},
+                  "target": {"type": "string", "description": "Element ref (e.g. 'button:Login', 'input:Username', 'link:Home')"},
+                  "value": {"type": "string", "description": "Value for fill/select actions"}
+                },
+                "required": ["type", "target"]
+              }
+            }
+          },
+          "required": ["actions"]
+        }
+      },
+      {
+        "name": "boundary_test",
+        "description": "Run boundary/security tests on an input field — XSS (6 payloads), SQL injection (2), long strings (256/5000 chars), emoji, null bytes, special chars. Detects XSS reflection in DOM.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target": {"type": "string", "description": "Input field ref (e.g. 'input:Username')"},
+            "payloads": {"type": "array", "items": {"type": "string"}, "description": "Custom payloads (uses built-in 13-payload set if omitted)"}
+          },
+          "required": ["target"]
+        }
+      },
+      {
+        "name": "explore_report",
+        "description": "Generate styled HTML explore report from collected step data.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "steps": {"type": "array", "description": "Array of step objects: {url, actions, bugs, a11y_issues}", "items": {"type": "object"}},
+            "title": {"type": "string", "default": "Explore Report"},
+            "output": {"type": "string", "default": "./explore-report.html"}
+          },
+          "required": ["steps"]
+        }
+      },
     ];
   }
 
