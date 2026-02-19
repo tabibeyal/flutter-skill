@@ -340,13 +340,24 @@ Future<void> runMonkey(List<String> args) async {
             currentUrl.startsWith('chrome-error://');
 
         if (!isSpecialUrl && innerHtmlLen < 100) {
+          // Retry after 1.5s to avoid false positives during navigation
+          await Future.delayed(const Duration(milliseconds: 1500));
+          final retry = await cdp.sendCommand('Runtime.evaluate', {
+            'expression': 'document.body ? document.body.innerHTML.length : 0',
+            'returnByValue': true,
+          });
+          final retryLen = retry['result']?['value'] as int? ?? innerHtmlLen;
+          if (retryLen >= 100) {
+            // Page loaded after retry — not a white screen
+          } else {
           errors.add(_MonkeyError(
             type: 'white_screen',
-            message: 'Page appears blank (innerHTML length: $innerHtmlLen, possible crash)',
+            message: 'Page appears blank after retry (innerHTML: $retryLen, possible crash)',
             actionIndex: actionCount,
             timestamp: DateTime.now(),
           ));
           print('  ❌ White screen detected!');
+          }
         }
       } catch (_) {}
     }

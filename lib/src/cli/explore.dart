@@ -406,8 +406,10 @@ class _ExploreAgent {
           linkCount++;
           elementCount++;
           // Only treat as nav item if inside navigation landmark or depth <= 2
+          // Filter out product/content links (contain prices, are too long, etc.)
           if ((insideNavigation || depth <= 2) && 
-              name.length < 50 && name.length > 1 && name.isNotEmpty) {
+              name.length > 1 && name.length < 40 &&
+              !RegExp(r'[\$€£¥]\d|CO₂|^\d+\s*(hours?|minutes?|days?)\s*ago').hasMatch(name)) {
             navItems.add(name);
           }
           break;

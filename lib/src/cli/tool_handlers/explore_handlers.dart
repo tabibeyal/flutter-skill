@@ -75,7 +75,8 @@ extension _ExploreHandlers on FlutterMcpServer {
         switch (role) {
           case 'link':
             links++;
-            if ((insideNav || depth <= 2) && name.length > 1 && name.length < 50) {
+            if ((insideNav || depth <= 2) && name.length > 1 && name.length < 40 &&
+                !RegExp(r'[\$€£¥]\d|CO₂|^\d+\s*(hours?|minutes?|days?)\s*ago').hasMatch(name)) {
               nav.add(name);
             }
             break;
