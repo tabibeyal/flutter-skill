@@ -6,9 +6,9 @@ extension _CdpConnectionHandlers2 on FlutterMcpServer {
   Future<dynamic> _handleCdpConnectionTools(
       String name, Map<String, dynamic> args) async {
     if (name == 'connect_cdp') {
-      final url = args['url'] as String;
+      final url = args['url'] as String? ?? '';
       final port = args['port'] as int? ?? 9222;
-      final launchChrome = args['launch_chrome'] ?? true;
+      final launchChrome = args['launch_chrome'] ?? (url.isNotEmpty);
       final headless = args['headless'] ?? false;
       final chromePath = args['chrome_path'] as String?;
       final proxy = args['proxy'] as String?;
