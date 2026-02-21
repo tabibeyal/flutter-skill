@@ -478,22 +478,6 @@ Future<void> _quickstartElectron() async {
   }
 }
 
-Future<bool> _waitForCdpReady(int port) async {
-  for (var i = 0; i < 60; i++) {
-    try {
-      final socket = await Socket.connect('127.0.0.1', port,
-          timeout: const Duration(milliseconds: 200));
-      await socket.close();
-      // Give it a moment after port is open
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
-    } catch (_) {
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-  }
-  return false;
-}
-
 // ─── React Native Guide ──────────────────────────────────────────
 
 void _quickstartReactNativeGuide() {

@@ -328,23 +328,7 @@ class _ExploreAgent {
     print('═══════════════════════════════════════════════');
   }
 
-  static List<Map<String, String>> _parseForms(List<dynamic> rawForms) {
-    final result = <Map<String, String>>[];
-    for (final f in rawForms) {
-      final fields = (f['fields'] as List?) ?? [];
-      final m = <String, String>{};
-      for (final fi in fields) {
-        final fm = fi as Map<String, dynamic>;
-        final ref = fm['ref'] as String? ?? '';
-        final type = fm['type'] as String? ?? '';
-        if (ref.isNotEmpty) m[ref] = type;
-      }
-      if (m.isNotEmpty) result.add(m);
-    }
-    return result;
-  }
-
-  // ─── Page Summary ─────────────────────────────────────────────────
+    // ─── Page Summary ─────────────────────────────────────────────────
 
   Future<_PageSummary> _summarizePage() async {
     // Wait for page to be stable (SPA rendering, lazy loading)
@@ -356,9 +340,6 @@ class _ExploreAgent {
     // Use CDP Accessibility tree for semantic page understanding
     final axTree = await _getAccessibilityTree();
     
-    // Also get navigation history to track SPA navigations
-    final navHistory = await _getNavigationHistory();
-
     // Extract structured info from AX tree
     final navItems = <String>[];
     final forms = <Map<String, String>>[];
@@ -383,8 +364,6 @@ class _ExploreAgent {
     for (final node in axTree) {
       final role = node['role'] as String? ?? '';
       final name = node['name'] as String? ?? '';
-      final value = node['value'] as String? ?? '';
-      final focusable = node['focusable'] as bool? ?? false;
       final depth = node['depth'] as int? ?? 0;
 
       // Track if we're inside a navigation landmark
@@ -441,7 +420,7 @@ class _ExploreAgent {
               (nameLower.contains('url') ? 'url' :
               (role == 'spinbutton' ? 'number' : 'text'))));
           currentForm ??= {};
-          currentForm![ref] = inputType;
+          currentForm[ref] = inputType;
           break;
         case 'heading':
           if (headings.length < 5 && name.isNotEmpty) {
@@ -469,8 +448,8 @@ class _ExploreAgent {
     }
 
     // Finalize current form if any
-    if (currentForm != null && currentForm!.isNotEmpty) {
-      forms.add(currentForm!);
+    if (currentForm != null && currentForm.isNotEmpty) {
+      forms.add(currentForm);
     }
 
     // Also check for login via password fields using a focused CDP query
@@ -644,17 +623,7 @@ class _ExploreAgent {
   }
 
   /// Get navigation history to track SPA navigations
-  Future<List<String>> _getNavigationHistory() async {
-    try {
-      final result = await _cdp.call('Page.getNavigationHistory');
-      final entries = (result['entries'] as List?) ?? [];
-      return entries.map((e) => e['url'] as String? ?? '').toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  // ─── AI Actions ───────────────────────────────────────────────────
+    // ─── AI Actions ───────────────────────────────────────────────────
 
   Future<List<_ExploreAction>> _getAiActions(
       _PageSummary summary, int step) async {
