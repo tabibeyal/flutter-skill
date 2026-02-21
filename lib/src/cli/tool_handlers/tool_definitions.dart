@@ -100,6 +100,12 @@ extension _ToolDefinitions on FlutterMcpServer {
       'native_get_text',
       'native_tap_element',
       'native_element_at',
+      'native_long_press',
+      'native_gesture',
+      'native_press_key',
+      'native_key_combo',
+      'native_button',
+      'native_list_simulators',
       'auth_biometric',
       'auth_deeplink',
     };
@@ -2165,6 +2171,168 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
             },
           },
           "required": ["x", "y"],
+        },
+      },
+      {
+        "name": "native_long_press",
+        "description":
+            """Long press at device coordinates using OS-level input (bypasses Flutter).
+
+[USE WHEN]
+• Triggering context menus on native elements
+• Long-pressing items in native lists or views
+• Any interaction requiring a sustained touch
+
+[HOW IT WORKS]
+• iOS Simulator: Finds element at coordinates via AX tree and performs sustained press
+• Android Emulator: Uses adb shell input swipe to same point (long press simulation)""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "X coordinate in device pixels"
+            },
+            "y": {
+              "type": "number",
+              "description": "Y coordinate in device pixels"
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Long press duration in ms (default: 1000)"
+            },
+          },
+          "required": ["x", "y"],
+        },
+      },
+      {
+        "name": "native_gesture",
+        "description":
+            """Perform a preset gesture on the device (bypasses Flutter).
+
+[AVAILABLE GESTURES]
+• scroll_up, scroll_down, scroll_left, scroll_right — scroll content
+• edge_swipe_left, edge_swipe_right — swipe from screen edge (back navigation, etc.)
+• pull_to_refresh — pull down to refresh content
+
+[HOW IT WORKS]
+• iOS Simulator: Uses AX scroll actions for scroll presets, coordinate swipes for edge gestures
+• Android Emulator: Maps presets to adb shell input swipe with appropriate screen coordinates""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "gesture": {
+              "type": "string",
+              "description":
+                  "Gesture name: scroll_up, scroll_down, scroll_left, scroll_right, edge_swipe_left, edge_swipe_right, pull_to_refresh",
+              "enum": [
+                "scroll_up",
+                "scroll_down",
+                "scroll_left",
+                "scroll_right",
+                "edge_swipe_left",
+                "edge_swipe_right",
+                "pull_to_refresh"
+              ]
+            },
+          },
+          "required": ["gesture"],
+        },
+      },
+      {
+        "name": "native_press_key",
+        "description":
+            """Press a single key by name on the device (bypasses Flutter).
+
+[AVAILABLE KEYS]
+enter, backspace, tab, escape, delete, space, up, down, left, right, home_key, end_key, volume_up, volume_down
+
+[HOW IT WORKS]
+• iOS Simulator: Uses osascript key codes sent to Simulator window
+• Android Emulator: Uses adb shell input keyevent with Android KEYCODE values""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description":
+                  "Key name: enter, backspace, tab, escape, delete, space, up, down, left, right, home_key, end_key, volume_up, volume_down"
+            },
+          },
+          "required": ["key"],
+        },
+      },
+      {
+        "name": "native_key_combo",
+        "description":
+            """Press a key combination on the device (bypasses Flutter).
+
+[EXAMPLES]
+cmd+a (select all), cmd+c (copy), cmd+v (paste), ctrl+a, shift+tab
+
+[HOW IT WORKS]
+• iOS Simulator: Uses osascript keystroke with modifier keys
+• Android Emulator: Limited support — ctrl+a, ctrl+c, ctrl+v, ctrl+x, ctrl+z
+
+[LIMITATIONS]
+Android has limited key combo support. Only common ctrl+key combos are available.""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "keys": {
+              "type": "string",
+              "description":
+                  "Key combination string (e.g. 'cmd+a', 'ctrl+c', 'shift+tab')"
+            },
+          },
+          "required": ["keys"],
+        },
+      },
+      {
+        "name": "native_button",
+        "description":
+            """Press a hardware button on the device (bypasses Flutter).
+
+[AVAILABLE BUTTONS]
+home, lock, power, siri, volume_up, volume_down, app_switch
+
+[HOW IT WORKS]
+• iOS Simulator: Uses simctl commands or keyboard shortcuts
+• Android Emulator: Uses adb shell input keyevent with hardware keycodes""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "button": {
+              "type": "string",
+              "description":
+                  "Button name: home, lock, power, siri, volume_up, volume_down, app_switch"
+            },
+          },
+          "required": ["button"],
+        },
+      },
+      {
+        "name": "native_list_simulators",
+        "description": """List available iOS simulators and Android emulators.
+
+[USE WHEN]
+• Need to see what devices are available before launching
+• Checking device state (Booted, Shutdown, etc.)
+• Finding device UDID or serial for targeting
+
+[RETURNS]
+• iOS: name, udid, state, runtime for each simulator
+• Android: serial, state, model, device for each emulator""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "platform": {
+              "type": "string",
+              "description":
+                  "Filter by platform: 'ios', 'android', or 'all' (default: 'all')",
+              "enum": ["ios", "android", "all"]
+            },
+          },
         },
       },
       {

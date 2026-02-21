@@ -95,6 +95,12 @@ class ToolRegistry {
     'native_get_text',
     'native_tap_element',
     'native_element_at',
+    'native_long_press',
+    'native_gesture',
+    'native_press_key',
+    'native_key_combo',
+    'native_button',
+    'native_list_simulators',
     'auth_biometric',
     'auth_deeplink',
   };
@@ -2024,6 +2030,108 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
             }
           },
           "required": ["start_x", "start_y", "end_x", "end_y"]
+        },
+      },
+      {
+        "name": "native_long_press",
+        "description":
+            "Long press at device coordinates using OS-level input (bypasses Flutter). iOS: AX tree element press. Android: adb swipe to same point.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "X coordinate in device pixels"
+            },
+            "y": {
+              "type": "number",
+              "description": "Y coordinate in device pixels"
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Duration in ms (default: 1000)"
+            },
+          },
+          "required": ["x", "y"],
+        },
+      },
+      {
+        "name": "native_gesture",
+        "description":
+            "Perform a preset gesture: scroll_up/down/left/right, edge_swipe_left/right, pull_to_refresh.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "gesture": {
+              "type": "string",
+              "description": "Gesture name",
+              "enum": [
+                "scroll_up",
+                "scroll_down",
+                "scroll_left",
+                "scroll_right",
+                "edge_swipe_left",
+                "edge_swipe_right",
+                "pull_to_refresh"
+              ]
+            },
+          },
+          "required": ["gesture"],
+        },
+      },
+      {
+        "name": "native_press_key",
+        "description":
+            "Press a single key: enter, backspace, tab, escape, delete, space, up, down, left, right, home_key, end_key, volume_up, volume_down.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "description": "Key name"},
+          },
+          "required": ["key"],
+        },
+      },
+      {
+        "name": "native_key_combo",
+        "description":
+            "Press a key combination (e.g. cmd+a, ctrl+c). Android: limited to ctrl+a/c/v/x/z.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "keys": {
+              "type": "string",
+              "description": "Key combo (e.g. 'cmd+a', 'shift+tab')"
+            },
+          },
+          "required": ["keys"],
+        },
+      },
+      {
+        "name": "native_button",
+        "description":
+            "Press a hardware button: home, lock, power, siri, volume_up, volume_down, app_switch.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "button": {"type": "string", "description": "Button name"},
+          },
+          "required": ["button"],
+        },
+      },
+      {
+        "name": "native_list_simulators",
+        "description":
+            "List available iOS simulators and Android emulators with their state.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "platform": {
+              "type": "string",
+              "description":
+                  "Filter: 'ios', 'android', or 'all' (default: 'all')",
+              "enum": ["ios", "android", "all"]
+            },
+          },
         },
       },
 

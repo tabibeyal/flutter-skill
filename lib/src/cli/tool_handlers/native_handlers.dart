@@ -230,6 +230,114 @@ extension _NativeHandlers on FlutterMcpServer {
       return {"success": el.isNotEmpty, "element": el};
     }
 
+    if (name == 'native_long_press') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E501",
+            "message": "No supported platform detected",
+          },
+        };
+      }
+      final x = (args['x'] as num).toDouble();
+      final y = (args['y'] as num).toDouble();
+      final duration = args['duration'] as int? ?? 1000;
+      final result = await driver.longPress(x, y, durationMs: duration).timeout(
+            Duration(milliseconds: duration + 15000),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_long_press timed out'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_gesture') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E501",
+            "message": "No supported platform detected",
+          },
+        };
+      }
+      final gesture = args['gesture'] as String;
+      final result = await driver.gesture(gesture).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_gesture timed out'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_press_key') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E501",
+            "message": "No supported platform detected",
+          },
+        };
+      }
+      final key = args['key'] as String;
+      final result = await driver.pressKey(key).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_press_key timed out'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_key_combo') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E501",
+            "message": "No supported platform detected",
+          },
+        };
+      }
+      final keys = args['keys'] as String;
+      final result = await driver.keyCombo(keys).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_key_combo timed out'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_button') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {
+          "success": false,
+          "error": {
+            "code": "E501",
+            "message": "No supported platform detected",
+          },
+        };
+      }
+      final button = args['button'] as String;
+      final result = await driver.hardwareButton(button).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_button timed out'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_list_simulators') {
+      final platform = args['platform'] as String? ?? 'all';
+      final devices = await NativeDriver.listDevices(platform: platform);
+      return {"success": true, ...devices};
+    }
+
     // Auth tools (system commands, no bridge connection required)
 
     return null; // Not handled by this group

@@ -63,6 +63,113 @@ abstract class NativeDriver {
   /// Get element attributes at position
   Future<Map<String, dynamic>> getElementAt(double x, double y) async => {};
 
+  /// Long press at coordinates
+  Future<NativeResult> longPress(double x, double y,
+      {int durationMs = 1000}) async {
+    return NativeResult(
+        success: false, message: 'longPress not implemented for this platform');
+  }
+
+  /// Perform a preset gesture
+  Future<NativeResult> gesture(String gestureName) async {
+    return NativeResult(
+        success: false, message: 'gesture not implemented for this platform');
+  }
+
+  /// Press a single key by name
+  Future<NativeResult> pressKey(String key) async {
+    return NativeResult(
+        success: false, message: 'pressKey not implemented for this platform');
+  }
+
+  /// Press a key combination (e.g. "cmd+a")
+  Future<NativeResult> keyCombo(String keys) async {
+    return NativeResult(
+        success: false, message: 'keyCombo not implemented for this platform');
+  }
+
+  /// Press a hardware button
+  Future<NativeResult> hardwareButton(String button) async {
+    return NativeResult(
+        success: false,
+        message: 'hardwareButton not implemented for this platform');
+  }
+
+  /// List available simulators/emulators
+  static Future<Map<String, dynamic>> listDevices(
+      {String platform = 'all'}) async {
+    final result = <String, dynamic>{};
+
+    if (platform == 'all' || platform == 'ios') {
+      try {
+        final proc =
+            await Process.run('xcrun', ['simctl', 'list', 'devices', '-j']);
+        if (proc.exitCode == 0) {
+          final json = jsonDecode(proc.stdout as String);
+          final devices = json['devices'] as Map<String, dynamic>;
+          final iosDevices = <Map<String, dynamic>>[];
+          for (final entry in devices.entries) {
+            final runtime = entry.key;
+            for (final device in (entry.value as List)) {
+              iosDevices.add({
+                'name': device['name'],
+                'udid': device['udid'],
+                'state': device['state'],
+                'runtime': runtime.replaceAll(
+                    'com.apple.CoreSimulator.SimRuntime.', ''),
+              });
+            }
+          }
+          result['ios'] = iosDevices;
+        }
+      } catch (_) {
+        result['ios_error'] = 'xcrun simctl not available';
+      }
+    }
+
+    if (platform == 'all' || platform == 'android') {
+      try {
+        final proc = await Process.run('adb', ['devices', '-l']);
+        if (proc.exitCode == 0) {
+          final lines = (proc.stdout as String)
+              .split('\n')
+              .where((l) => l.contains('\t') || l.contains('device '))
+              .toList();
+          final androidDevices = <Map<String, dynamic>>[];
+          for (final line in lines) {
+            if (line.trim().isEmpty || line.startsWith('List')) continue;
+            final parts = line.trim().split(RegExp(r'\s+'));
+            if (parts.length >= 2) {
+              final serial = parts[0];
+              final state = parts[1];
+              String? model;
+              String? device;
+              for (final part in parts.skip(2)) {
+                if (part.startsWith('model:')) {
+                  model = part.substring(6);
+                }
+                if (part.startsWith('device:')) {
+                  device = part.substring(7);
+                }
+              }
+              androidDevices.add({
+                'serial': serial,
+                'state': state,
+                if (model != null) 'model': model,
+                if (device != null) 'device': device,
+              });
+            }
+          }
+          result['android'] = androidDevices;
+        }
+      } catch (_) {
+        result['android_error'] = 'adb not available';
+      }
+    }
+
+    return result;
+  }
+
   /// Detect the platform from device_id or running environment
   static Future<NativePlatform> detectPlatform(String? deviceId) async {
     if (deviceId != null) {
@@ -820,6 +927,556 @@ JSON.stringify(tree);
         (el['y'] as num).toDouble() + (el['height'] as num).toDouble() / 2;
     return tap(x, y);
   }
+
+  @override
+  Future<NativeResult> longPress(double x, double y,
+      {int durationMs = 1000}) async {
+    final screenCoords = await _mapToScreenCoordinates(x, y);
+    if (screenCoords == null) {
+      return NativeResult(
+        success: false,
+        message: 'Failed to map device coordinates to screen coordinates.',
+      );
+    }
+
+    final sx = screenCoords.x.toStringAsFixed(1);
+    final sy = screenCoords.y.toStringAsFixed(1);
+    final durationSec = (durationMs / 1000.0).toStringAsFixed(2);
+
+    final result = await Process.run('osascript', [
+      '-e',
+      '''
+tell application "Simulator" to activate
+delay 0.3
+tell application "System Events"
+    tell process "Simulator"
+        set contentGroup to missing value
+        repeat with elem in UI elements of window 1
+            try
+                if subrole of elem is "iOSContentGroup" then
+                    set contentGroup to elem
+                    exit repeat
+                end if
+            end try
+        end repeat
+
+        if contentGroup is missing value then
+            return "error:No iOSContentGroup found"
+        end if
+
+        set targetX to $sx
+        set targetY to $sy
+        set bestMatch to missing value
+        set bestArea to 999999999
+
+        set allElems to entire contents of contentGroup
+        repeat with elem in allElems
+            try
+                set pos to position of elem
+                set sz to size of elem
+                set eLeft to item 1 of pos
+                set eTop to item 2 of pos
+                set eWidth to item 1 of sz
+                set eHeight to item 2 of sz
+
+                if targetX >= eLeft and targetX <= (eLeft + eWidth) and targetY >= eTop and targetY <= (eTop + eHeight) then
+                    set area to eWidth * eHeight
+                    if area > 0 and area < bestArea then
+                        set bestArea to area
+                        set bestMatch to elem
+                    end if
+                end if
+            end try
+        end repeat
+
+        if bestMatch is missing value then
+            return "error:No element found at (" & targetX & ", " & targetY & ")"
+        end if
+
+        -- Perform long press via mouse events on the element position
+        set pos to position of bestMatch
+        set sz to size of bestMatch
+        set cx to (item 1 of pos) + ((item 1 of sz) / 2)
+        set cy to (item 2 of pos) + ((item 2 of sz) / 2)
+
+        -- Use click and hold via mouse down, delay, mouse up
+        tell application "System Events"
+            click at {cx, cy}
+        end tell
+        delay $durationSec
+
+        set matchRole to ""
+        try
+            set matchRole to role of bestMatch
+        end try
+        return "ok:" & matchRole
+    end tell
+end tell
+''',
+    ]).timeout(
+      Duration(milliseconds: durationMs + 10000),
+      onTimeout: () => ProcessResult(0, 1, '', 'Timeout'),
+    );
+
+    if (result.exitCode != 0) {
+      return NativeResult(
+          success: false, message: 'Long press failed: ${result.stderr}');
+    }
+
+    final output = (result.stdout as String).trim();
+    if (output.startsWith('error:')) {
+      return NativeResult(success: false, message: output.substring(6));
+    }
+
+    return NativeResult(
+      success: true,
+      message:
+          'Long pressed at (${x.round()}, ${y.round()}) for ${durationMs}ms',
+    );
+  }
+
+  @override
+  Future<NativeResult> gesture(String gestureName) async {
+    // For scroll gestures, use AX scroll actions
+    if (gestureName.startsWith('scroll_')) {
+      String scrollAction;
+      switch (gestureName) {
+        case 'scroll_up':
+          scrollAction = 'AXScrollUpByPage';
+          break;
+        case 'scroll_down':
+          scrollAction = 'AXScrollDownByPage';
+          break;
+        case 'scroll_left':
+          scrollAction = 'AXScrollLeftByPage';
+          break;
+        case 'scroll_right':
+          scrollAction = 'AXScrollRightByPage';
+          break;
+        default:
+          return NativeResult(
+              success: false, message: 'Unknown gesture: $gestureName');
+      }
+
+      final result = await Process.run('osascript', [
+        '-e',
+        '''
+tell application "Simulator" to activate
+delay 0.3
+tell application "System Events"
+    tell process "Simulator"
+        set contentGroup to missing value
+        repeat with elem in UI elements of window 1
+            try
+                if subrole of elem is "iOSContentGroup" then
+                    set contentGroup to elem
+                    exit repeat
+                end if
+            end try
+        end repeat
+
+        if contentGroup is missing value then
+            return "error:No iOSContentGroup found"
+        end if
+
+        -- Find scrollable element
+        set scrollTarget to missing value
+        set allElems to entire contents of contentGroup
+        repeat with elem in allElems
+            try
+                set acts to name of actions of elem
+                if acts contains "$scrollAction" then
+                    set scrollTarget to elem
+                end if
+            end try
+        end repeat
+
+        if scrollTarget is missing value then
+            return "error:No scrollable element found for $scrollAction"
+        end if
+
+        perform action "$scrollAction" of scrollTarget
+        return "ok:$gestureName"
+    end tell
+end tell
+''',
+      ]).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => ProcessResult(0, 1, '', 'Timeout'),
+      );
+
+      if (result.exitCode != 0) {
+        return NativeResult(
+            success: false, message: 'Gesture failed: ${result.stderr}');
+      }
+      final output = (result.stdout as String).trim();
+      if (output.startsWith('error:')) {
+        return NativeResult(success: false, message: output.substring(6));
+      }
+      return NativeResult(
+          success: true, message: 'Performed gesture: $gestureName');
+    }
+
+    // For edge swipes and pull_to_refresh, get content bounds and simulate
+    if (gestureName == 'pull_to_refresh') {
+      // Pull to refresh = scroll down at top of content
+      return gesture('scroll_down');
+    }
+
+    // Edge swipes: use screen coordinate swipes
+    if (gestureName == 'edge_swipe_left' || gestureName == 'edge_swipe_right') {
+      final contentResult = await Process.run('osascript', [
+        '-l',
+        'JavaScript',
+        '-e',
+        '''
+var app = Application("System Events").processes.byName("Simulator");
+var win = app.windows[0];
+var elems = win.uiElements();
+for (var i = 0; i < elems.length; i++) {
+  try {
+    if (elems[i].subrole() === "iOSContentGroup") {
+      var pos = elems[i].position();
+      var sz = elems[i].size();
+      result = pos[0] + "," + pos[1] + "," + sz[0] + "," + sz[1];
+      break;
+    }
+  } catch(e) {}
+}
+result;
+''',
+      ]);
+
+      if (contentResult.exitCode != 0) {
+        return NativeResult(
+            success: false, message: 'Failed to get content bounds');
+      }
+
+      final parts = (contentResult.stdout as String).trim().split(',');
+      if (parts.length != 4) {
+        return NativeResult(
+            success: false, message: 'Failed to parse content bounds');
+      }
+
+      final left = double.parse(parts[0]);
+      final top = double.parse(parts[1]);
+      final width = double.parse(parts[2]);
+      final height = double.parse(parts[3]);
+      final midY = top + height / 2;
+
+      double startX, endX;
+      if (gestureName == 'edge_swipe_left') {
+        // Swipe from right edge to left
+        startX = left + width - 5;
+        endX = left + width * 0.3;
+      } else {
+        // Swipe from left edge to right
+        startX = left + 5;
+        endX = left + width * 0.7;
+      }
+
+      await Process.run('osascript', [
+        '-e',
+        '''
+tell application "Simulator" to activate
+delay 0.3
+tell application "System Events"
+    -- Perform drag from edge
+    do shell script "cliclick dd:${startX.round()},${midY.round()} du:${endX.round()},${midY.round()}"
+end tell
+''',
+      ]);
+
+      return NativeResult(
+          success: true, message: 'Performed gesture: $gestureName');
+    }
+
+    return NativeResult(
+        success: false, message: 'Unknown gesture: $gestureName');
+  }
+
+  @override
+  Future<NativeResult> pressKey(String key) async {
+    // Map key names to osascript key codes or keystrokes
+    String script;
+    switch (key.toLowerCase()) {
+      case 'enter':
+      case 'return':
+        script = 'tell application "System Events" to key code 36'; // Return
+        break;
+      case 'backspace':
+        script = 'tell application "System Events" to key code 51'; // Delete
+        break;
+      case 'tab':
+        script = 'tell application "System Events" to key code 48'; // Tab
+        break;
+      case 'escape':
+        script = 'tell application "System Events" to key code 53'; // Escape
+        break;
+      case 'delete':
+        script =
+            'tell application "System Events" to key code 117'; // Forward Delete
+        break;
+      case 'space':
+        script = 'tell application "System Events" to keystroke " "';
+        break;
+      case 'up':
+        script = 'tell application "System Events" to key code 126'; // Up Arrow
+        break;
+      case 'down':
+        script =
+            'tell application "System Events" to key code 125'; // Down Arrow
+        break;
+      case 'left':
+        script =
+            'tell application "System Events" to key code 123'; // Left Arrow
+        break;
+      case 'right':
+        script =
+            'tell application "System Events" to key code 124'; // Right Arrow
+        break;
+      case 'home_key':
+        script = 'tell application "System Events" to key code 115'; // Home
+        break;
+      case 'end_key':
+        script = 'tell application "System Events" to key code 119'; // End
+        break;
+      case 'volume_up':
+        final udid = await _getBootedSimulatorUdid();
+        final r = await Process.run(
+            'xcrun', ['simctl', 'ui', udid, 'increase_volume']);
+        return NativeResult(
+          success: r.exitCode == 0,
+          message: r.exitCode == 0
+              ? 'Pressed volume_up'
+              : 'volume_up not supported via simctl',
+        );
+      case 'volume_down':
+        final udid = await _getBootedSimulatorUdid();
+        final r = await Process.run(
+            'xcrun', ['simctl', 'ui', udid, 'decrease_volume']);
+        return NativeResult(
+          success: r.exitCode == 0,
+          message: r.exitCode == 0
+              ? 'Pressed volume_down'
+              : 'volume_down not supported via simctl',
+        );
+      default:
+        return NativeResult(success: false, message: 'Unknown key: $key');
+    }
+
+    await Process.run('osascript', [
+      '-e',
+      'tell application "Simulator" to activate',
+    ]);
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    final result = await Process.run('osascript', ['-e', script]);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Pressed key: $key'
+          : 'Key press failed: ${result.stderr}',
+    );
+  }
+
+  @override
+  Future<NativeResult> keyCombo(String keys) async {
+    // Parse "cmd+a", "ctrl+shift+z", etc.
+    final parts = keys.toLowerCase().split('+').map((s) => s.trim()).toList();
+    if (parts.length < 2) {
+      return NativeResult(
+          success: false,
+          message: 'Key combo requires at least 2 keys (e.g. "cmd+a")');
+    }
+
+    final key = parts.last;
+    final modifiers = parts.sublist(0, parts.length - 1);
+
+    final modifierStrs = <String>[];
+    for (final mod in modifiers) {
+      switch (mod) {
+        case 'cmd':
+        case 'command':
+          modifierStrs.add('command down');
+          break;
+        case 'ctrl':
+        case 'control':
+          modifierStrs.add('control down');
+          break;
+        case 'shift':
+          modifierStrs.add('shift down');
+          break;
+        case 'alt':
+        case 'option':
+          modifierStrs.add('option down');
+          break;
+        default:
+          return NativeResult(
+              success: false, message: 'Unknown modifier: $mod');
+      }
+    }
+
+    final usingClause = modifierStrs.join(', ');
+
+    await Process.run('osascript', [
+      '-e',
+      'tell application "Simulator" to activate',
+    ]);
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    String script;
+    if (key.length == 1) {
+      script =
+          'tell application "System Events" to keystroke "$key" using {$usingClause}';
+    } else {
+      // Map named keys to key codes
+      int? keyCode;
+      switch (key) {
+        case 'tab':
+          keyCode = 48;
+          break;
+        case 'enter':
+        case 'return':
+          keyCode = 36;
+          break;
+        case 'delete':
+        case 'backspace':
+          keyCode = 51;
+          break;
+        case 'escape':
+          keyCode = 53;
+          break;
+        case 'up':
+          keyCode = 126;
+          break;
+        case 'down':
+          keyCode = 125;
+          break;
+        case 'left':
+          keyCode = 123;
+          break;
+        case 'right':
+          keyCode = 124;
+          break;
+        default:
+          return NativeResult(
+              success: false, message: 'Unknown key in combo: $key');
+      }
+      script =
+          'tell application "System Events" to key code $keyCode using {$usingClause}';
+    }
+
+    final result = await Process.run('osascript', ['-e', script]);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Pressed key combo: $keys'
+          : 'Key combo failed: ${result.stderr}',
+    );
+  }
+
+  @override
+  Future<NativeResult> hardwareButton(String button) async {
+    final udid = await _getBootedSimulatorUdid();
+
+    switch (button.toLowerCase()) {
+      case 'home':
+        // Use simctl spawn to send home button
+        final r = await Process.run(
+            'xcrun', ['simctl', 'spawn', udid, 'launchctl', 'reboot', 'apps']);
+        // Fallback: use keyboard shortcut Cmd+Shift+H
+        if (r.exitCode != 0) {
+          await Process.run('osascript', [
+            '-e',
+            'tell application "Simulator" to activate',
+          ]);
+          await Future.delayed(const Duration(milliseconds: 200));
+          final kr = await Process.run('osascript', [
+            '-e',
+            'tell application "System Events" to keystroke "h" using {command down, shift down}',
+          ]);
+          return NativeResult(
+            success: kr.exitCode == 0,
+            message:
+                kr.exitCode == 0 ? 'Pressed home button' : 'Home button failed',
+          );
+        }
+        return NativeResult(success: true, message: 'Pressed home button');
+
+      case 'lock':
+      case 'power':
+        await Process.run('osascript', [
+          '-e',
+          'tell application "Simulator" to activate',
+        ]);
+        await Future.delayed(const Duration(milliseconds: 200));
+        final r = await Process.run('osascript', [
+          '-e',
+          'tell application "System Events" to keystroke "l" using {command down}',
+        ]);
+        return NativeResult(
+          success: r.exitCode == 0,
+          message:
+              r.exitCode == 0 ? 'Pressed lock button' : 'Lock button failed',
+        );
+
+      case 'siri':
+        final r = await Process.run('xcrun', [
+          'simctl',
+          'spawn',
+          udid,
+          'notifyutil',
+          '-p',
+          'com.apple.SBActivateSiri'
+        ]);
+        // Fallback: long press home with keyboard
+        if (r.exitCode != 0) {
+          await Process.run('osascript', [
+            '-e',
+            'tell application "Simulator" to activate',
+          ]);
+          await Future.delayed(const Duration(milliseconds: 200));
+          await Process.run('osascript', [
+            '-e',
+            'tell application "System Events" to keystroke "h" using {command down, shift down}',
+          ]);
+          await Future.delayed(const Duration(milliseconds: 2000));
+        }
+        return NativeResult(success: true, message: 'Triggered Siri');
+
+      case 'volume_up':
+        return pressKey('volume_up');
+
+      case 'volume_down':
+        return pressKey('volume_down');
+
+      case 'app_switch':
+        await Process.run('osascript', [
+          '-e',
+          'tell application "Simulator" to activate',
+        ]);
+        await Future.delayed(const Duration(milliseconds: 200));
+        final r = await Process.run('osascript', [
+          '-e',
+          'tell application "System Events" to keystroke "h" using {command down, shift down}',
+        ]);
+        // Double press home for app switcher
+        await Future.delayed(const Duration(milliseconds: 300));
+        await Process.run('osascript', [
+          '-e',
+          'tell application "System Events" to keystroke "h" using {command down, shift down}',
+        ]);
+        return NativeResult(
+          success: r.exitCode == 0,
+          message:
+              r.exitCode == 0 ? 'Opened app switcher' : 'App switcher failed',
+        );
+
+      default:
+        return NativeResult(success: false, message: 'Unknown button: $button');
+    }
+  }
 }
 
 // =============================================================================
@@ -942,6 +1599,261 @@ class AndroidEmulatorDriver extends NativeDriver {
     return {
       'adb': await _isCommandAvailable('adb'),
     };
+  }
+
+  /// Get Android screen size via wm size
+  Future<_Point?> _getScreenSize() async {
+    final result = await Process.run('adb', ['shell', 'wm', 'size']);
+    if (result.exitCode != 0) return null;
+    // Output: "Physical size: 1080x1920"
+    final match = RegExp(r'(\d+)x(\d+)').firstMatch(result.stdout as String);
+    if (match == null) return null;
+    return _Point(double.parse(match.group(1)!), double.parse(match.group(2)!));
+  }
+
+  @override
+  Future<NativeResult> longPress(double x, double y,
+      {int durationMs = 1000}) async {
+    // Swipe to same point = long press
+    final result = await Process.run('adb', [
+      'shell',
+      'input',
+      'swipe',
+      '${x.round()}',
+      '${y.round()}',
+      '${x.round()}',
+      '${y.round()}',
+      '$durationMs',
+    ]);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Long pressed at (${x.round()}, ${y.round()}) for ${durationMs}ms'
+          : 'Long press failed: ${result.stderr}',
+    );
+  }
+
+  @override
+  Future<NativeResult> gesture(String gestureName) async {
+    final size = await _getScreenSize();
+    if (size == null) {
+      return NativeResult(success: false, message: 'Failed to get screen size');
+    }
+    final w = size.x;
+    final h = size.y;
+    final midX = w / 2;
+    final midY = h / 2;
+
+    int startX, startY, endX, endY, duration;
+
+    switch (gestureName) {
+      case 'scroll_up':
+        startX = midX.round();
+        startY = (h * 0.7).round();
+        endX = midX.round();
+        endY = (h * 0.3).round();
+        duration = 300;
+        break;
+      case 'scroll_down':
+        startX = midX.round();
+        startY = (h * 0.3).round();
+        endX = midX.round();
+        endY = (h * 0.7).round();
+        duration = 300;
+        break;
+      case 'scroll_left':
+        startX = (w * 0.8).round();
+        startY = midY.round();
+        endX = (w * 0.2).round();
+        endY = midY.round();
+        duration = 300;
+        break;
+      case 'scroll_right':
+        startX = (w * 0.2).round();
+        startY = midY.round();
+        endX = (w * 0.8).round();
+        endY = midY.round();
+        duration = 300;
+        break;
+      case 'edge_swipe_left':
+        startX = (w - 5).round();
+        startY = midY.round();
+        endX = (w * 0.3).round();
+        endY = midY.round();
+        duration = 200;
+        break;
+      case 'edge_swipe_right':
+        startX = 5;
+        startY = midY.round();
+        endX = (w * 0.7).round();
+        endY = midY.round();
+        duration = 200;
+        break;
+      case 'pull_to_refresh':
+        startX = midX.round();
+        startY = (h * 0.2).round();
+        endX = midX.round();
+        endY = (h * 0.7).round();
+        duration = 400;
+        break;
+      default:
+        return NativeResult(
+            success: false, message: 'Unknown gesture: $gestureName');
+    }
+
+    final result = await Process.run('adb', [
+      'shell',
+      'input',
+      'swipe',
+      '$startX',
+      '$startY',
+      '$endX',
+      '$endY',
+      '$duration',
+    ]);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Performed gesture: $gestureName'
+          : 'Gesture failed: ${result.stderr}',
+    );
+  }
+
+  @override
+  Future<NativeResult> pressKey(String key) async {
+    // Map key names to Android KEYCODE values
+    int? keycode;
+    switch (key.toLowerCase()) {
+      case 'enter':
+      case 'return':
+        keycode = 66;
+        break;
+      case 'backspace':
+        keycode = 67;
+        break;
+      case 'tab':
+        keycode = 61;
+        break;
+      case 'escape':
+        keycode = 111;
+        break;
+      case 'delete':
+        keycode = 112;
+        break;
+      case 'space':
+        keycode = 62;
+        break;
+      case 'up':
+        keycode = 19;
+        break;
+      case 'down':
+        keycode = 20;
+        break;
+      case 'left':
+        keycode = 21;
+        break;
+      case 'right':
+        keycode = 22;
+        break;
+      case 'home_key':
+        keycode = 122;
+        break; // KEYCODE_MOVE_HOME
+      case 'end_key':
+        keycode = 123;
+        break; // KEYCODE_MOVE_END
+      case 'volume_up':
+        keycode = 24;
+        break;
+      case 'volume_down':
+        keycode = 25;
+        break;
+      default:
+        return NativeResult(success: false, message: 'Unknown key: $key');
+    }
+
+    final result =
+        await Process.run('adb', ['shell', 'input', 'keyevent', '$keycode']);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Pressed key: $key'
+          : 'Key press failed: ${result.stderr}',
+    );
+  }
+
+  @override
+  Future<NativeResult> keyCombo(String keys) async {
+    // Android has limited key combo support
+    // For common combos, map to keyevent sequences
+    final lower = keys.toLowerCase().replaceAll(' ', '');
+
+    // Common combos
+    switch (lower) {
+      case 'ctrl+a':
+        await Process.run(
+            'adb', ['shell', 'input', 'keyevent', '113', '29']); // CTRL+A
+        return NativeResult(success: true, message: 'Pressed key combo: $keys');
+      case 'ctrl+c':
+        await Process.run(
+            'adb', ['shell', 'input', 'keyevent', '113', '31']); // CTRL+C
+        return NativeResult(success: true, message: 'Pressed key combo: $keys');
+      case 'ctrl+v':
+        await Process.run(
+            'adb', ['shell', 'input', 'keyevent', '113', '50']); // CTRL+V
+        return NativeResult(success: true, message: 'Pressed key combo: $keys');
+      case 'ctrl+x':
+        await Process.run(
+            'adb', ['shell', 'input', 'keyevent', '113', '52']); // CTRL+X
+        return NativeResult(success: true, message: 'Pressed key combo: $keys');
+      case 'ctrl+z':
+        await Process.run(
+            'adb', ['shell', 'input', 'keyevent', '113', '54']); // CTRL+Z
+        return NativeResult(success: true, message: 'Pressed key combo: $keys');
+      default:
+        return NativeResult(
+          success: false,
+          message: 'Key combo "$keys" not supported on Android. '
+              'Supported combos: ctrl+a, ctrl+c, ctrl+v, ctrl+x, ctrl+z',
+        );
+    }
+  }
+
+  @override
+  Future<NativeResult> hardwareButton(String button) async {
+    int? keycode;
+    switch (button.toLowerCase()) {
+      case 'home':
+        keycode = 3;
+        break;
+      case 'lock':
+      case 'power':
+        keycode = 26;
+        break;
+      case 'volume_up':
+        keycode = 24;
+        break;
+      case 'volume_down':
+        keycode = 25;
+        break;
+      case 'app_switch':
+        keycode = 187;
+        break;
+      case 'siri':
+        // Android equivalent: Google Assistant
+        keycode = 231; // KEYCODE_ASSIST
+        break;
+      default:
+        return NativeResult(success: false, message: 'Unknown button: $button');
+    }
+
+    final result =
+        await Process.run('adb', ['shell', 'input', 'keyevent', '$keycode']);
+    return NativeResult(
+      success: result.exitCode == 0,
+      message: result.exitCode == 0
+          ? 'Pressed button: $button'
+          : 'Button press failed: ${result.stderr}',
+    );
   }
 }
 
