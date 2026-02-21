@@ -531,10 +531,30 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.newTab(args['url'] as String? ?? 'about:blank');
 
       case 'close_tab':
-        return await cdp.closeTab(args['target_id'] as String? ?? '');
+        var closeTargetId = args['target_id'] as String? ?? '';
+        if (closeTargetId.isEmpty && args['index'] != null) {
+          final idx = (args['index'] as num).toInt();
+          final tabList = await cdp.getTabs();
+          final tabItems = tabList['tabs'] as List<dynamic>? ?? [];
+          if (idx >= 0 && idx < tabItems.length) {
+            closeTargetId = (tabItems[idx] as Map<String, dynamic>)['id'] as String? ?? '';
+          }
+        }
+        if (closeTargetId.isEmpty) return {"success": false, "error": "No target_id or valid index"};
+        return await cdp.closeTab(closeTargetId);
 
       case 'switch_tab':
-        return await cdp.switchTab(args['target_id'] as String? ?? '');
+        var switchTargetId = args['target_id'] as String? ?? '';
+        if (switchTargetId.isEmpty && args['index'] != null) {
+          final idx = (args['index'] as num).toInt();
+          final tabList = await cdp.getTabs();
+          final tabItems = tabList['tabs'] as List<dynamic>? ?? [];
+          if (idx >= 0 && idx < tabItems.length) {
+            switchTargetId = (tabItems[idx] as Map<String, dynamic>)['id'] as String? ?? '';
+          }
+        }
+        if (switchTargetId.isEmpty) return {"success": false, "error": "No target_id or valid index"};
+        return await cdp.switchTab(switchTargetId);
 
       case 'intercept_requests':
         return await cdp.interceptRequests(

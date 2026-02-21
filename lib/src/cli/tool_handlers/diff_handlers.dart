@@ -29,6 +29,7 @@ extension _DiffHandlers on FlutterMcpServer {
     final baselinePath =
         args['path'] as String? ?? './.flutter-skill-baseline';
     final depth = args['depth'] as int? ?? 2;
+    final maxPages = args['max_pages'] as int? ?? 10;
 
     final dir = Directory(baselinePath);
     if (!dir.existsSync()) await dir.create(recursive: true);
@@ -41,7 +42,7 @@ extension _DiffHandlers on FlutterMcpServer {
     }
 
     // Discover pages
-    final pages = await _diffDiscoverPages(cdp, startUrl, depth);
+    final pages = await _diffDiscoverPages(cdp, startUrl, depth, maxPages: maxPages);
     final savedPages = <String>[];
 
     for (final page in pages) {
@@ -308,7 +309,7 @@ extension _DiffHandlers on FlutterMcpServer {
   // --- Helpers ---
 
   Future<List<String>> _diffDiscoverPages(
-      CdpDriver cdp, String startUrl, int maxDepth) async {
+      CdpDriver cdp, String startUrl, int maxDepth, {int maxPages = 10}) async {
     final visited = <String>{};
     final toVisit = <String>[startUrl];
     final baseUri = Uri.parse(startUrl);
@@ -318,6 +319,7 @@ extension _DiffHandlers on FlutterMcpServer {
       toVisit.clear();
 
       for (final pageUrl in batch) {
+        if (visited.length >= maxPages) break;
         if (visited.contains(pageUrl)) continue;
         visited.add(pageUrl);
 
