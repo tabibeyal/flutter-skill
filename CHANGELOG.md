@@ -1,3 +1,21 @@
+## 0.8.9
+
+**Heavy DOM site stability + CI fixes**
+
+### Bug Fixes
+- **get_network_requests**: Limited to 100 entries (configurable via `limit` param) — prevents OOM/hang on heavy DOM sites (YouTube, Amazon, Reddit)
+- **dart analyze**: Resolved all 8 warnings (unused vars, unnecessary null assertions)
+- **dart format**: Formatted all 41 files
+
+### Performance Verified — Heavy DOM Sites
+| Site | Tools | Time | Snapshot |
+|------|-------|------|----------|
+| YouTube | 15/15 ✅ | 6.9s | 43ms |
+| Amazon | 15/15 ✅ | 14.2s | 1ms |
+| Reddit | 15/15 ✅ | 17.9s | 6ms |
+| HN | 15/15 ✅ | 4.8s | 53ms |
+| Wikipedia | 15/15 ✅ | 7.8s | 15ms |
+
 ## 0.8.8
 
 **CDP reliability + multi-platform fixes**
