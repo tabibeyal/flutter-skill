@@ -441,7 +441,8 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.getConsoleMessages();
 
       case 'get_network_requests':
-        return await cdp.getNetworkRequests();
+        return await cdp.getNetworkRequests(
+            limit: (args['limit'] as num?)?.toInt() ?? 100);
 
       case 'set_viewport':
         return await cdp.setViewport(

@@ -59,9 +59,9 @@ extension CdpBrowserMethods on CdpDriver {
   }
 
   /// Get network requests (requires Network.enable).
-  Future<Map<String, dynamic>> getNetworkRequests() async {
+  Future<Map<String, dynamic>> getNetworkRequests({int limit = 100}) async {
     final result = await _evalJs('''
-      JSON.stringify(performance.getEntriesByType('resource').map(r => ({
+      JSON.stringify(performance.getEntriesByType('resource').slice(-$limit).map(r => ({
         name: r.name,
         type: r.initiatorType,
         duration: Math.round(r.duration),
@@ -70,7 +70,8 @@ extension CdpBrowserMethods on CdpDriver {
       })))
     ''');
     final v = result['result']?['value'] as String?;
-    return {"requests": v != null ? jsonDecode(v) : []};
+    final requests = v != null ? jsonDecode(v) : [];
+    return {"requests": requests, "limited_to": limit};
   }
 
   /// Set viewport size.
