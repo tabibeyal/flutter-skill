@@ -487,17 +487,24 @@ class CdpDriver implements AppDriver {
   /// Take a screenshot of a specific region.
   Future<String?> takeRegionScreenshot(
       double x, double y, double width, double height) async {
-    final result = await _call('Page.captureScreenshot', {
-      'format': 'png',
-      'clip': {
-        'x': x,
-        'y': y,
-        'width': width,
-        'height': height,
-        'scale': 1,
-      },
-    });
-    return result['data'] as String?;
+    try {
+      final result = await _call('Page.captureScreenshot', {
+        'format': 'jpeg',
+        'quality': 80,
+        'clip': {
+          'x': x,
+          'y': y,
+          'width': width,
+          'height': height,
+          'scale': 1,
+        },
+      }).timeout(const Duration(seconds: 10));
+      return result['data'] as String?;
+    } catch (_) {
+      // Fallback: full screenshot (clip times out on some Chrome versions)
+      final full = await takeScreenshot(quality: 0.8);
+      return full;
+    }
   }
 
   /// Take a screenshot of a specific element.
