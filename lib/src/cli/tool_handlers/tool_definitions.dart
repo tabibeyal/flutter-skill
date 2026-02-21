@@ -95,6 +95,11 @@ extension _ToolDefinitions on FlutterMcpServer {
       'native_input_text',
       'native_swipe',
       'native_screenshot',
+      'native_snapshot',
+      'native_find_elements',
+      'native_get_text',
+      'native_tap_element',
+      'native_element_at',
       'auth_biometric',
       'auth_deeplink',
     };
@@ -2040,6 +2045,126 @@ This captures the ENTIRE device screen, not just the Flutter app content.""",
             },
           },
           "required": ["start_x", "start_y", "end_x", "end_y"],
+        },
+      },
+      {
+        "name": "native_snapshot",
+        "description":
+            """Get accessibility tree from iOS Simulator or Android Emulator (ZERO INVASION — no SDK needed).
+
+[USE WHEN]
+• Testing ANY iOS app without code changes
+• Need element discovery on native apps
+• Want structured UI data without screenshots (95% fewer tokens)
+
+[HOW IT WORKS]
+• iOS Simulator: Reads macOS Accessibility API → full element tree with roles, names, positions
+• Returns semantic roles (button, textbox, link, switch, etc.) compatible with CDP snapshot format
+• No app modification needed — works on App Store apps, Settings, Safari, any app
+
+[RETURNS]
+• snapshot: Compact text representation (like CDP snapshot)
+• elements: Full element array with role, name, value, position, size
+• interactiveCount: Number of tappable/editable elements""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+        },
+      },
+      {
+        "name": "native_find_elements",
+        "description":
+            """Find elements by role, name, or text in iOS Simulator / Android Emulator (zero invasion).
+
+[USE WHEN]
+• Looking for a specific button, text field, or link
+• Verifying element existence without screenshots
+• Building element-based test assertions""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "description":
+                  "Semantic role: button, textbox, link, checkbox, switch, slider, tab, text, image, list, navigation"
+            },
+            "name": {
+              "type": "string",
+              "description":
+                  "Element name/label (partial match, case-insensitive)"
+            },
+            "text": {
+              "type": "string",
+              "description":
+                  "Text content to search (matches name or value, case-insensitive)"
+            },
+          },
+        },
+      },
+      {
+        "name": "native_get_text",
+        "description":
+            """Get all visible text on screen from iOS Simulator / Android Emulator (zero invasion).
+
+[USE WHEN]
+• Reading screen content without screenshots
+• Verifying text is displayed
+• Extracting data from native app screens""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+        },
+      },
+      {
+        "name": "native_tap_element",
+        "description":
+            """Tap an element by name/role instead of coordinates (zero invasion, iOS Simulator).
+
+[USE WHEN]
+• More reliable than coordinate-based tap — finds element by accessibility label
+• Don't know exact coordinates but know the button text
+• Element may shift position between runs
+
+[EXAMPLE]
+• native_tap_element {name: "Sign In"} — taps the Sign In button
+• native_tap_element {name: "Settings", role: "button"} — taps Settings button specifically""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Element name/label to tap (partial match)"
+            },
+            "role": {
+              "type": "string",
+              "description":
+                  "Optional role filter: button, link, textbox, switch, tab"
+            },
+          },
+          "required": ["name"],
+        },
+      },
+      {
+        "name": "native_element_at",
+        "description":
+            """Get element info at specific screen coordinates (zero invasion).
+
+[USE WHEN]
+• Identify what element is at a position from a screenshot
+• Debug tap targets — verify what's under a coordinate""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "X coordinate in screen pixels"
+            },
+            "y": {
+              "type": "number",
+              "description": "Y coordinate in screen pixels"
+            },
+          },
+          "required": ["x", "y"],
         },
       },
       {

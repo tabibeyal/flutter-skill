@@ -90,6 +90,11 @@ class ToolRegistry {
     'native_input_text',
     'native_swipe',
     'native_screenshot',
+    'native_snapshot',
+    'native_find_elements',
+    'native_get_text',
+    'native_tap_element',
+    'native_element_at',
     'auth_biometric',
     'auth_deeplink',
   };

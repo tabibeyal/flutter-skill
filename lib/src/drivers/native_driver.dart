@@ -43,6 +43,26 @@ abstract class NativeDriver {
       {int durationMs = 300});
   Future<Map<String, bool>> checkToolAvailability();
 
+  /// Get the accessibility tree snapshot (zero-invasion element discovery)
+  Future<List<Map<String, dynamic>>> getAccessibilityTree() async => [];
+
+  /// Find elements by role, name, or text
+  Future<List<Map<String, dynamic>>> findElements({
+    String? role,
+    String? name,
+    String? text,
+  }) async =>
+      [];
+
+  /// Get text content of element at position
+  Future<String?> getTextAt(double x, double y) async => null;
+
+  /// Get all text visible on screen
+  Future<String> getVisibleText() async => '';
+
+  /// Get element attributes at position
+  Future<Map<String, dynamic>> getElementAt(double x, double y) async => {};
+
   /// Detect the platform from device_id or running environment
   static Future<NativePlatform> detectPlatform(String? deviceId) async {
     if (deviceId != null) {
@@ -600,6 +620,205 @@ result;
         (bytes[20] << 24 | bytes[21] << 16 | bytes[22] << 8 | bytes[23])
             .toDouble();
     return _Point(width, height);
+  }
+
+  // ─── Accessibility Tree (Zero-Invasion) ────────────────────────────
+
+  @override
+  Future<List<Map<String, dynamic>>> getAccessibilityTree() async {
+    final result = await Process.run('osascript', [
+      '-l',
+      'JavaScript',
+      '-e',
+      '''
+const app = Application("System Events").processes.byName("Simulator");
+const win = app.windows[0];
+
+// Find iOSContentGroup
+let contentGroup = null;
+const elems = win.uiElements();
+for (let i = 0; i < elems.length; i++) {
+  try {
+    if (elems[i].subrole() === "iOSContentGroup") {
+      contentGroup = elems[i];
+      break;
+    }
+  } catch(e) {}
+}
+if (!contentGroup) { JSON.stringify([]); }
+
+// Recursively collect all elements
+function collectElements(elem, depth) {
+  const results = [];
+  try {
+    const role = elem.role ? elem.role() : "";
+    const name = elem.name ? elem.name() : "";
+    const value = elem.value ? elem.value() : "";
+    const desc = elem.description ? elem.description() : "";
+    const enabled = elem.enabled ? elem.enabled() : true;
+    const focused = elem.focused ? elem.focused() : false;
+    let pos = null, sz = null;
+    try { pos = elem.position(); sz = elem.size(); } catch(e) {}
+
+    // Map AX roles to semantic roles
+    let semanticRole = "";
+    if (role === "AXButton") semanticRole = "button";
+    else if (role === "AXTextField" || role === "AXTextArea") semanticRole = "textbox";
+    else if (role === "AXStaticText") semanticRole = "text";
+    else if (role === "AXLink") semanticRole = "link";
+    else if (role === "AXImage") semanticRole = "image";
+    else if (role === "AXCheckBox") semanticRole = "checkbox";
+    else if (role === "AXRadioButton") semanticRole = "radio";
+    else if (role === "AXSlider") semanticRole = "slider";
+    else if (role === "AXSwitch" || role === "AXToggle") semanticRole = "switch";
+    else if (role === "AXTabGroup") semanticRole = "tablist";
+    else if (role === "AXTab") semanticRole = "tab";
+    else if (role === "AXTable" || role === "AXList") semanticRole = "list";
+    else if (role === "AXCell" || role === "AXRow") semanticRole = "listitem";
+    else if (role === "AXScrollArea") semanticRole = "scrollbar";
+    else if (role === "AXNavigationBar" || role === "AXToolbar") semanticRole = "navigation";
+    else if (role === "AXGroup") semanticRole = "group";
+    else semanticRole = role.replace("AX", "").toLowerCase();
+
+    const displayName = name || desc || value || "";
+    if (displayName || semanticRole === "button" || semanticRole === "textbox" ||
+        semanticRole === "link" || semanticRole === "checkbox" || semanticRole === "switch") {
+      results.push({
+        role: semanticRole,
+        axRole: role,
+        name: displayName,
+        value: (value && value !== name) ? String(value) : "",
+        enabled: enabled,
+        focused: focused,
+        x: pos ? pos[0] : 0,
+        y: pos ? pos[1] : 0,
+        width: sz ? sz[0] : 0,
+        height: sz ? sz[1] : 0,
+        depth: depth
+      });
+    }
+
+    // Recurse into children (limit depth to avoid slowness)
+    if (depth < 10) {
+      try {
+        const children = elem.uiElements();
+        for (let i = 0; i < children.length; i++) {
+          const childResults = collectElements(children[i], depth + 1);
+          for (let j = 0; j < childResults.length; j++) {
+            results.push(childResults[j]);
+          }
+        }
+      } catch(e) {}
+    }
+  } catch(e) {}
+  return results;
+}
+
+const tree = collectElements(contentGroup, 0);
+JSON.stringify(tree);
+''',
+    ]).timeout(const Duration(seconds: 15), onTimeout: () {
+      return ProcessResult(0, 1, '[]', 'Timeout');
+    });
+
+    if (result.exitCode != 0) return [];
+    try {
+      final list = jsonDecode((result.stdout as String).trim()) as List;
+      return list.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> findElements({
+    String? role,
+    String? name,
+    String? text,
+  }) async {
+    final tree = await getAccessibilityTree();
+    return tree.where((el) {
+      if (role != null && el['role'] != role) return false;
+      if (name != null) {
+        final elName = (el['name'] as String? ?? '').toLowerCase();
+        if (!elName.contains(name.toLowerCase())) return false;
+      }
+      if (text != null) {
+        final elName = (el['name'] as String? ?? '').toLowerCase();
+        final elValue = (el['value'] as String? ?? '').toLowerCase();
+        if (!elName.contains(text.toLowerCase()) &&
+            !elValue.contains(text.toLowerCase())) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  @override
+  Future<String?> getTextAt(double x, double y) async {
+    final tree = await getAccessibilityTree();
+    for (final el in tree.reversed) {
+      final ex = (el['x'] as num?)?.toDouble() ?? 0;
+      final ey = (el['y'] as num?)?.toDouble() ?? 0;
+      final ew = (el['width'] as num?)?.toDouble() ?? 0;
+      final eh = (el['height'] as num?)?.toDouble() ?? 0;
+      if (x >= ex && x <= ex + ew && y >= ey && y <= ey + eh) {
+        final name = el['name'] as String? ?? '';
+        if (name.isNotEmpty) return name;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<String> getVisibleText() async {
+    final tree = await getAccessibilityTree();
+    final texts = tree
+        .where((el) =>
+            (el['role'] == 'text' ||
+                el['role'] == 'button' ||
+                el['role'] == 'link') &&
+            (el['name'] as String? ?? '').isNotEmpty)
+        .map((el) => el['name'] as String)
+        .toList();
+    return texts.join('\n');
+  }
+
+  @override
+  Future<Map<String, dynamic>> getElementAt(double x, double y) async {
+    final tree = await getAccessibilityTree();
+    Map<String, dynamic>? best;
+    double bestArea = double.infinity;
+
+    for (final el in tree) {
+      final ex = (el['x'] as num?)?.toDouble() ?? 0;
+      final ey = (el['y'] as num?)?.toDouble() ?? 0;
+      final ew = (el['width'] as num?)?.toDouble() ?? 0;
+      final eh = (el['height'] as num?)?.toDouble() ?? 0;
+      if (x >= ex && x <= ex + ew && y >= ey && y <= ey + eh) {
+        final area = ew * eh;
+        if (area < bestArea && area > 0) {
+          bestArea = area;
+          best = el;
+        }
+      }
+    }
+    return best ?? {};
+  }
+
+  /// Tap element by name/role (zero-invasion alternative to coordinate tap)
+  Future<NativeResult> tapByName(String name, {String? role}) async {
+    final elements = await findElements(name: name, role: role);
+    if (elements.isEmpty) {
+      return NativeResult(
+        success: false,
+        message: 'Element not found: $name',
+      );
+    }
+    final el = elements.first;
+    final x = (el['x'] as num).toDouble() + (el['width'] as num).toDouble() / 2;
+    final y =
+        (el['y'] as num).toDouble() + (el['height'] as num).toDouble() / 2;
+    return tap(x, y);
   }
 }
 

@@ -119,6 +119,117 @@ extension _NativeHandlers on FlutterMcpServer {
       return result.toJson();
     }
 
+    if (name == 'native_snapshot') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {"success": false, "error": "No supported platform detected"};
+      }
+      final tree = await driver.getAccessibilityTree().timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => <Map<String, dynamic>>[],
+          );
+      if (tree.isEmpty) {
+        return {
+          "success": false,
+          "error":
+              "Could not read accessibility tree — check macOS Accessibility permissions for Terminal/IDE"
+        };
+      }
+
+      // Build compact text snapshot (like CDP snapshot)
+      final buf = StringBuffer();
+      var interactiveCount = 0;
+      for (final el in tree) {
+        final role = el['role'] as String? ?? '';
+        final name = el['name'] as String? ?? '';
+        final value = el['value'] as String? ?? '';
+        final depth = el['depth'] as int? ?? 0;
+        final indent = '  ' * depth;
+
+        if (role == 'text') {
+          buf.writeln('$indent"$name"');
+        } else if (role == 'button' ||
+            role == 'link' ||
+            role == 'textbox' ||
+            role == 'checkbox' ||
+            role == 'switch' ||
+            role == 'slider' ||
+            role == 'radio' ||
+            role == 'tab') {
+          interactiveCount++;
+          final valStr = value.isNotEmpty ? ' value="$value"' : '';
+          buf.writeln('$indent[$role] $name$valStr');
+        } else if (name.isNotEmpty) {
+          buf.writeln('$indent($role) $name');
+        }
+      }
+
+      return {
+        "snapshot": buf.toString(),
+        "summary": "Found $interactiveCount interactive elements",
+        "elementCount": tree.length,
+        "interactiveCount": interactiveCount,
+        "platform": "ios_simulator",
+        "method": "macOS_accessibility_api",
+        "elements": tree,
+      };
+    }
+
+    if (name == 'native_find_elements') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {"success": false, "error": "No supported platform detected"};
+      }
+      final elements = await driver.findElements(
+        role: args['role'] as String?,
+        name: args['name'] as String?,
+        text: args['text'] as String?,
+      );
+      return {
+        "success": true,
+        "count": elements.length,
+        "elements": elements.take(50).toList(),
+      };
+    }
+
+    if (name == 'native_get_text') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {"success": false, "error": "No supported platform detected"};
+      }
+      final text = await driver.getVisibleText();
+      return {"success": true, "text": text};
+    }
+
+    if (name == 'native_tap_element') {
+      final driver = await _getNativeDriver(args);
+      if (driver is! IosSimulatorDriver) {
+        return {
+          "success": false,
+          "error": "native_tap_element requires iOS Simulator"
+        };
+      }
+      final elName = args['name'] as String? ?? '';
+      final role = args['role'] as String?;
+      final result = await driver.tapByName(elName, role: role).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => NativeResult(
+                success: false, message: 'native_tap_element timed out (15s)'),
+          );
+      return result.toJson();
+    }
+
+    if (name == 'native_element_at') {
+      final driver = await _getNativeDriver(args);
+      if (driver == null) {
+        return {"success": false, "error": "No supported platform detected"};
+      }
+      final x = (args['x'] as num).toDouble();
+      final y = (args['y'] as num).toDouble();
+      final el = await driver.getElementAt(x, y);
+      return {"success": el.isNotEmpty, "element": el};
+    }
+
     // Auth tools (system commands, no bridge connection required)
 
     return null; // Not handled by this group
