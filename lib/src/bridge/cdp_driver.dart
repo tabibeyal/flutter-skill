@@ -674,20 +674,18 @@ class CdpDriver implements AppDriver {
   Future<Map<String, dynamic>> drag(
       double startX, double startY, double endX, double endY) async {
     try {
-      await _dispatchMouseEvent('mousePressed', startX, startY, button: 'left', clickCount: 1)
-          .timeout(const Duration(seconds: 5));
-      const steps = 10;
-      for (var i = 1; i <= steps; i++) {
-        final x = startX + (endX - startX) * i / steps;
-        final y = startY + (endY - startY) * i / steps;
-        await _dispatchMouseEvent('mouseMoved', x, y, button: 'left')
-            .timeout(const Duration(seconds: 5));
-      }
-      await _dispatchMouseEvent('mouseReleased', endX, endY, button: 'left', clickCount: 1)
-          .timeout(const Duration(seconds: 5));
-      return {"success": true};
+      return await Future(() async {
+        await _dispatchMouseEvent('mousePressed', startX, startY, button: 'left', clickCount: 1);
+        const steps = 10;
+        for (var i = 1; i <= steps; i++) {
+          final x = startX + (endX - startX) * i / steps;
+          final y = startY + (endY - startY) * i / steps;
+          await _dispatchMouseEvent('mouseMoved', x, y, button: 'left');
+        }
+        await _dispatchMouseEvent('mouseReleased', endX, endY, button: 'left', clickCount: 1);
+        return {"success": true} as Map<String, dynamic>;
+      }).timeout(const Duration(seconds: 10));
     } on TimeoutException {
-      _failAllPending('Drag timed out');
       return {"success": false, "error": "Drag timed out — mouse event not acknowledged by browser"};
     }
   }
@@ -704,22 +702,19 @@ class CdpDriver implements AppDriver {
       double startX, double startY, double endX, double endY,
       {int durationMs = 300}) async {
     try {
-      await _dispatchMouseEvent('mousePressed', startX, startY, button: 'left', clickCount: 1)
-          .timeout(const Duration(seconds: 5));
-      const steps = 8;
-      for (var i = 1; i <= steps; i++) {
-        final x = startX + (endX - startX) * i / steps;
-        final y = startY + (endY - startY) * i / steps;
-        await _dispatchMouseEvent('mouseMoved', x, y, button: 'left')
-            .timeout(const Duration(seconds: 5));
-        await Future.delayed(Duration(milliseconds: durationMs ~/ steps));
-      }
-      await _dispatchMouseEvent('mouseReleased', endX, endY, button: 'left', clickCount: 1)
-          .timeout(const Duration(seconds: 5));
-      return {"success": true};
+      return await Future(() async {
+        await _dispatchMouseEvent('mousePressed', startX, startY, button: 'left', clickCount: 1);
+        const steps = 8;
+        for (var i = 1; i <= steps; i++) {
+          final x = startX + (endX - startX) * i / steps;
+          final y = startY + (endY - startY) * i / steps;
+          await _dispatchMouseEvent('mouseMoved', x, y, button: 'left');
+          await Future.delayed(Duration(milliseconds: durationMs ~/ steps));
+        }
+        await _dispatchMouseEvent('mouseReleased', endX, endY, button: 'left', clickCount: 1);
+        return {"success": true} as Map<String, dynamic>;
+      }).timeout(const Duration(seconds: 10));
     } on TimeoutException {
-      // Clear stale pending requests to prevent connection corruption
-      _failAllPending('Swipe timed out');
       return {"success": false, "error": "Swipe timed out — mouse event not acknowledged by browser"};
     }
   }
@@ -768,25 +763,22 @@ class CdpDriver implements AppDriver {
       List<Map<String, dynamic>> points) async {
     if (points.isEmpty) return {"success": false, "message": "No points"};
     try {
-      final first = points.first;
-      await _dispatchMouseEvent('mousePressed', (first['x'] as num).toDouble(),
-          (first['y'] as num).toDouble(),
-          button: 'left').timeout(const Duration(seconds: 5));
-      for (var i = 1; i < points.length; i++) {
-        await _dispatchMouseEvent(
-            'mouseMoved',
-            (points[i]['x'] as num).toDouble(),
-            (points[i]['y'] as num).toDouble(),
-            button: 'left').timeout(const Duration(seconds: 5));
-        await Future.delayed(const Duration(milliseconds: 20));
-      }
-      final last = points.last;
-      await _dispatchMouseEvent('mouseReleased', (last['x'] as num).toDouble(),
-          (last['y'] as num).toDouble(),
-          button: 'left').timeout(const Duration(seconds: 5));
-      return {"success": true};
+      return await Future(() async {
+        final first = points.first;
+        await _dispatchMouseEvent('mousePressed', (first['x'] as num).toDouble(),
+            (first['y'] as num).toDouble(), button: 'left');
+        for (var i = 1; i < points.length; i++) {
+          await _dispatchMouseEvent('mouseMoved',
+              (points[i]['x'] as num).toDouble(),
+              (points[i]['y'] as num).toDouble(), button: 'left');
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+        final last = points.last;
+        await _dispatchMouseEvent('mouseReleased', (last['x'] as num).toDouble(),
+            (last['y'] as num).toDouble(), button: 'left');
+        return {"success": true} as Map<String, dynamic>;
+      }).timeout(const Duration(seconds: 10));
     } on TimeoutException {
-      _failAllPending('Gesture timed out');
       return {"success": false, "error": "Gesture timed out — mouse event not acknowledged by browser"};
     }
   }
