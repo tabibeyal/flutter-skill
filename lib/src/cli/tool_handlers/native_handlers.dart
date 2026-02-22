@@ -124,15 +124,46 @@ extension _NativeHandlers on FlutterMcpServer {
       if (driver == null) {
         return {"success": false, "error": "No supported platform detected"};
       }
-      final tree = await driver.getAccessibilityTree().timeout(
+      var tree = await driver.getAccessibilityTree().timeout(
             const Duration(seconds: 20),
             onTimeout: () => <Map<String, dynamic>>[],
           );
+
+      // Fallback: if osascript AX tree failed, try bridge inspect
+      if (tree.isEmpty && _client != null) {
+        try {
+          if (_client is BridgeDriver) {
+            final bridgeResult =
+                await (_client as BridgeDriver).callMethod('inspect', {});
+            final elements = bridgeResult['elements'] as List<dynamic>? ?? [];
+            if (elements.isNotEmpty) {
+              // Convert bridge inspect format to AX tree format
+              final converted = <Map<String, dynamic>>[];
+              for (final e in elements) {
+                final el = e as Map<String, dynamic>;
+                converted.add(<String, dynamic>{
+                  'role': el['type'] as String? ?? 'unknown',
+                  'name': (el['text'] as String?) ??
+                      (el['accessibilityLabel'] as String?) ??
+                      '',
+                  'value': '',
+                  'depth': 0,
+                });
+              }
+              tree = converted;
+            }
+          }
+        } catch (_) {
+          // Bridge fallback failed — continue to error
+        }
+      }
+
       if (tree.isEmpty) {
         return {
           "success": false,
           "error":
-              "Could not read accessibility tree — check macOS Accessibility permissions for Terminal/IDE"
+              "Could not read accessibility tree — check macOS Accessibility permissions for Terminal/IDE, "
+              "or connect via bridge SDK (scan_and_connect) for bridge-based inspection"
         };
       }
 

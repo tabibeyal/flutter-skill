@@ -175,6 +175,15 @@ extension _BfInspection on FlutterMcpServer {
         }
         return result;
       case 'get_widget_tree':
+        if (client is BridgeDriver) {
+          // Non-Flutter bridges: delegate to inspect (component/accessibility tree)
+          final result = await client.callMethod('inspect', {});
+          result['source'] = 'bridge_inspect';
+          result['framework'] = client.frameworkName;
+          result['hint'] = 'This is the component/accessibility tree from the ${client.frameworkName} bridge SDK. '
+              'For Flutter apps, get_widget_tree returns the full widget tree via VM Service.';
+          return result;
+        }
         final fc = _asFlutterClient(client!, 'get_widget_tree');
         final maxDepth = args['max_depth'] ?? 10;
         return await fc.getWidgetTree(maxDepth: maxDepth);
