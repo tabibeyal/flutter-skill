@@ -343,11 +343,22 @@ jobs:
       - name: Compile native binary
         run: dart compile exe bin/flutter_skill.dart -o ${{ matrix.artifact }}
 
+      - name: Compile fs-ios-bridge (macOS only)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          clang -framework Foundation -framework CoreGraphics \
+            -F/Library/Developer/PrivateFrameworks -framework SimulatorKit \
+            -rpath /Library/Developer/PrivateFrameworks \
+            -o fs-ios-bridge native/ios-hid/fs_ios_bridge.m
+        continue-on-error: true
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}
+            fs-ios-bridge
 
   # Submit to Microsoft Winget official repository
   update-winget:
@@ -448,6 +459,8 @@ jobs:
           mkdir -p release-assets
           # Move all binaries to release-assets with proper names
           find artifacts -type f -name "flutter-skill-*" -exec mv {} release-assets/ \;
+          # Move fs-ios-bridge if built (macOS only)
+          find artifacts -type f -name "fs-ios-bridge" -exec mv {} release-assets/ \; 2>/dev/null || true
           # Move IntelliJ plugin zip if exists
           find artifacts -type f -name "*.zip" -exec mv {} release-assets/ \; 2>/dev/null || true
           ls -la release-assets/
