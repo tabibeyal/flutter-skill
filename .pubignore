@@ -37,3 +37,24 @@ USAGE_GUIDE.md
 SKILL.md
 RELEASE_GUIDE.md
 CHANGELOG_FIXES.md
+
+# Test suites & test apps
+test/
+test_app/
+test_tiktok/
+
+# SDKs (large, not needed for package)
+sdks/
+
+# IDE settings
+.idea/
+
+# Assets (screenshots, images)
+assets/
+
+# Compiled binaries in bin/
+bin/*.dill
+bin/flutter-skill-native
+
+# Winget manifest
+winget/
