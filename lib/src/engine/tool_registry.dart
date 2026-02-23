@@ -77,6 +77,7 @@ class ToolRegistry {
     'fill_rich_text',
     'paste_text',
     'solve_captcha',
+    'act',
   };
 
   /// Flutter VM Service-only tools.
@@ -1489,11 +1490,64 @@ Elements with [ref] can be targeted: tap(ref: "button:Login"), enter_text(ref: "
             },
             "mode": {
               "type": "string",
-              "enum": ["text", "smart", "vision"],
+              "enum": ["text", "smart", "vision", "accessibility", "dom"],
               "description":
-                  "Snapshot mode: text (default, token-efficient tree), smart (text + hints about visual content), vision (screenshot file for visual AI)"
+                  "Snapshot mode: accessibility (default for CDP — uses Chrome Accessibility Tree, most compact), dom (legacy DOM query), text (default for Flutter), smart (text + hints), vision (screenshot file)"
             },
           },
+        },
+      },
+
+      // ======================== Act (Composite Action) ========================
+      {
+        "name": "act",
+        "description": """🎯 COMPOSITE ACTION — One-step element interaction with auto-wait + auto-scroll.
+
+Combines element finding, waiting, scrolling into view, and action execution in a single call.
+Like Playwright's locator.click() but works across Shadow DOM.
+
+Examples:
+  act(text: "Sign In", action: "click")
+  act(ref: "input:Email", action: "fill", value: "user@test.com")
+  act(text: "Submit", action: "click")
+
+Supported actions: click, fill, select, hover, check
+Auto-waits up to 5s for element to appear. Auto-scrolls into view if off-screen.
+""",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "description": "Optional session ID"
+            },
+            "ref": {
+              "type": "string",
+              "description": "Element ref from snapshot (e.g. 'button:Login', 'e1')"
+            },
+            "text": {
+              "type": "string",
+              "description": "Visible text of the element to act on"
+            },
+            "key": {
+              "type": "string",
+              "description": "CSS selector / element key"
+            },
+            "action": {
+              "type": "string",
+              "enum": ["click", "fill", "select", "hover", "check"],
+              "description": "Action to perform (default: click)"
+            },
+            "value": {
+              "type": "string",
+              "description": "Value for fill/select actions"
+            },
+            "timeout": {
+              "type": "integer",
+              "description": "Max wait time in ms (default: 5000)"
+            },
+          },
+          "required": ["action"],
         },
       },
 

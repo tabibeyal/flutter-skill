@@ -23,39 +23,50 @@ extension _CdpToolHandlers on FlutterMcpServer {
         return await cdp.getInteractiveElementsStructured();
 
       case 'snapshot':
-        final structured = await cdp.getInteractiveElementsStructured();
-        final elements = structured['elements'] as List<dynamic>? ?? [];
-        final buffer = StringBuffer();
-        for (var i = 0; i < elements.length; i++) {
-          final el = elements[i] as Map<String, dynamic>;
-          final isLast = i == elements.length - 1;
-          final prefix = isLast ? '└── ' : '├── ';
-          final ref = el['ref'] ?? '';
-          final text = (el['text'] ?? el['label'] ?? '').toString();
-          final displayText =
-              text.length > 40 ? '${text.substring(0, 37)}...' : text;
-          final bounds = el['bounds'] as Map<String, dynamic>?;
-          final bStr = bounds != null
-              ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})'
-              : '';
-          final valuePart =
-              (el['value'] != null && el['value'].toString().isNotEmpty)
-                  ? ' value="${el['value']}"'
-                  : '';
-          final enabledPart = el['enabled'] == false ? ' DISABLED' : '';
-          final actions = (el['actions'] as List?)?.join(',') ?? '';
-          buffer.writeln(
-              '$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+        // Use Accessibility Tree for compact, semantic snapshot (like Playwright)
+        final mode = args['mode'] as String? ?? 'accessibility';
+        if (mode == 'dom') {
+          // Legacy DOM-based snapshot
+          final structured = await cdp.getInteractiveElementsStructured();
+          final elements = structured['elements'] as List<dynamic>? ?? [];
+          final buffer = StringBuffer();
+          for (var i = 0; i < elements.length; i++) {
+            final el = elements[i] as Map<String, dynamic>;
+            final isLast = i == elements.length - 1;
+            final prefix = isLast ? '└── ' : '├── ';
+            final ref = el['ref'] ?? '';
+            final text = (el['text'] ?? el['label'] ?? '').toString();
+            final displayText = text.length > 40 ? '${text.substring(0, 37)}...' : text;
+            final bounds = el['bounds'] as Map<String, dynamic>?;
+            final bStr = bounds != null ? '(${bounds['x']},${bounds['y']} ${bounds['w']}x${bounds['h']})' : '';
+            final valuePart = (el['value'] != null && el['value'].toString().isNotEmpty) ? ' value="${el['value']}"' : '';
+            final enabledPart = el['enabled'] == false ? ' DISABLED' : '';
+            final actions = (el['actions'] as List?)?.join(',') ?? '';
+            buffer.writeln('$prefix[$ref] "$displayText" $bStr$valuePart$enabledPart {$actions}');
+          }
+          return {
+            'snapshot': buffer.toString(),
+            'mode': 'dom',
+            'summary': structured['summary'] ?? '',
+            'elementCount': elements.length,
+            'interactiveCount': elements.length,
+            'tokenEstimate': buffer.length ~/ 4,
+            'hint': 'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
+          };
         }
-        return {
-          'snapshot': buffer.toString(),
-          'summary': structured['summary'] ?? '',
-          'elementCount': elements.length,
-          'interactiveCount': elements.length,
-          'tokenEstimate': buffer.length ~/ 4,
-          'hint':
-              'Use ref IDs to interact: tap(ref: "button:Login"), enter_text(ref: "input:Email", text: "...")',
-        };
+        // Default: Accessibility tree snapshot
+        return await cdp.getAccessibilitySnapshot();
+
+      case 'act':
+        return await cdp.act(
+          ref: args['ref'] as String?,
+          text: args['text'] as String?,
+          key: args['key'] as String?,
+          action: args['action'] as String? ?? 'click',
+          value: args['value'] as String?,
+          timeoutMs: (args['timeout'] as num?)?.toInt() ?? 5000,
+          dispatchRealEvents: args['dispatchRealEvents'] as bool? ?? false,
+        );
 
       case 'tap':
         final x = args['x'] as num?;
