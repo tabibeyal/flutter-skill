@@ -1185,8 +1185,10 @@ class CdpDriver implements AppDriver {
       if (File(arm64).existsSync()) return arm64;
       if (File(x64).existsSync()) return x64;
     } else if (Platform.isLinux) {
-      final path = '$dir/chrome-linux64/chrome';
-      if (File(path).existsSync()) return path;
+      for (final sub in ['chrome-linux64', 'chrome-linux-arm64']) {
+        final path = '$dir/$sub/chrome';
+        if (File(path).existsSync()) return path;
+      }
     } else if (Platform.isWindows) {
       final path = '$dir/chrome-win64/chrome.exe';
       if (File(path).existsSync()) return path;
@@ -1197,15 +1199,25 @@ class CdpDriver implements AppDriver {
   /// Platform identifier for Chrome for Testing downloads.
   static String get _cftPlatform {
     if (Platform.isMacOS) {
-      // Detect ARM vs Intel
       try {
         final result = Process.runSync('uname', ['-m']);
         if (result.stdout.toString().trim() == 'arm64') return 'mac-arm64';
       } catch (_) {}
       return 'mac-x64';
     }
-    if (Platform.isLinux) return 'linux64';
-    return 'win64';
+    if (Platform.isLinux) {
+      try {
+        final result = Process.runSync('uname', ['-m']);
+        final arch = result.stdout.toString().trim();
+        if (arch == 'aarch64' || arch == 'arm64') return 'linux-arm64';
+      } catch (_) {}
+      return 'linux64';
+    }
+    if (Platform.isWindows) {
+      // Windows ARM64 runs x64 Chrome via emulation
+      return 'win64';
+    }
+    return 'linux64'; // fallback
   }
 
   /// Download and install Chrome for Testing.
@@ -1232,7 +1244,8 @@ class CdpDriver implements AppDriver {
       );
       if (entry == null) {
         throw Exception(
-            'No Chrome for Testing download for platform: $platform');
+            'No Chrome for Testing download for platform: $platform. '
+            '${platform == 'linux-arm64' ? 'Chrome for Testing does not support Linux ARM64 yet. Use Chromium instead: sudo apt install chromium-browser' : 'Check https://googlechromelabs.github.io/chrome-for-testing/ for available platforms.'}');
       }
       final url = entry['url'] as String;
 
