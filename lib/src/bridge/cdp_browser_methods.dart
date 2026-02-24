@@ -533,7 +533,9 @@ extension CdpBrowserMethods on CdpDriver {
         await Future.delayed(const Duration(milliseconds: 300));
         try { await _call('Page.setInterceptFileChooserDialog', {'enabled': false}); } catch (_) {}
         removeEventListeners('Page.fileChooserOpened');
-        return {"success": true, "files": filePaths, "method": "fileChooser"};
+        // Verify files were actually set
+        final fcVerified = await _verifyFilesSet(escapedSelector);
+        return {"success": fcVerified, "files": fcVerified ? filePaths : [], "method": "fileChooser", if (!fcVerified) "error": "File chooser completed but files.length is 0"};
       }
 
       // File chooser didn't fire — disable interception and fall through
@@ -548,6 +550,15 @@ extension CdpBrowserMethods on CdpDriver {
     // ── Strategy 2: Direct setFileInputFiles + dispatch events (legacy) ──
     await _setFiles();
     await _dispatchFileEvents(selector);
+
+    // ── Verify files were actually set ──
+    final verified = await _verifyFilesSet(escapedSelector);
+    if (!verified) {
+      // Strategy 3: Try iframe-aware upload
+      final iframeResult = await _tryIframeUpload(filePaths);
+      if (iframeResult != null) return iframeResult;
+      return {"success": false, "files": [], "method": "direct", "error": "Files not set after setFileInputFiles — input.files.length is 0"};
+    }
     return {"success": true, "files": filePaths, "method": "direct"};
   }
 
@@ -586,6 +597,104 @@ extension CdpBrowserMethods on CdpDriver {
       ''',
       'returnByValue': true,
     });
+  }
+
+  /// Verify that files were actually set on the file input.
+  /// Returns true if input.files.length > 0.
+  Future<bool> _verifyFilesSet(String escapedSelector) async {
+    try {
+      final result = await _call('Runtime.evaluate', {
+        'expression': '''(() => {
+          function dq(s,r){let e=r.querySelector(s);if(e)return e;for(const n of r.querySelectorAll("*"))if(n.shadowRoot){e=dq(s,n.shadowRoot);if(e)return e;}return null;}
+          const el = dq('$escapedSelector', document);
+          return el ? el.files.length : -1;
+        })()''',
+        'returnByValue': true,
+      });
+      final count = result['result']?['value'] as int? ?? 0;
+      return count > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Try to find and upload to file inputs inside iframes.
+  /// Google, some social sites use iframes for profile picture dialogs.
+  Future<Map<String, dynamic>?> _tryIframeUpload(List<String> filePaths) async {
+    try {
+      // Find file inputs inside iframes
+      final result = await _call('Runtime.evaluate', {
+        'expression': '''(() => {
+          const iframes = document.querySelectorAll('iframe');
+          for (const iframe of iframes) {
+            try {
+              const doc = iframe.contentDocument;
+              if (!doc) continue;
+              const inp = doc.querySelector('input[type=file]');
+              if (inp) {
+                return JSON.stringify({found: true, iframeSrc: iframe.src.substring(0, 100)});
+              }
+            } catch(e) { /* cross-origin */ }
+          }
+          return JSON.stringify({found: false});
+        })()''',
+        'returnByValue': true,
+      });
+      final data = jsonDecode(result['result']?['value'] as String? ?? '{}') as Map<String, dynamic>;
+      if (data['found'] != true) return null;
+
+      // Get the iframe's file input backendNodeId
+      final nodeResult = await _call('Runtime.evaluate', {
+        'expression': '''(() => {
+          const iframes = document.querySelectorAll('iframe');
+          for (const iframe of iframes) {
+            try {
+              const doc = iframe.contentDocument;
+              if (!doc) continue;
+              const inp = doc.querySelector('input[type=file]');
+              if (inp) return inp;
+            } catch(e) {}
+          }
+          return null;
+        })()''',
+        'returnByValue': false,
+      });
+      final objectId = nodeResult['result']?['objectId'] as String?;
+      if (objectId == null) return null;
+
+      final desc = await _call('DOM.describeNode', {'objectId': objectId});
+      await _call('Runtime.releaseObject', {'objectId': objectId}).catchError((_) => <String, dynamic>{});
+      final backendNodeId = desc['node']?['backendNodeId'] as int?;
+      if (backendNodeId == null) return null;
+
+      await _call('DOM.setFileInputFiles', {'backendNodeId': backendNodeId, 'files': filePaths});
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Dispatch events in iframe context
+      await _call('Runtime.evaluate', {
+        'expression': '''(() => {
+          const iframes = document.querySelectorAll('iframe');
+          for (const iframe of iframes) {
+            try {
+              const doc = iframe.contentDocument;
+              if (!doc) continue;
+              const inp = doc.querySelector('input[type=file]');
+              if (inp) {
+                inp.dispatchEvent(new Event('input', {bubbles: true}));
+                inp.dispatchEvent(new Event('change', {bubbles: true}));
+                return true;
+              }
+            } catch(e) {}
+          }
+          return false;
+        })()''',
+        'returnByValue': true,
+      });
+
+      return {"success": true, "files": filePaths, "method": "iframe"};
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── Dialog handling ──

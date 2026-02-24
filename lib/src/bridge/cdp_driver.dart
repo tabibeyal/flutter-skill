@@ -566,6 +566,27 @@ class CdpDriver implements AppDriver {
   const landmarkSel = 'h1,h2,h3,h4,h5,h6,nav,main,header,footer,[role="heading"],[role="navigation"],[role="main"],[role="banner"],[role="complementary"],[role="dialog"],[role="alert"],[role="status"],img[alt],label,[class*="error"],[class*="warning"],[aria-invalid]';
   
   const allEls = dqAll(interactiveSel + ',' + landmarkSel);
+
+  // Also collect elements from same-origin iframes
+  const iframeEls = [];
+  const iframeOffsets = new WeakMap();
+  try {
+    for (const iframe of document.querySelectorAll('iframe')) {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc) continue;
+        const iRect = iframe.getBoundingClientRect();
+        if (iRect.width === 0 || iRect.height === 0) continue;
+        const sel = interactiveSel + ',' + landmarkSel;
+        for (const el of doc.querySelectorAll(sel)) {
+          iframeEls.push(el);
+          iframeOffsets.set(el, {dx: iRect.x, dy: iRect.y, src: iframe.src.substring(0, 60)});
+        }
+      } catch(e) { /* cross-origin iframe — skip */ }
+    }
+  } catch(e) {}
+  const combinedEls = [...allEls, ...iframeEls];
+
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   let refN = 0;
@@ -575,8 +596,10 @@ class CdpDriver implements AppDriver {
   const requiredEmpty = [];
   const errors = [];
   
-  for (const el of allEls) {
+  for (const el of combinedEls) {
+    const iframeOff = iframeOffsets.get(el);
     const r = el.getBoundingClientRect();
+    // For iframe elements, we store the offset but use raw rect for visibility check
     if (r.width === 0 && r.height === 0) continue;
     const s = getComputedStyle(el);
     if (s.display === 'none' || s.visibility === 'hidden') continue;
@@ -665,7 +688,8 @@ class CdpDriver implements AppDriver {
     const beyondVW = r.left > vw ? ' (beyond-viewport-x:' + Math.round(r.left) + ')' : '';
     
     refs[refId] = displayName;
-    lines.push(role + ' "' + displayName + '"' + typeStr + valueStr + optionsStr + refStr + stateStr + validation + disabledReason + offscreen + beyondVW);
+    const iframeTag = iframeOff ? ' (iframe:' + iframeOff.src + ')' : '';
+    lines.push(role + ' "' + displayName + '"' + typeStr + valueStr + optionsStr + refStr + stateStr + validation + disabledReason + offscreen + beyondVW + iframeTag);
   }
   
   const elapsed = Math.round(performance.now() - t0);
