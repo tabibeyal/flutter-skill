@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/ai-dashboad/flutter-skill">
-    <img src="assets/demo-teaser.gif" alt="AI testing a TikTok clone across 10 platforms" width="640">
+    <img src="assets/demo-teaser.gif" alt="flutter-skill CLI demo — nav, tap, type, screenshot across websites" width="640">
   </a>
 </p>
 
