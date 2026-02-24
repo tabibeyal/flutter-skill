@@ -122,7 +122,24 @@ async fn handle_call(pool: &Arc<ConnectionPool>, body: &str) -> Value {
     let result = match name {
         "navigate" => {
             let url = args["url"].as_str().unwrap_or("");
-            ops::navigate(&conn, url).await
+            let nav_result = ops::navigate(&conn, url).await;
+            // Reconnect after navigate — cross-origin nav breaks WebSocket
+            if nav_result.is_ok() && !tab_id.is_empty() {
+                // Wait for new page to be ready (reconnect + poll readyState)
+                for attempt in 0..20 {
+                    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                    if let Ok(new_conn) = pool.reconnect(tab_id).await {
+                        if let Ok(state) = ops::evaluate(&new_conn, "document.readyState").await {
+                            let s = state.as_str().unwrap_or("");
+                            if s == "interactive" || s == "complete" {
+                                break;
+                            }
+                        }
+                    }
+                    if attempt > 12 { break; } // 3s max
+                }
+            }
+            nav_result
         }
         "evaluate" => {
             let expr = args["expression"].as_str().unwrap_or("");

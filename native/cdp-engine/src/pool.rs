@@ -107,6 +107,12 @@ impl ConnectionPool {
         self.tabs.get(tab_id).map(|v| v.value().clone())
     }
 
+    /// Drop cached connection and reconnect (needed after cross-origin navigate).
+    pub async fn reconnect(&self, tab_id: &str) -> Result<Arc<CdpConnection>, String> {
+        self.tabs.remove(tab_id);
+        self.get_or_connect(tab_id).await
+    }
+
     /// List all connected tab IDs.
     pub fn connected_tabs(&self) -> Vec<String> {
         self.tabs.iter().map(|e| e.key().clone()).collect()

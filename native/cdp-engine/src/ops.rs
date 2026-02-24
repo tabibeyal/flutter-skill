@@ -23,13 +23,8 @@ pub async fn navigate(conn: &Arc<CdpConnection>, url: &str) -> Result<Value, Str
 
     conn.call("Page.navigate", json!({"url": url})).await?;
 
-    // Wait for load
-    let mut rx = conn.on_event("Page.loadEventFired");
-    tokio::select! {
-        _ = rx.recv() => {},
-        _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {},
-    }
-    conn.remove_listeners("Page.loadEventFired");
+    // Brief wait for navigation to start
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     Ok(json!({"navigated": true, "url": url}))
 }
