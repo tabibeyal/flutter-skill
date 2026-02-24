@@ -99,9 +99,26 @@ class CdpDriver implements AppDriver {
     }
 
     // Discover tabs via CDP JSON endpoint
-    final wsUrl = await _discoverTarget();
+    var wsUrl = await _discoverTarget();
+    
+    // No suitable tab found — create a new one via CDP HTTP API
+    if (wsUrl == null && _url.isNotEmpty) {
+      try {
+        final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+        final encodedUrl = Uri.encodeComponent(_url);
+        final request = await client.getUrl(Uri.parse('http://127.0.0.1:$_port/json/new?$encodedUrl'));
+        final response = await request.close();
+        final body = await response.transform(utf8.decoder).join();
+        client.close();
+        final tab = jsonDecode(body) as Map<String, dynamic>;
+        wsUrl = tab['webSocketDebuggerUrl'] as String?;
+        // Tab was just created with our URL — skip later navigation
+        if (wsUrl != null) connectedToExistingTab = true;
+      } catch (_) {}
+    }
+    
     if (wsUrl == null) {
-      throw Exception('Could not find debuggable tab on port $_port. '
+      throw Exception('Could not find or create a debuggable tab on port $_port. '
           'Ensure Chrome is running with --remote-debugging-port=$_port');
     }
 
@@ -2152,57 +2169,57 @@ class CdpDriver implements AppDriver {
         final tabs = jsonDecode(body) as List;
         final pageTabs = tabs.where((t) => t is Map && t['type'] == 'page').cast<Map>().toList();
 
-        // 1. Exact URL match
-        for (final tab in pageTabs) {
-          if (tab['url'] == _url) {
-            connectedToExistingTab = true;
-            return tab['webSocketDebuggerUrl'] as String?;
-          }
-        }
-        // 2. Same-origin match (e.g. URL with different query params)
-        if (_url.isNotEmpty) {
-          final targetUri = Uri.tryParse(_url);
-          if (targetUri != null) {
-            final targetOrigin = '${targetUri.scheme}://${targetUri.host}';
-            final targetPath = targetUri.path;
-            for (final tab in pageTabs) {
-              final tabUrl = tab['url']?.toString() ?? '';
-              final tabUri = Uri.tryParse(tabUrl);
-              if (tabUri != null) {
-                final tabOrigin = '${tabUri.scheme}://${tabUri.host}';
-                // Same origin + same path = very likely the same page
-                if (tabOrigin == targetOrigin && tabUri.path == targetPath) {
-                  connectedToExistingTab = true;
-                  return tab['webSocketDebuggerUrl'] as String?;
-                }
-              }
+        // Parse target host for domain matching
+        final targetUri = _url.isNotEmpty ? Uri.tryParse(_url) : null;
+        final targetHost = targetUri?.host ?? '';
+
+        // 1. Same domain match (host-based, ignores path/query entirely)
+        //    This is the PRIMARY strategy — never hijack tabs from other domains.
+        if (targetHost.isNotEmpty) {
+          // Prefer exact URL match within same domain
+          for (final tab in pageTabs) {
+            if (tab['url'] == _url) {
+              connectedToExistingTab = true;
+              return tab['webSocketDebuggerUrl'] as String?;
             }
-            // 3. Same-origin only (different path — will navigate within same tab)
-            for (final tab in pageTabs) {
-              final tabUrl = tab['url']?.toString() ?? '';
-              final tabUri = Uri.tryParse(tabUrl);
-              if (tabUri != null) {
-                final tabOrigin = '${tabUri.scheme}://${tabUri.host}';
-                if (tabOrigin == targetOrigin) {
-                  return tab['webSocketDebuggerUrl'] as String?;
-                }
-              }
+          }
+          // Then any tab on the same domain
+          for (final tab in pageTabs) {
+            final tabUri = Uri.tryParse(tab['url']?.toString() ?? '');
+            if (tabUri != null && tabUri.host == targetHost) {
+              return tab['webSocketDebuggerUrl'] as String?;
             }
           }
         }
-        // 4. Prefer page with actual content (not devtools/about:blank)
+
+        // 2. No same-domain tab found — use about:blank or chrome://newtab
+        //    NEVER navigate an unrelated site's tab to our URL.
         for (final tab in pageTabs) {
           final tabUrl = tab['url']?.toString() ?? '';
-          if (!tabUrl.startsWith('devtools://') &&
-              !tabUrl.startsWith('chrome://') &&
-              tabUrl != 'about:blank') {
+          if (tabUrl == 'about:blank' || tabUrl == 'chrome://newtab/' || tabUrl == 'chrome://new-tab-page/') {
             return tab['webSocketDebuggerUrl'] as String?;
           }
         }
-        // 5. Fall back to first page tab
-        if (pageTabs.isNotEmpty) {
+
+        // 3. No blank tab — if URL is empty, pick first non-chrome tab
+        if (_url.isEmpty) {
+          for (final tab in pageTabs) {
+            final tabUrl = tab['url']?.toString() ?? '';
+            if (!tabUrl.startsWith('devtools://') &&
+                !tabUrl.startsWith('chrome://') &&
+                tabUrl != 'about:blank') {
+              return tab['webSocketDebuggerUrl'] as String?;
+            }
+          }
+        }
+
+        // 4. Last resort — return first page tab (only if no URL specified)
+        if (_url.isEmpty && pageTabs.isNotEmpty) {
           return pageTabs.first['webSocketDebuggerUrl'] as String?;
         }
+
+        // 5. No suitable tab found — return null, caller should create new tab
+        //    This is better than hijacking an unrelated tab.
       } catch (_) {
         await Future.delayed(const Duration(milliseconds: 500));
       }
