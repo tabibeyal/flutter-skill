@@ -154,7 +154,7 @@ For standalone browser automation, CI/CD pipelines, or remote access:
 # Start server
 flutter-skill serve https://your-app.com
 
-# Use CLI client commands (NEW in v0.9.1)
+# Use CLI client commands
 flutter-skill nav https://google.com
 flutter-skill snap                    # Accessibility tree (99% fewer tokens)
 flutter-skill screenshot /tmp/ss.jpg
@@ -440,7 +440,7 @@ Then batch multiple actions in one call:
 
 ```yaml
 dependencies:
-  flutter_skill: ^0.9.1
+  flutter_skill: ^0.9.2
 ```
 
 ```dart
