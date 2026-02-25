@@ -242,19 +242,56 @@ Future<void> _navigateToUrl(CdpDriver cdp, String url, int cdpPort) async {
         await cdp.reconnectTo(wsUrl);
         print('   ✅ Connected to existing tab: ${matchingTab['url']}');
       }
-      // Navigate within this tab to the exact URL
-      await cdp.call('Page.navigate', {'url': url});
-      await Future.delayed(const Duration(seconds: 3));
+      // Only navigate if the tab isn't already on the exact URL
+      final tabUrl = matchingTab['url'] as String? ?? '';
+      if (tabUrl != url) {
+        await cdp.call('Page.navigate', {'url': url});
+        await Future.delayed(const Duration(seconds: 3));
+        // Fallback: if page is broken (SPA anti-bot), retry via JS navigation
+        await _retryWithJsNavIfBroken(cdp, url);
+      }
     } else {
       // No matching tab — navigate in current tab
       await cdp.call('Page.navigate', {'url': url});
       await Future.delayed(const Duration(seconds: 3));
+      await _retryWithJsNavIfBroken(cdp, url);
       print('   ✅ Navigated current tab to: $url');
     }
   } catch (e) {
     print('   ⚠️ Smart navigate failed ($e), using direct navigate');
     await cdp.call('Page.navigate', {'url': url});
     await Future.delayed(const Duration(seconds: 3));
+  }
+}
+
+/// Some SPAs (X/Twitter) detect CDP Page.navigate and serve static error pages
+/// like "JavaScript is not available". If detected, retry via JS navigation
+/// which triggers the SPA router instead of a full page reload.
+/// Only triggers on definitive anti-bot error pages, NOT on slow-loading pages.
+Future<void> _retryWithJsNavIfBroken(CdpDriver cdp, String url) async {
+  try {
+    final result = await cdp.evaluate('''
+      (() => {
+        const text = document.body?.innerText || '';
+        // Only retry on definitive anti-bot/broken-JS error pages
+        if (text.includes('JavaScript is not available') ||
+            text.includes('Enable JavaScript') ||
+            text.includes('JavaScript is disabled') ||
+            text.includes('browser is not supported')) {
+          return 'broken';
+        }
+        return 'ok';
+      })()
+    ''');
+    final status = result['result']?['value'] as String? ?? 'ok';
+    if (status == 'broken') {
+      print('   ⚠️ Anti-bot error page detected, retrying via JS navigation...');
+      final escaped = url.replaceAll("'", "\\'");
+      await cdp.evaluate("window.location.href = '$escaped'");
+      await Future.delayed(const Duration(seconds: 4));
+    }
+  } catch (_) {
+    // Ignore errors in detection — non-critical
   }
 }
 
