@@ -272,12 +272,8 @@ Future<void> _navigateToUrl(CdpDriver cdp, String url, int cdpPort) async {
       final tabUrl = matchingTab['url'] as String? ?? '';
       if (tabUrl == url) {
         // Already on exact URL — skip navigation
-      } else if (isRootDomainMatch) {
-        // Same root domain but different subdomain (e.g. login page redirected)
-        // The tab is likely already logged in — skip navigation to avoid loops
-        print('   ℹ️ Same root domain ($targetRoot), skipping re-navigation');
       } else {
-        // Same origin, different path — navigate
+        // Navigate (even for root domain matches — user explicitly requested this URL)
         await cdp.call('Page.navigate', {'url': url});
         await Future.delayed(const Duration(seconds: 3));
         await _retryWithJsNavIfBroken(cdp, url);
