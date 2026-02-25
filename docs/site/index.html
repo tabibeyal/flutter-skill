@@ -256,6 +256,41 @@
     footer a { color: var(--text-muted); }
     footer a:hover { color: var(--text); }
 
+    /* Code blocks with copy button */
+    .code-block {
+      position: relative;
+      margin: 12px 0;
+    }
+
+    .code-block pre {
+      margin: 0;
+      padding-right: 80px;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .copy-btn.copied {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
     /* Responsive */
     @media (max-width: 640px) {
       .hero h1 { font-size: 32px; }
@@ -272,6 +307,7 @@
     <div class="logo">flutter-skill</div>
     <nav>
       <a href="#getting-started">Getting Started</a>
+      <a href="#browser-setup">Browser Setup</a>
       <a href="#platforms">Platforms</a>
       <a href="#cli">CLI Reference</a>
       <a href="#ide-setup">IDE Setup</a>
@@ -380,6 +416,133 @@
         <p style="margin-top: 12px"><strong>Best for:</strong> OpenClaw, scripts, CI/CD, remote access</p>
       </div>
     </div>
+  </section>
+
+  <!-- Browser Setup -->
+  <section id="browser-setup">
+    <h2>Browser Setup</h2>
+    <p>flutter-skill connects to any Chromium-based browser via CDP. Choose your browser and copy the commands.</p>
+
+    <h3>🚀 Quick Start (Auto-launch)</h3>
+    <p>flutter-skill can auto-launch a headless Chrome — zero setup required.</p>
+    <div class="code-block">
+      <pre><span class="comment"># Auto-launches Chrome, opens the URL, starts the MCP server</span>
+flutter-skill serve https://your-app.com --port=3000</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'flutter-skill serve https://your-app.com --port=3000')">📋 Copy</button>
+    </div>
+
+    <h3>🌐 System Chrome</h3>
+    <p>Use your regular Chrome with existing login sessions.</p>
+    <div class="code-block">
+      <pre><span class="comment"># macOS</span>
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir=$HOME/.flutter-skill/chrome-profile</pre>
+      <button class="copy-btn" onclick="copyCode(this, '/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=$HOME/.flutter-skill/chrome-profile')">📋 Copy (macOS)</button>
+    </div>
+    <div class="code-block">
+      <pre><span class="comment"># Linux</span>
+google-chrome --remote-debugging-port=9222 \
+  --user-data-dir=$HOME/.flutter-skill/chrome-profile</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'google-chrome --remote-debugging-port=9222 --user-data-dir=$HOME/.flutter-skill/chrome-profile')">📋 Copy (Linux)</button>
+    </div>
+    <div class="code-block">
+      <pre><span class="comment"># Windows</span>
+"C:\Program Files\Google\Chrome\Application\chrome.exe" ^
+  --remote-debugging-port=9222 ^
+  --user-data-dir=%USERPROFILE%\.flutter-skill\chrome-profile</pre>
+      <button class="copy-btn" onclick="copyCode(this, '&quot;C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe&quot; --remote-debugging-port=9222 --user-data-dir=%USERPROFILE%\\.flutter-skill\\chrome-profile')">📋 Copy (Windows)</button>
+    </div>
+    <p>Then connect flutter-skill:</p>
+    <div class="code-block">
+      <pre>flutter-skill serve https://your-app.com --port=3000 --chrome-port=9222 --no-launch</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'flutter-skill serve https://your-app.com --port=3000 --chrome-port=9222 --no-launch')">📋 Copy</button>
+    </div>
+
+    <h3>🧪 Chrome for Testing (CfT)</h3>
+    <p>Isolated Chrome build designed for automation. Recommended for CI/CD.</p>
+    <div class="code-block">
+      <pre><span class="comment"># Install via npx</span>
+npx @anthropic-ai/cft install</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'npx @anthropic-ai/cft install')">📋 Copy</button>
+    </div>
+    <div class="code-block">
+      <pre><span class="comment"># Or download directly (macOS ARM64 example)</span>
+npx @anthropic-ai/cft install --platform=mac-arm64</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'npx @anthropic-ai/cft install --platform=mac-arm64')">📋 Copy</button>
+    </div>
+
+    <h3>🖥️ Microsoft Edge</h3>
+    <p>Edge is Chromium-based and supports CDP.</p>
+    <div class="code-block">
+      <pre><span class="comment"># macOS</span>
+/Applications/Microsoft\ Edge.app/Contents/MacOS/Microsoft\ Edge \
+  --remote-debugging-port=9222</pre>
+      <button class="copy-btn" onclick="copyCode(this, '/Applications/Microsoft\\ Edge.app/Contents/MacOS/Microsoft\\ Edge --remote-debugging-port=9222')">📋 Copy (macOS)</button>
+    </div>
+    <div class="code-block">
+      <pre><span class="comment"># Windows</span>
+"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" ^
+  --remote-debugging-port=9222</pre>
+      <button class="copy-btn" onclick="copyCode(this, '&quot;C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe&quot; --remote-debugging-port=9222')">📋 Copy (Windows)</button>
+    </div>
+
+    <h3>🦁 Brave Browser</h3>
+    <div class="code-block">
+      <pre><span class="comment"># macOS</span>
+/Applications/Brave\ Browser.app/Contents/MacOS/Brave\ Browser \
+  --remote-debugging-port=9222</pre>
+      <button class="copy-btn" onclick="copyCode(this, '/Applications/Brave\\ Browser.app/Contents/MacOS/Brave\\ Browser --remote-debugging-port=9222')">📋 Copy</button>
+    </div>
+
+    <h3>🐳 Docker (Headless)</h3>
+    <p>For CI/CD and server environments.</p>
+    <div class="code-block">
+      <pre><span class="comment"># Run headless Chrome in Docker</span>
+docker run -d --name chrome -p 9222:9222 \
+  zenika/alpine-chrome \
+  --no-sandbox --remote-debugging-address=0.0.0.0 \
+  --remote-debugging-port=9222</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'docker run -d --name chrome -p 9222:9222 zenika/alpine-chrome --no-sandbox --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222')">📋 Copy</button>
+    </div>
+    <div class="code-block">
+      <pre><span class="comment"># Connect from host</span>
+flutter-skill serve https://your-app.com --chrome-port=9222 --no-launch</pre>
+      <button class="copy-btn" onclick="copyCode(this, 'flutter-skill serve https://your-app.com --chrome-port=9222 --no-launch')">📋 Copy</button>
+    </div>
+
+    <h3>⚙️ Chrome Launch Options</h3>
+    <table>
+      <thead>
+        <tr><th>Flag</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>--remote-debugging-port=9222</code></td><td>Enable CDP on port 9222 (required)</td></tr>
+        <tr><td><code>--user-data-dir=PATH</code></td><td>Persistent profile (keeps login sessions)</td></tr>
+        <tr><td><code>--headless=new</code></td><td>Headless mode (no UI window)</td></tr>
+        <tr><td><code>--no-sandbox</code></td><td>Required in Docker/CI</td></tr>
+        <tr><td><code>--disable-gpu</code></td><td>Disable GPU acceleration (CI)</td></tr>
+        <tr><td><code>--window-size=1920,1080</code></td><td>Set viewport size</td></tr>
+        <tr><td><code>--proxy-server=host:port</code></td><td>Route through proxy</td></tr>
+        <tr><td><code>--ignore-certificate-errors</code></td><td>Skip SSL verification</td></tr>
+      </tbody>
+    </table>
+
+    <h3>🔗 flutter-skill serve Options</h3>
+    <table>
+      <thead>
+        <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>--port</code></td><td>3000</td><td>HTTP API port</td></tr>
+        <tr><td><code>--chrome-port</code></td><td>9222</td><td>Chrome CDP port to connect to</td></tr>
+        <tr><td><code>--no-launch</code></td><td>false</td><td>Don't auto-launch Chrome (connect to existing)</td></tr>
+        <tr><td><code>--headless</code></td><td>false</td><td>Launch Chrome in headless mode</td></tr>
+        <tr><td><code>--proxy</code></td><td>-</td><td>Proxy URL for Chrome</td></tr>
+        <tr><td><code>--ignore-ssl</code></td><td>false</td><td>Ignore SSL certificate errors</td></tr>
+        <tr><td><code>--max-tabs</code></td><td>5</td><td>Maximum open tabs</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- CLI Reference -->
@@ -515,5 +678,17 @@ flutter-skill tools</pre>
   </div>
 </footer>
 
+<script>
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
 </body>
 </html>
