@@ -229,25 +229,57 @@ Future<void> _navigateToUrl(CdpDriver cdp, String url, int cdpPort) async {
     final tabs = (jsonDecode(body) as List).cast<Map<String, dynamic>>();
     client.close();
 
-    // Find tab with matching origin
-    final matchingTab = tabs.cast<Map<String, dynamic>?>().firstWhere(
+    // Find tab with matching origin or same root domain
+    final targetHost = targetUri.host;
+    final targetParts = targetHost.split('.');
+    final targetRoot = targetParts.length >= 2
+        ? targetParts.sublist(targetParts.length - 2).join('.')
+        : targetHost;
+
+    Map<String, dynamic>? matchingTab;
+    bool isRootDomainMatch = false;
+
+    // 1. Exact origin match
+    matchingTab = tabs.cast<Map<String, dynamic>?>().firstWhere(
       (t) => t!['type'] == 'page' && (t['url'] as String? ?? '').startsWith(targetOrigin),
       orElse: () => null,
     );
 
+    // 2. Root domain match (e.g. passport.csdn.net → www.csdn.net)
+    if (matchingTab == null) {
+      matchingTab = tabs.cast<Map<String, dynamic>?>().firstWhere(
+        (t) {
+          if (t!['type'] != 'page') return false;
+          final tabHost = Uri.tryParse(t['url']?.toString() ?? '')?.host ?? '';
+          final tabParts = tabHost.split('.');
+          final tabRoot = tabParts.length >= 2
+              ? tabParts.sublist(tabParts.length - 2).join('.')
+              : tabHost;
+          return tabRoot == targetRoot && tabRoot.isNotEmpty;
+        },
+        orElse: () => null,
+      );
+      if (matchingTab != null) isRootDomainMatch = true;
+    }
+
     if (matchingTab != null) {
-      // Connect to existing tab with same origin
+      // Connect to existing tab with same origin/domain
       final wsUrl = matchingTab['webSocketDebuggerUrl'] as String?;
       if (wsUrl != null && wsUrl.isNotEmpty) {
         await cdp.reconnectTo(wsUrl);
         print('   ✅ Connected to existing tab: ${matchingTab['url']}');
       }
-      // Only navigate if the tab isn't already on the exact URL
       final tabUrl = matchingTab['url'] as String? ?? '';
-      if (tabUrl != url) {
+      if (tabUrl == url) {
+        // Already on exact URL — skip navigation
+      } else if (isRootDomainMatch) {
+        // Same root domain but different subdomain (e.g. login page redirected)
+        // The tab is likely already logged in — skip navigation to avoid loops
+        print('   ℹ️ Same root domain ($targetRoot), skipping re-navigation');
+      } else {
+        // Same origin, different path — navigate
         await cdp.call('Page.navigate', {'url': url});
         await Future.delayed(const Duration(seconds: 3));
-        // Fallback: if page is broken (SPA anti-bot), retry via JS navigation
         await _retryWithJsNavIfBroken(cdp, url);
       }
     } else {
