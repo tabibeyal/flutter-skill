@@ -12,6 +12,13 @@ import 'device_presets.dart';
 part 'cdp_browser_methods.dart';
 part 'cdp_appmcp_methods.dart';
 
+/// Segment of text for typeText: either a control char or printable text run.
+class _TypeSegment {
+  final String text;
+  final bool isControl;
+  _TypeSegment(this.text, this.isControl);
+}
+
 /// AppDriver that communicates with any web page via Chrome DevTools Protocol.
 ///
 /// No SDK injection needed — connects directly to Chrome's debugging port
@@ -1578,29 +1585,134 @@ class CdpDriver implements AppDriver {
     '?': ['Slash', 191, true],
   };
 
-  /// Type text character-by-character via dispatchKeyEvent.
+  /// Type text into the currently focused element.
   ///
-  /// Full US QWERTY mapping for ALL printable ASCII (letters, digits,
-  /// symbols, punctuation). Control characters (Enter, Tab) dispatched
-  /// with proper key codes. Non-ASCII characters (CJK, emoji, etc.)
-  /// fall back to Input.insertText since they have no physical key.
+  /// **Strategy** (universal, works with all frameworks — React, Vue, Angular,
+  /// Svelte, vanilla, contenteditable, etc.):
+  ///
+  /// 1. Detect focused element type (input/textarea/contenteditable/other).
+  /// 2. For form elements (`<input>`, `<textarea>`) and contenteditable:
+  ///    use **`Input.insertText`** which reliably triggers native `input`
+  ///    events that all frameworks listen to.  This is the same code path
+  ///    Chrome uses for IME composition and clipboard paste.
+  /// 3. Control characters (Enter, Tab) always use `dispatchKeyEvent` so
+  ///    they trigger form submission, focus changes, etc.
+  /// 4. Fallback: if `Input.insertText` didn't change the value, try
+  ///    `execCommand('insertText')` then `dispatchKeyEvent` per char.
+  ///
+  /// Full US QWERTY mapping is retained in [_usKeyboard] for use by
+  /// [pressKey] and the dispatchKeyEvent fallback path.
   Future<void> typeText(String text) async {
-    // Snapshot focused element before typing
+    // Detect focused element type and snapshot length before typing
     final beforeResult = await _evalJs('''
       (() => {
         const el = document.activeElement;
-        if (!el) return JSON.stringify({tag: null, len: 0});
+        if (!el) return JSON.stringify({tag: null, len: 0, editable: false});
+        const tag = el.tagName;
+        const isFormField = tag === 'INPUT' || tag === 'TEXTAREA';
+        const isCE = el.isContentEditable || el.getAttribute('contenteditable') === 'true';
+        const val = isFormField ? (el.value || '') : (el.textContent || '');
         return JSON.stringify({
-          tag: el.tagName,
-          len: (el.value || el.textContent || '').length
+          tag: tag,
+          len: val.length,
+          editable: isFormField || isCE,
+          isFormField: isFormField,
+          isCE: isCE,
         });
       })()
     ''');
     final beforeParsed = _parseJsonEval(beforeResult);
     final beforeLen = (beforeParsed?['len'] as num?)?.toInt() ?? 0;
+    final isEditable = beforeParsed?['editable'] == true;
 
+    // Split text into segments: control chars vs printable text runs
+    // This allows us to batch printable text into a single insertText call
+    // while still dispatching control keys individually.
+    final segments = <_TypeSegment>[];
+    final buf = StringBuffer();
     for (final char in text.split('')) {
-      // --- Control characters ---
+      if (char == '\n' || char == '\r' || char == '\t') {
+        if (buf.isNotEmpty) {
+          segments.add(_TypeSegment(buf.toString(), false));
+          buf.clear();
+        }
+        segments.add(_TypeSegment(char, true));
+      } else {
+        buf.write(char);
+      }
+    }
+    if (buf.isNotEmpty) {
+      segments.add(_TypeSegment(buf.toString(), false));
+    }
+
+    // Type each segment
+    for (final seg in segments) {
+      if (seg.isControl) {
+        // Control characters → always dispatchKeyEvent
+        if (seg.text == '\n' || seg.text == '\r') {
+          await _dispatchKey('Enter', 'Enter', 13, text: '\r');
+        } else if (seg.text == '\t') {
+          await _dispatchKey('Tab', 'Tab', 9);
+        }
+      } else if (isEditable) {
+        // Printable text into editable element → Input.insertText (universal)
+        await _call('Input.insertText', {'text': seg.text});
+      } else {
+        // Not a known editable element — fall back to per-char dispatchKeyEvent
+        await _typeViaDispatchKeyEvent(seg.text);
+      }
+    }
+
+    // Verify text was inserted
+    final afterResult = await _evalJs('''
+      (() => {
+        const el = document.activeElement;
+        if (!el) return JSON.stringify({len: 0});
+        const tag = el.tagName;
+        const isFormField = tag === 'INPUT' || tag === 'TEXTAREA';
+        const val = isFormField ? (el.value || '') : (el.textContent || '');
+        return JSON.stringify({len: val.length});
+      })()
+    ''');
+    final afterParsed = _parseJsonEval(afterResult);
+    final afterLen = (afterParsed?['len'] as num?)?.toInt() ?? 0;
+
+    if (afterLen <= beforeLen && text.isNotEmpty) {
+      // Primary method failed — try fallback chain
+      // 1. execCommand (works in some contenteditable contexts)
+      final escaped = text
+          .replaceAll('\\', '\\\\')
+          .replaceAll("'", "\\'")
+          .replaceAll('\n', '\\n')
+          .replaceAll('\t', '\\t');
+      await _evalJs(
+          "document.execCommand('insertText', false, '$escaped')");
+
+      // 2. If still failed, try per-char dispatchKeyEvent as last resort
+      final fallbackResult = await _evalJs('''
+        (() => {
+          const el = document.activeElement;
+          if (!el) return JSON.stringify({len: 0});
+          const tag = el.tagName;
+          const isFormField = tag === 'INPUT' || tag === 'TEXTAREA';
+          const val = isFormField ? (el.value || '') : (el.textContent || '');
+          return JSON.stringify({len: val.length});
+        })()
+      ''');
+      final fallbackParsed = _parseJsonEval(fallbackResult);
+      final fallbackLen = (fallbackParsed?['len'] as num?)?.toInt() ?? 0;
+
+      if (fallbackLen <= beforeLen) {
+        // execCommand also failed — dispatchKeyEvent as absolute last resort
+        await _typeViaDispatchKeyEvent(text);
+      }
+    }
+  }
+
+  /// Type text character-by-character via dispatchKeyEvent (fallback).
+  /// Used when Input.insertText and execCommand both fail.
+  Future<void> _typeViaDispatchKeyEvent(String text) async {
+    for (final char in text.split('')) {
       if (char == '\n' || char == '\r') {
         await _dispatchKey('Enter', 'Enter', 13, text: '\r');
         continue;
@@ -1610,13 +1722,12 @@ class CdpDriver implements AppDriver {
         continue;
       }
 
-      // --- Mapped ASCII characters (dispatchKeyEvent) ---
       final mapping = _usKeyboard[char];
       if (mapping != null) {
         final code = mapping[0] as String;
         final keyCode = mapping[1] as int;
         final shifted = mapping[2] as bool;
-        final modifiers = shifted ? 8 : 0; // 8 = Shift
+        final modifiers = shifted ? 8 : 0;
 
         await _call('Input.dispatchKeyEvent', {
           'type': 'keyDown',
@@ -1635,36 +1746,10 @@ class CdpDriver implements AppDriver {
           'windowsVirtualKeyCode': keyCode,
           'nativeVirtualKeyCode': keyCode,
         });
-        continue;
+      } else {
+        // Non-ASCII char without keyboard mapping
+        await _call('Input.insertText', {'text': char});
       }
-
-      // --- Non-ASCII (CJK, emoji, accented chars, etc.) ---
-      // No physical key mapping exists; use Input.insertText for this char
-      await _call('Input.insertText', {'text': char});
-    }
-
-    // Verify text was inserted; fall back to execCommand if failed
-    final afterResult = await _evalJs('''
-      (() => {
-        const el = document.activeElement;
-        if (!el) return JSON.stringify({len: 0});
-        return JSON.stringify({
-          len: (el.value || el.textContent || '').length
-        });
-      })()
-    ''');
-    final afterParsed = _parseJsonEval(afterResult);
-    final afterLen = (afterParsed?['len'] as num?)?.toInt() ?? 0;
-
-    if (afterLen <= beforeLen && text.isNotEmpty) {
-      // dispatchKeyEvent failed — try execCommand fallback
-      final escaped = text
-          .replaceAll('\\', '\\\\')
-          .replaceAll("'", "\\'")
-          .replaceAll('\n', '\\n')
-          .replaceAll('\t', '\\t');
-      await _evalJs(
-          "document.execCommand('insertText', false, '$escaped')");
     }
   }
 
