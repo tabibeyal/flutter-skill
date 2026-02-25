@@ -256,6 +256,51 @@
     footer a { color: var(--text-muted); }
     footer a:hover { color: var(--text); }
 
+    /* Use case tabs */
+    .use-case-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 24px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .use-case-tabs .tab {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .use-case-tabs .tab:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .use-case-tabs .tab.active {
+      background: var(--code-bg);
+      border-color: var(--accent);
+      border-bottom-color: var(--code-bg);
+      color: var(--accent);
+    }
+
+    .tab-content {
+      display: none;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 0 8px 8px 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .tab-content.active { display: block; }
+
+    .tab-content p { color: var(--text-muted); margin-bottom: 12px; }
+
     /* Code blocks with copy button */
     .code-block {
       position: relative;
@@ -328,20 +373,55 @@
       <a href="https://www.npmjs.com/package/flutter-skill"><img src="https://img.shields.io/npm/v/flutter-skill.svg" alt="npm"></a>
       <a href="https://github.com/ai-dashboad/flutter-skill/actions"><img src="https://img.shields.io/github/actions/workflow/status/ai-dashboad/flutter-skill/ci.yml?label=tests" alt="CI"></a>
     </div>
-    <div class="install-box" onclick="navigator.clipboard.writeText('npm install -g flutter-skill')">npm install -g flutter-skill</div>
+    <div class="code-block" style="display:inline-block; margin-top: 0;">
+      <div class="install-box" style="padding-right: 70px;">npm install -g flutter-skill</div>
+      <button class="copy-btn" style="top: 50%; transform: translateY(-50%);" onclick="copyCode(this, 'npm install -g flutter-skill')">📋 Copy</button>
+    </div>
   </div>
 
   <!-- Getting Started -->
   <section id="getting-started">
     <h2>Getting Started</h2>
-    <p>Install flutter-skill and connect it to your AI in under 60 seconds.</p>
+    <p>Choose your use case. Each path is one or two commands — you'll be running in under 60 seconds.</p>
 
-    <h3>1. Install</h3>
-    <pre>npm install -g flutter-skill</pre>
+    <!-- Use Case Tabs -->
+    <div class="use-case-tabs">
+      <button class="tab active" onclick="showTab('web')">🌐 Test Any Website</button>
+      <button class="tab" onclick="showTab('mcp')">🤖 MCP for AI IDE</button>
+      <button class="tab" onclick="showTab('flutter')">💙 Flutter App</button>
+      <button class="tab" onclick="showTab('mobile')">📱 iOS / Android</button>
+    </div>
 
-    <h3>2. Add to your AI</h3>
-    <p>Copy this into your MCP config (Cursor, Claude Desktop, Windsurf, VSCode, etc.):</p>
-    <pre>{
+    <!-- Tab: Web -->
+    <div class="tab-content active" id="tab-web">
+      <p>Automate any website with zero config — no SDK, no code changes.</p>
+      <div class="code-block">
+        <pre><span class="comment"># Install + run (that's it!)</span>
+npm install -g flutter-skill
+flutter-skill serve https://your-website.com</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'npm install -g flutter-skill && flutter-skill serve https://your-website.com')">📋 Copy</button>
+      </div>
+      <p>Now use the CLI to interact:</p>
+      <div class="code-block">
+        <pre>flutter-skill snap          <span class="comment"># See the page (accessibility tree)</span>
+flutter-skill tap "Login"   <span class="comment"># Click a button</span>
+flutter-skill type "hello"  <span class="comment"># Type text</span>
+flutter-skill screenshot    <span class="comment"># Take a screenshot</span></pre>
+        <button class="copy-btn" onclick="copyCode(this, 'flutter-skill snap')">📋 Copy</button>
+      </div>
+    </div>
+
+    <!-- Tab: MCP -->
+    <div class="tab-content" id="tab-mcp">
+      <p>Add to Cursor, Claude Desktop, Windsurf, VSCode Copilot, or any MCP-compatible AI.</p>
+      <div class="code-block">
+        <pre><span class="comment"># Step 1: Install</span>
+npm install -g flutter-skill</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'npm install -g flutter-skill')">📋 Copy</button>
+      </div>
+      <div class="code-block">
+        <pre><span class="comment">// Step 2: Add to your MCP config</span>
+{
   <span class="string">"mcpServers"</span>: {
     <span class="string">"flutter-skill"</span>: {
       <span class="string">"command"</span>: <span class="string">"flutter-skill"</span>,
@@ -349,17 +429,65 @@
     }
   }
 }</pre>
+        <button class="copy-btn" onclick="copyCode(this, JSON.stringify({mcpServers:{'flutter-skill':{command:'flutter-skill',args:['server']}}}, null, 2))">📋 Copy JSON</button>
+      </div>
+      <p>Then just ask your AI: <em>"Open https://example.com, find the login button, and test it"</em></p>
+    </div>
 
-    <h3>3. Add to your Flutter app (optional)</h3>
-    <pre><span class="keyword">import</span> <span class="string">'package:flutter_skill/flutter_skill.dart'</span>;
+    <!-- Tab: Flutter -->
+    <div class="tab-content" id="tab-flutter">
+      <p>Add the SDK to your Flutter app for deep integration (widget tree, semantics, gestures).</p>
+      <div class="code-block">
+        <pre><span class="comment"># Step 1: Install CLI + add SDK to your app</span>
+npm install -g flutter-skill
+flutter pub add flutter_skill --dev</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'npm install -g flutter-skill && flutter pub add flutter_skill --dev')">📋 Copy</button>
+      </div>
+      <div class="code-block">
+        <pre><span class="comment">// Step 2: Add 2 lines to main.dart</span>
+<span class="keyword">import</span> <span class="string">'package:flutter_skill/flutter_skill.dart'</span>;
 
 <span class="keyword">void</span> main() {
   <span class="keyword">if</span> (kDebugMode) FlutterSkillBinding.ensureInitialized();
   runApp(MyApp());
 }</pre>
+        <button class="copy-btn" onclick="copyCode(this, `import 'package:flutter_skill/flutter_skill.dart';\n\nvoid main() {\n  if (kDebugMode) FlutterSkillBinding.ensureInitialized();\n  runApp(MyApp());\n}`)">📋 Copy</button>
+      </div>
+      <div class="code-block">
+        <pre><span class="comment"># Step 3: Run your app + connect</span>
+flutter run
+flutter-skill server</pre>
+        <button class="copy-btn" onclick="copyCode(this, 'flutter run && flutter-skill server')">📋 Copy</button>
+      </div>
+    </div>
 
-    <h3>4. Test</h3>
-    <p>Just talk to your AI: <em>"Launch my app, explore every screen, and report any bugs"</em></p>
+    <!-- Tab: Mobile -->
+    <div class="tab-content" id="tab-mobile">
+      <p>Test native iOS/Android apps. Requires the platform SDK in your app.</p>
+      <div class="cards" style="margin-top: 16px;">
+        <div class="card">
+          <h4>iOS (Swift)</h4>
+          <div class="code-block">
+            <pre>npm install -g flutter-skill
+<span class="comment"># Add sdks/ios to your Xcode project</span>
+<span class="comment"># Run your app on simulator</span>
+flutter-skill server</pre>
+            <button class="copy-btn" onclick="copyCode(this, 'npm install -g flutter-skill')">📋 Copy</button>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Android (Kotlin)</h4>
+          <div class="code-block">
+            <pre>npm install -g flutter-skill
+<span class="comment"># Add sdks/android to your Gradle project</span>
+<span class="comment"># Run your app on emulator</span>
+flutter-skill server</pre>
+            <button class="copy-btn" onclick="copyCode(this, 'npm install -g flutter-skill')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top: 16px;">Also supports: <strong>React Native</strong>, <strong>Electron</strong>, <strong>Tauri</strong>, <strong>KMP</strong>, <strong>.NET MAUI</strong>. See <a href="#platforms">Platforms</a> for details.</p>
+    </div>
   </section>
 
   <!-- Platforms -->
@@ -679,6 +807,13 @@ flutter-skill tools</pre>
 </footer>
 
 <script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.use-case-tabs .tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
 function copyCode(btn, text) {
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '✅ Copied!';
