@@ -1,3 +1,12 @@
+## 0.9.6
+
+**Shadow DOM deep pierce for tap/snapshot, serve port reuse fix**
+
+### Changes
+- TODO: Add your changes here
+
+---
+
 ## 0.9.1
 
 **CLI client commands, GitHub Pages docs, comprehensive platform guide**
