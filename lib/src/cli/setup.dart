@@ -84,7 +84,7 @@ Future<void> runSetup(String projectPath) async {
         'SDK integration failed — could not find "void main() {" in lib/main.dart.\n'
         '\nTo complete setup manually:'
         '\n  1. Add flutter_skill to pubspec.yaml dependencies:'
-        '\n       flutter_skill: ^1.0.0'
+        '\n       flutter_skill: ^0.9.6'
         '\n  2. Call FlutterSkillBinding.ensureInitialized() inside main():'
         '\n       void main() {'
         '\n         FlutterSkillBinding.ensureInitialized();'
